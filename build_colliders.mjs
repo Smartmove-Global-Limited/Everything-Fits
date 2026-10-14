@@ -58,6 +58,9 @@ function matNa(anh) {
 // hơn hình thật, người chơi thấy món "chạm" nhau giữa khoảng trống. 40 đỉnh thì ôm được cả vòng
 // cong; poly-decomp cắt thành vài mảnh lồi, vật lý vẫn nhẹ với ≤11 món một màn.
 const TOI_DA_DINH = 40;
+// Chỉ dò VIỀN NGOÀI. Lỗ kín bên trong (vòng carabiner, lõi cuộn dây, lỗ mở chai) cố ý để lấp:
+// chạm viền ngoài là đã tính va chạm, lỗ rỗng không có giá trị gì trong luật chơi — quyết định
+// của designer (2026-10-14). Đừng thêm dò lỗ.
 const TOI_DA_DINH_VIEN = 64;   // đường viền vẽ
 
 function sinhCollider(duongDanAnh, ppu, buocLaCircle) {
