@@ -53,7 +53,11 @@ function matNa(anh) {
 }
 
 // ---------------- sinh collider cho một món ----------------
-const TOI_DA_DINH = 16;
+// 16 đỉnh là đủ cho hình đặc, nhưng hình có chỗ lõm cong (tai nghe chụp tai, đồng hồ có chuông,
+// mặt trăng khuyết) thì bước rút gọn lấp luôn chỗ lõm thành một cạnh thẳng — vùng va chạm to
+// hơn hình thật, người chơi thấy món "chạm" nhau giữa khoảng trống. 40 đỉnh thì ôm được cả vòng
+// cong; poly-decomp cắt thành vài mảnh lồi, vật lý vẫn nhẹ với ≤11 món một màn.
+const TOI_DA_DINH = 40;
 const TOI_DA_DINH_VIEN = 64;   // đường viền vẽ
 
 function sinhCollider(duongDanAnh, ppu, buocLaCircle) {
@@ -64,7 +68,9 @@ function sinhCollider(duongDanAnh, ppu, buocLaCircle) {
   if (vien.length < 8) throw new Error('viền quá ít điểm');
 
   // rút gọn dần cho tới khi đủ ít đỉnh; sai số tính bằng pixel ảnh
-  let eps = Math.max(1.5, Math.min(anh.w, anh.h) * 0.012), gon = vien;
+  // Bắt đầu từ sai số nhỏ như đường viền vẽ rồi mới nới dần: khởi đầu thô quá thì lần đầu đã
+  // dưới trần đỉnh, loop dừng ngay dù còn dư đỉnh để ôm sát hơn.
+  let eps = Math.max(.9, Math.min(anh.w, anh.h) * 0.004), gon = vien;
   for (let i = 0; i < 24; i++) {
     gon = rutGon([...vien, vien[0]], eps);
     gon.pop();
@@ -79,7 +85,7 @@ function sinhCollider(duongDanAnh, ppu, buocLaCircle) {
   // (body.origin), đa giác giữ nguyên chỗ trên ảnh.
   const cx = anh.w / 2, cy = anh.h / 2;
   // Đường viền để VẼ (viền xanh/đỏ khi kéo, viền chọn, lớp băng): bám sát mép ảnh hơn nhiều so
-  // với collider (collider rút còn ≤16 đỉnh cho vật lý nhẹ, vẽ ra thì góc bị gãy, lệch mép).
+  // với collider (collider rút còn ≤40 đỉnh cho vật lý nhẹ, vẽ ra thì góc bị gãy, lệch mép).
   // Chỉ để vẽ, vật lý không dùng.
   let epsV = Math.max(.9, Math.min(anh.w, anh.h) * 0.004), vienVe = vien;
   for (let i = 0; i < 24; i++) {
