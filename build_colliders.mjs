@@ -52,15 +52,97 @@ function matNa(anh) {
   return { m, soO: toNhat };
 }
 
+// ---------------- lỗ kín ----------------
+// Một đa giác chỉ tả được viền ngoài; lỗ kín bên trong (vòng carabiner, lõi cuộn dây, lỗ mở
+// chai) sẽ bị lấp dù bao nhiêu đỉnh. Designer muốn lỗ rỗng thật — sau này món nhỏ xếp vào
+// được. Cách làm: cắt mặt nạ thân món theo các đường DỌC đi qua tâm từng lỗ; mỗi dải còn lại
+// không chứa lỗ kín nào (lỗ nào cũng bị chính đường cắt qua tâm nó xẻ đôi, mảnh lỗ trong dải
+// luôn chạm biên dải), nên từng mảnh của dải là một đa giác đơn. Gom các mảnh thành
+// collider kiểu "polys"; Matter dựng thân nhiều phần, lỗ rỗng thật.
+const LO_TOI_THIEU = 40;        // đơn vị², lỗ nhỏ hơn thì món nào cũng không chui vào được
+const TOI_DA_DINH_MANH = 24;    // đỉnh tối đa của một mảnh
+const MANH_TOI_THIEU = 24;      // px, mảnh nhỏ hơn là vụn do cắt, bỏ
+
+/** Tách mặt nạ thành các thành phần liền nhau (4 hướng). Trả về [{m, dem, x0, x1, cx}] */
+function thanhPhan(mask, w, h) {
+  const nhan = new Int32Array(w * h).fill(-1), hang = new Int32Array(w * h);
+  const ra = [];
+  for (let s = 0; s < w * h; s++) {
+    if (!mask[s] || nhan[s] >= 0) continue;
+    let dau = 0, cuoi = 0, sumX = 0, x0 = w, x1 = -1;
+    hang[cuoi++] = s; nhan[s] = ra.length;
+    while (dau < cuoi) {
+      const p = hang[dau++], x = p % w, y = (p / w) | 0;
+      sumX += x; if (x < x0) x0 = x; if (x > x1) x1 = x;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const q = ny * w + nx;
+        if (mask[q] && nhan[q] < 0) { nhan[q] = ra.length; hang[cuoi++] = q; }
+      }
+    }
+    const m = new Uint8Array(w * h);
+    for (let i = 0; i < cuoi; i++) m[hang[i]] = 1;
+    ra.push({ m, dem: cuoi, x0, x1, cx: sumX / cuoi });
+  }
+  return ra;
+}
+
+/** Các lỗ kín trong thân: thành phần nền KHÔNG chạm biên ảnh và đủ lớn */
+function timLo(m, w, h, ppu) {
+  const nen = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) nen[i] = m[i] ? 0 : 1;
+  const toiThieu = LO_TOI_THIEU * ppu * ppu;
+  return thanhPhan(nen, w, h).filter(tp => {
+    if (tp.dem < toiThieu) return false;
+    for (let y = 0; y < h; y++) if (tp.m[y * w] || tp.m[y * w + w - 1]) return false;       // chạm mép trái/phải
+    for (let x = 0; x < w; x++) if (tp.m[x] || tp.m[(h - 1) * w + x]) return false;         // chạm mép trên/dưới
+    return true;
+  });
+}
+
+/** Rút gọn một đường viền pixel về ≤ toiDa đỉnh, đổi sang đơn vị game quanh tâm ảnh */
+function daGiacTuVien(vien, toiDa, anh, ppu) {
+  let eps = Math.max(.9, Math.min(anh.w, anh.h) * 0.004), gon = vien;
+  for (let i = 0; i < 24; i++) {
+    gon = rutGon([...vien, vien[0]], eps); gon.pop();
+    if (gon.length <= toiDa) break;
+    eps *= 1.28;
+  }
+  const cx = anh.w / 2, cy = anh.h / 2;
+  return gon.map(([x, y]) => [+((x + .5 - cx) / ppu).toFixed(2), +((y + .5 - cy) / ppu).toFixed(2)]);
+}
+
+/** Cắt thân theo đường dọc qua tâm từng lỗ, trả về các mảnh đa giác đơn */
+function catTheoLo(m, lo, anh, ppu) {
+  const { w, h } = anh;
+  const cat = [...new Set(lo.map(l => Math.round(l.cx)))].sort((a, b) => a - b);
+  const daiCua = x => cat.filter(c => c <= x).length;
+  const soDai = cat.length + 1;
+  const manh = [];
+  for (let s = 0; s < soDai; s++) {
+    const dai = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (m[i] && daiCua(x) === s) dai[i] = 1;
+    }
+    for (const tp of thanhPhan(dai, w, h)) {
+      if (tp.dem < MANH_TOI_THIEU) continue;
+      const vien = doVien(tp.m, w, h);
+      if (vien.length < 6) continue;
+      const pts = daGiacTuVien(vien, TOI_DA_DINH_MANH, anh, ppu);
+      if (pts.length >= 3 && Math.abs(dienTich(pts)) > 1) manh.push(pts);
+    }
+  }
+  return manh;
+}
+
 // ---------------- sinh collider cho một món ----------------
 // 16 đỉnh là đủ cho hình đặc, nhưng hình có chỗ lõm cong (tai nghe chụp tai, đồng hồ có chuông,
 // mặt trăng khuyết) thì bước rút gọn lấp luôn chỗ lõm thành một cạnh thẳng — vùng va chạm to
 // hơn hình thật, người chơi thấy món "chạm" nhau giữa khoảng trống. 40 đỉnh thì ôm được cả vòng
 // cong; poly-decomp cắt thành vài mảnh lồi, vật lý vẫn nhẹ với ≤11 món một màn.
 const TOI_DA_DINH = 40;
-// Chỉ dò VIỀN NGOÀI. Lỗ kín bên trong (vòng carabiner, lõi cuộn dây, lỗ mở chai) cố ý để lấp:
-// chạm viền ngoài là đã tính va chạm, lỗ rỗng không có giá trị gì trong luật chơi — quyết định
-// của designer (2026-10-14). Đừng thêm dò lỗ.
 const TOI_DA_DINH_VIEN = 64;   // đường viền vẽ
 
 function sinhCollider(duongDanAnh, ppu, buocLaCircle) {
@@ -113,7 +195,18 @@ function sinhCollider(duongDanAnh, ppu, buocLaCircle) {
     const r = +(pts.reduce((s, p) => s + Math.hypot(p[0], p[1]), 0) / pts.length).toFixed(2);
     return { collider: { kind: 'circle', r }, outline, soDinh: 0, rong, cao, dt: Math.PI * r * r };
   }
-  return { collider: { kind: 'poly', pts }, outline, soDinh: pts.length, rong, cao, dt: Math.abs(dienTich(pts)) };
+  // Có lỗ kín → cắt thân thành các mảnh đơn ôm quanh lỗ. Viền ngoài (pts) giữ lại để vẽ và
+  // để editor bắt chuột; vật lý dùng các mảnh.
+  const lo = timLo(m, anh.w, anh.h, ppu);
+  if (lo.length) {
+    const parts = catTheoLo(m, lo, anh, ppu);
+    if (parts.length) {
+      return { collider: { kind: 'polys', parts, outer: pts }, outline, soLo: lo.length,
+        soDinh: parts.reduce((s, p) => s + p.length, 0), rong, cao,
+        dt: parts.reduce((s, p) => s + Math.abs(dienTich(p)), 0) };
+    }
+  }
+  return { collider: { kind: 'poly', pts }, outline, soLo: 0, soDinh: pts.length, rong, cao, dt: Math.abs(dienTich(pts)) };
 }
 
 // ---------------- chạy ----------------
@@ -133,7 +226,7 @@ for (const [id, duong] of Object.entries(index.items)) {
     const kq = sinhCollider(resolve(CONTENT, man.sprite.src), ppu, cu?.kind === 'circle');
     const cuRong = cu ? cu.box[2] - cu.box[0] : 0, cuCao = cu ? cu.box[3] - cu.box[1] : 0;
     bang.push({
-      id, ten: man.name || cu?.name, kieu: kq.collider.kind, dinh: kq.soDinh, vien: kq.outline.length,
+      id, ten: man.name || cu?.name, kieu: kq.collider.kind, lo: kq.soLo || 0, dinh: kq.soDinh, vien: kq.outline.length,
       cu: `${cuRong}x${cuCao}`, moi: `${kq.rong.toFixed(0)}x${kq.cao.toFixed(0)}`,
       lech: cuRong ? `${((kq.rong / cuRong - 1) * 100).toFixed(0)}% / ${((kq.cao / cuCao - 1) * 100).toFixed(0)}%` : '—',
     });

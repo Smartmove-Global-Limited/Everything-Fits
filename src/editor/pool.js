@@ -97,7 +97,7 @@ export function initPool({ E, status, onSaved }) {
     $('imLink').checked = !!def.meta.canLink;
     $('imLock').checked = !!def.meta.canLock;
     scalePct = 100;
-    const nhieuManh = def.kind === 'compound';
+    const nhieuManh = !colliderOf(def);    // compound từ manifest 'polys' thì đổi cỡ được như thường
     for (const id of ['imScale', 'imMinus', 'imPlus']) $(id).disabled = nhieuManh;
     paintScale();
     if (nhieuManh) $('imSize').textContent = 'món nhiều mảnh, chưa đổi cỡ được';
@@ -124,6 +124,8 @@ export function initPool({ E, status, onSaved }) {
     if (def.kind === 'circle') return { kind: 'circle', r: def.r };
     if (def.kind === 'rect') return { kind: 'rect', w: def.w, h: def.h, chamfer: def.chamfer || 0 };
     if (def.kind === 'poly') return { kind: 'poly', pts: def.pts };
+    if (def.kind === 'compound' && def.parts?.every(p => p.kind === 'poly'))   // món có lỗ kín
+      return { kind: 'polys', parts: def.parts.map(p => p.pts), outer: def.pts };
     return null;            // compound: nhiều mảnh, manifest chưa tả được
   }
 
@@ -139,6 +141,8 @@ export function initPool({ E, status, onSaved }) {
     if (c.kind === 'circle') return { ...c, r: tron(c.r * k) };
     if (c.kind === 'rect') return { ...c, w: tron(c.w * k), h: tron(c.h * k), chamfer: tron((c.chamfer || 0) * k) };
     if (c.kind === 'poly') return { ...c, pts: c.pts.map(([x, y]) => [tron(x * k), tron(y * k)]) };
+    if (c.kind === 'polys') return { ...c, parts: c.parts.map(p => p.map(([x, y]) => [tron(x * k), tron(y * k)])),
+      outer: c.outer.map(([x, y]) => [tron(x * k), tron(y * k)]) };
     return c;
   }
 

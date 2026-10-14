@@ -36,7 +36,9 @@ export function xoaNen() {
  */
 function veVien(b, { grow = 0, to = false } = {}) {
   const d = b.def;
-  const coVien = d && ((d.kind === 'poly' && d.pts?.length > 2) || d.kind === 'circle' || d.kind === 'rect');
+  // 'compound' có pts = viền ngoài (món có lỗ kín, thân cắt thành nhiều mảnh): vẽ theo viền ngoài
+  // cho khỏi lộ các đường cắt giữa mảnh.
+  const coVien = d && (((d.kind === 'poly' || d.kind === 'compound') && d.pts?.length > 2) || d.kind === 'circle' || d.kind === 'rect');
   // có viền vẽ riêng (bám mép ảnh) thì dùng nó cho mọi kiểu hình, kể cả hình tròn
   const vienRieng = d?.outline;
   if (!coVien) {

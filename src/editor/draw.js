@@ -34,7 +34,8 @@ export function initDraw({ E, onChange, status, areaOf: areaOfItem }) {
    * ngoài mà dùng thì người dựng level nhìn món to hơn thực tế và bấm trúng cả góc trống.
    */
   function vienHinh(def) {
-    if (def.kind === 'poly' && def.pts?.length) return def.pts;
+    // 'compound' (món có lỗ kín, thân nhiều mảnh) cũng mang pts = viền ngoài: chọn và bắt chuột theo đó
+    if ((def.kind === 'poly' || def.kind === 'compound') && def.pts?.length) return def.pts;
     if (def.kind === 'circle') {
       const r = def.r, n = 20, pts = [];
       for (let i = 0; i < n; i++) pts.push([Math.cos(i / n * 2 * Math.PI) * r, Math.sin(i / n * 2 * Math.PI) * r]);

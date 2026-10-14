@@ -16,6 +16,14 @@ export function applyCollider(def, c) {
     Object.assign(def, { kind: 'poly', pts: c.pts,
       box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] });
     delete def.parts; delete def.extra;
+  } else if (c.kind === 'polys') {
+    // Món có lỗ kín: thân là NHIỀU đa giác đơn ôm quanh lỗ (vật lý dùng), còn `outer` là viền
+    // ngoài một đa giác (vẽ viền, bắt chuột trong editor). Cùng hệ toạ độ tâm ảnh như 'poly'.
+    const tatCa = c.parts.flat();
+    const xs = tatCa.map(p => p[0]), ys = tatCa.map(p => p[1]);
+    Object.assign(def, { kind: 'compound', parts: c.parts.map(pts => ({ kind: 'poly', pts })), pts: c.outer,
+      box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] });
+    delete def.extra;
   }
   return def;
 }

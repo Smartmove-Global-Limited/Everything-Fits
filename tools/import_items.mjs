@@ -47,6 +47,7 @@ function dienTich(c) {
   if (!c) return 0;
   if (c.kind === 'circle') return Math.PI * c.r * c.r;
   if (c.kind === 'rect') return c.w * c.h;
+  if (c.kind === 'polys') return c.parts.reduce((t, pts) => t + dienTich({ kind: 'poly', pts }), 0);   // món có lỗ kín
   let s = 0;
   for (let i = 0; i < c.pts.length; i++) {
     const [x1, y1] = c.pts[i], [x2, y2] = c.pts[(i + 1) % c.pts.length];
