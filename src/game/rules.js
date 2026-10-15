@@ -54,7 +54,10 @@ export function computeGhost(body, group = [body]) {
   // thường; thả ra vật lý tự đẩy món ra ngoài thành.
   const boQuaThanh = !lan;
   const mine = partsOf(body);
-  const others = S.bodies.filter(b => !group.includes(b) && daVao(b)).flatMap(partsOf).concat(S.staticBodies);
+  // Tường và vật cản cũng lấy từng mảnh: vật cản kiểu 'poly' (vách ngăn in sẵn trong ảnh túi) là
+  // thân ghép nhiều mảnh lồi, đem thân cha đi dò thì Matter dùng bao lồi của cả mạng vách — với
+  // khay chia múi, tổ ong là cả lòng túi, món nào thả vào cũng bị báo không vừa.
+  const others = S.bodies.filter(b => !group.includes(b) && daVao(b)).flatMap(partsOf).concat(S.staticBodies.flatMap(partsOf));
   for (const a of mine) {
     for (const b of others) {
       if (!Bounds.overlaps(a.bounds, b.bounds)) continue;

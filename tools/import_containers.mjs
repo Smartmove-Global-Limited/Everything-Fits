@@ -259,6 +259,15 @@ function xuLy(file) {
   const vachPx = vachGiu.flatMap(c => daGiacManh(c, w, h, DINH_VACH));
   const longPx = daGiac(H, w, h, DINH_LONG);
   if (!longPx) throw new Error('không dò được viền lòng túi');
+  // đo độ khớp: đa giác (kể cả vách) so với mặt nạ H: phần đa giác nằm ngoài H là đè lên dải viền,
+  // phần H nằm ngoài đa giác là bỏ sót
+  const trongDaGiac = (x, y) => { let t = false; for (let i = 0, j = longPx.length - 1; i < longPx.length; j = i++) { const [xi, yi] = longPx[i], [xj, yj] = longPx[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) t = !t; } return t; };
+  let de = 0, sot = 0, dg = 0;
+  for (let y = tpH.y0 - 4; y <= tpH.y1 + 4; y += 2) for (let x = tpH.x0 - 4; x <= tpH.x1 + 4; x += 2) {
+    const i = y * w + x, inP = trongDaGiac(x + .5, y + .5);
+    if (inP) { dg++; if (!H[i]) de++; } else if (H[i]) sot++;
+  }
+  const khop = { 'đè viền %': +(100 * de / dg).toFixed(2), 'bỏ sót %': +(100 * sot / tpH.dem * 4).toFixed(2) };
 
   // 4. cỡ
   let donVi = Math.sqrt(DT / tpH.dem);
@@ -278,7 +287,7 @@ function xuLy(file) {
     y: +((khung.y0 - goc[1]) * donVi - LE / PPU).toFixed(2),
     w: +(body.w / PPU).toFixed(2), h: +(body.h / PPU).toFixed(2),
   };
-  return { anh, khung, W, longPx, vachPx, ngan, inner, walls, image, body, frame, donVi, dtLong: tpH.dem * donVi * donVi, dtVach: walls.reduce((s, p) => s + Math.abs(dienTich(p)), 0) };
+  return { anh, khung, W, longPx, vachPx, ngan, inner, walls, image, body, frame, donVi, khop, dtLong: tpH.dem * donVi * donVi, dtVach: walls.reduce((s, p) => s + Math.abs(dienTich(p)), 0) };
 }
 
 // ---------- ảnh kiểm tra ----------
@@ -328,7 +337,7 @@ for (const f of files) {
     const xs = r.inner.map(p => p[0]), ys = r.inner.map(p => p[1]);
     bang.push({ id: t.id, ten: t.nameVi, 'ngăn': r.ngan.length, 'vách': r.walls.length, 'đỉnh lòng': r.inner.length,
       'lòng túi': `${(Math.max(...xs) - Math.min(...xs)).toFixed(0)}×${(Math.max(...ys) - Math.min(...ys)).toFixed(0)}`,
-      'dt lòng': Math.round(r.dtLong), 'dt vách': Math.round(r.dtVach), 'cả túi': `${r.image.w.toFixed(0)}×${r.image.h.toFixed(0)}` });
+      'dt lòng': Math.round(r.dtLong), 'dt vách': Math.round(r.dtVach), 'cả túi': `${r.image.w.toFixed(0)}×${r.image.h.toFixed(0)}`, ...r.khop });
     ketQua.push({ so, t, f, r });
   } catch (e) { bang.push({ id: t.id, ten: t.nameVi, ghiChu: 'LỖI: ' + e.message }); ketQua.push({ so, t, f, r: null }); }
 }
