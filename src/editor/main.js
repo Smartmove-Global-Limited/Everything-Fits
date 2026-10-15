@@ -417,13 +417,33 @@ export function refreshPickers() {
   const bgs = sceneOptions();
   $('lvBg').innerHTML = bgs.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
   if (E.level) { skin.value = E.level.container.skin || 'backpack'; $('lvBg').value = String(E.level.background ?? 1); }
+  // lưới ảnh túi: tên không thì không biết túi nào với túi nào
+  $('skinGrid').replaceChildren(...ds.map(b => {
+    const el = document.createElement('button'); el.type = 'button'; el.dataset.id = b.id; el.title = b.name;
+    const src = BAG_SKINS[b.id]?.img?.body?.src;
+    el.innerHTML = `${src ? `<img src="${src}" alt="">` : '<i class="no-img">chưa có ảnh</i>'}<span>${b.name}</span>`;
+    el.addEventListener('click', () => { skin.value = b.id; skin.dispatchEvent(new Event('change')); $('skinPick').hidden = true; });
+    return el;
+  }));
+  veNutTui();
 }
+/** Nút "Chiếc túi": ảnh + tên túi đang chọn, và đánh dấu túi đó trong lưới */
+function veNutTui() {
+  const id = $('lvSkin').value, sk = BAG_SKINS[id];
+  const img = $('lvSkinImg'), src = sk?.img?.body?.src;
+  img.hidden = !src; if (src) img.src = src;
+  $('lvSkinName').textContent = sk?.name || id || '—';
+  for (const b of $('skinGrid').children) b.classList.toggle('on', b.dataset.id === id);
+}
+$('lvSkinBtn').addEventListener('click', () => { veNutTui(); $('skinPick').hidden = false; });
+$('skinPickClose').addEventListener('click', () => { $('skinPick').hidden = true; });
+$('skinPick').addEventListener('click', e => { if (e.target === $('skinPick')) $('skinPick').hidden = true; });
 
 // ---------- form ----------
 // Tên tiếng Anh: game mặc định nói tiếng Anh, bỏ trống thì hiện tên tiếng Việt
 $('lvTimer').addEventListener('change', e => { E.level.timer = +e.target.value; onChange(); });
 $('lvBg').addEventListener('change', e => { E.level.background = Number(e.target.value); onChange(); });
-$('lvSkin').addEventListener('change', e => { E.level.container.skin = e.target.value; dongBoTui(E.level); draw?.syncBagUi(); onChange(); });
+$('lvSkin').addEventListener('change', e => { E.level.container.skin = e.target.value; dongBoTui(E.level); draw?.syncBagUi(); veNutTui(); onChange(); });
 $('lvCoin').addEventListener('change', e => { E.level.reward = { ...(E.level.reward || {}), coin: +e.target.value }; onChange(); });
 
 // ---------- tabs ----------

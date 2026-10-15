@@ -66,7 +66,9 @@
           <label class="field">Thưởng <input id="lvCoin" type="number" min="0" step="5"> coin</label>
         </div>
         <div class="row">
-          <label class="field">Chiếc túi <select id="lvSkin"></select></label>
+          <div class="field">Chiếc túi <select id="lvSkin" hidden></select>
+            <button type="button" id="lvSkinBtn" class="skin-btn" title="Bấm để chọn túi theo hình"><img id="lvSkinImg" alt=""><span id="lvSkinName">—</span><i>▾</i></button>
+          </div>
           <label class="field">Bối cảnh <select id="lvBg"></select></label>
         </div>
       </div>
@@ -295,5 +297,12 @@
 
 
   <script type="module" src="./src/editor/main.js"></script>
+  <!-- Chọn túi theo hình: ô select thường không gắn ảnh được -->
+  <div id="skinPick" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><b>Chọn túi</b><button type="button" id="skinPickClose">Đóng</button></div>
+      <div id="skinGrid" class="skin-grid"></div>
+    </div>
+  </div>
 </body>
 </html>

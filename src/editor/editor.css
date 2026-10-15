@@ -259,3 +259,15 @@ body[data-edit-art="casual"] .arttag{background:#FF4D6D;color:#fff}
 .lv-so{display:flex;align-items:center;gap:.5em}
 .lv-so b{font:800 1.05em "Nunito"}
 .lv-so code{color:var(--soft);font-size:.85em}
+
+/* chọn túi theo hình */
+.skin-btn{display:inline-flex;align-items:center;gap:.5em;border:1px solid var(--line);border-radius:10px;padding:.15em .6em .15em .3em;background:#fff;color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.skin-btn img{width:46px;height:38px;object-fit:contain}
+.skin-btn img[hidden]{display:none}
+.skin-btn i{font-style:normal;color:var(--soft)}
+.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:.55em;margin-top:.7em}
+.skin-grid button{display:flex;flex-direction:column;align-items:center;gap:.35em;padding:.55em .3em;border:2px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;font:inherit;font-size:.8em;font-weight:600;color:var(--ink);line-height:1.15;text-align:center}
+.skin-grid button img{width:100px;height:82px;object-fit:contain}
+.skin-grid button .no-img{font-style:normal;color:var(--soft);height:82px;display:flex;align-items:center}
+.skin-grid button:hover{border-color:var(--soft)}
+.skin-grid button.on{border-color:#3DBE78;background:#eefaf2}
