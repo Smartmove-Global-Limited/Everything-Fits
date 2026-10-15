@@ -83,23 +83,25 @@ export function itemArea(def) {
 function polygonWalls(poly, opt, closed = false) {
   const walls = [];
   const n = poly.length;
-  const cx = poly.reduce((s, p) => s + p[0], 0) / n, cy = poly.reduce((s, p) => s + p[1], 0) / n;
   // bỏ cạnh miệng túi: cạnh nằm trên đỉnh (y nhỏ nhất) và gần ngang
   const minY = Math.min(...poly.map(p => p[1]));
+  // Hướng ra ngoài lấy theo CHIỀU ĐI của polygon (dấu diện tích shoelace), không phải "xa trọng
+  // tâm": với lòng túi lõm (đuôi cá, chữ U, chữ L) cạnh ở phần nhô ra có khi nằm gần trọng tâm
+  // hơn khi đẩy ra ngoài, tường bị dựng vào trong lòng túi, đồ thả vào đó bị báo không vừa dù
+  // còn cách mép kem cả đoạn.
+  const chieu = Math.sign(polygonArea2(poly)) || 1;
   const phapTuyen = [];   // pháp tuyến hướng ra ngoài của cạnh i (đỉnh i → i+1); null nếu là miệng túi
   for (let i = 0; i < n; i++) {
     const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % n];
     const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy);
     if ((!closed && Math.abs(y1 - minY) < 1 && Math.abs(y2 - minY) < 1) || len < 1) { phapTuyen.push(null); continue; } // miệng túi mở
-    let nx = dy / len, ny = -dx / len;            // pháp tuyến
+    const nx = chieu * dy / len, ny = -chieu * dx / len;   // pháp tuyến hướng ra ngoài
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-    if ((mx + nx - cx) ** 2 + (my + ny - cy) ** 2 < (mx - cx) ** 2 + (my - cy) ** 2) { nx = -nx; ny = -ny; } // hướng ra ngoài
     phapTuyen.push({ nx, ny });
     walls.push(Bodies.rectangle(mx + nx * PAD / 2, my + ny * PAD / 2, len, PAD, { ...opt, angle: Math.atan2(dy, dx) }));
   }
   // Cột bịt khe chỉ ở góc LỒI: ở góc lõm hai đoạn tường đã chồng lên nhau phía ngoài, không có khe.
   // Lồi hay lõm xét bằng dấu tích có hướng của hai cạnh so với chiều đi của polygon.
-  const chieu = Math.sign(polygonArea2(poly));
   for (let i = 0; i < n; i++) {
     const a = phapTuyen[(i - 1 + n) % n], b = phapTuyen[i];
     if (!a || !b) continue;
