@@ -89,6 +89,7 @@ export function drawBagFront() {
 /** Ngăn khoá đặt sẵn trong túi — dữ liệu của level, không bake vào ảnh được */
 function drawBlocks() {
   for (const b of BAG.blocks || []) {
+    if (b.fixed) continue;   // vách ngăn in sẵn trong ảnh túi
     ctx.save();
     if (!b.kind || b.kind === 'rect') rrect(ctx, b.x, b.y, b.w, b.h, Math.min(8, b.w / 4, b.h / 4));
     else { ctx.beginPath(); blockPoly(b).forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); }

@@ -18,10 +18,12 @@ const cung = (cx, cy, rx, ry, a0, a1, n) => Array.from({ length: n + 1 }, (_, i)
   return [cx + Math.cos(a) * rx, cy + Math.sin(a) * ry];
 });
 
-/** Đa giác (lồi) của vật cản, cùng hệ toạ độ với b.x, b.y */
+/** Đa giác của vật cản, cùng hệ toạ độ với b.x, b.y. Các hình có sẵn đều lồi; kiểu 'poly'
+ *  (vách ngăn in sẵn trong ảnh túi, xem data/bag.js fixedWalls) có thể lõm, vật lý tự cắt lồi. */
 export function blockPoly(b) {
   const { x, y, w, h } = b;
   switch (b.kind) {
+    case 'poly': return b.pts.map(([px, py]) => [x + px, y + py]);   // pts tính từ góc trên trái khung
     case 'round': return cung(x + w / 2, y + h / 2, w / 2, h / 2, 0, Math.PI * 2, 20).slice(0, -1);
     case 'tri': return [[x + w / 2, y], [x + w, y + h], [x, y + h]];
     case 'diamond': return [[x + w / 2, y], [x + w, y + h / 2], [x + w / 2, y + h], [x, y + h / 2]];

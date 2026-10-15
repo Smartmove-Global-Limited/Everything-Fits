@@ -9,13 +9,30 @@ export const fixedShape = (skin, scale = 1) =>
 
 export const isFixedSkin = skin => !!(skin?.fixed && skin.inner?.length >= 3);
 
+/**
+ * Vách ngăn in sẵn trong ảnh túi (manifest `walls`: các đa giác toạ độ level ở scale 1), đổi thành
+ * vật cản kiểu 'poly' ở cỡ scale. Chỉ sinh lúc dựng túi (resolveContainer), KHÔNG ghi vào level:
+ * level chỉ giữ vật cản người thiết kế đặt thêm, vẽ lại ảnh túi là vách của mọi level đổi theo.
+ * `fixed` để render/editor biết vách đã có trong ảnh, không tô màu đè lên.
+ */
+export function fixedWalls(skin, scale = 1) {
+  return (skin?.walls || []).map(poly => {
+    const pts = poly.map(([x, y]) => [x * scale, y * scale]);
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const x = Math.min(...xs), y = Math.min(...ys);
+    return { kind: 'poly', fixed: true, x: +x.toFixed(1), y: +y.toFixed(1), w: +(Math.max(...xs) - x).toFixed(1), h: +(Math.max(...ys) - y).toFixed(1),
+      pts: pts.map(([px, py]) => [+(px - x).toFixed(1), +(py - y).toFixed(1)]) };
+  });
+}
+
 /** container của level → container để dựng: túi dáng cố định thì hình lấy từ ảnh túi */
 export function resolveContainer(c, skins) {
   const skin = skins?.[c?.skin];
   if (!isFixedSkin(skin)) return c;
   const s = c.scale || 1;
   // chỗ đặt túi cũng tính lúc chạy: đổi mốc BAG_FLOOR là mọi level dời theo, không phải dựng lại
-  return { ...c, scale: s, bottom: +(BAG_FLOOR - (skin.image.y + skin.image.h) * s).toFixed(1), shape: fixedShape(skin, s), closed: true };
+  return { ...c, scale: s, bottom: +(BAG_FLOOR - (skin.image.y + skin.image.h) * s).toFixed(1), shape: fixedShape(skin, s), closed: true,
+    blocks: [...(c.blocks || []).filter(b => !b.fixed), ...fixedWalls(skin, s)] };
 }
 
 // Chỗ đặt túi trên màn: đáy ẢNH túi luôn ngay trên mép bàn (TABLE_Y 482), túi to thì nhô lên

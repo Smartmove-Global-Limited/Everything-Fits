@@ -2,7 +2,7 @@
 import { ITEM_DEFS, defById } from '../data/items.js';
 import { loadBook, loadItemManifests, loadBackgrounds, loadBags, saveContent, whenSpriteReady, setAssetChapter, setArtStyle, artStyle, loadConfig, saveConfig, soThuTuLevel } from '../content/loader.js';
 import { sceneOptions, BAG_KINDS, BAG_SKINS } from '../art/scene-registry.js';
-import { isFixedSkin, placeFixed, maxScale, MIN_SCALE } from '../data/bag.js';
+import { isFixedSkin, placeFixed, maxScale, MIN_SCALE, resolveContainer } from '../data/bag.js';
 import { itemArea } from '../game/physics.js';
 import { difficulty } from '../gen/difficulty.js';
 import { solve } from '../gen/solver.js';
@@ -359,7 +359,7 @@ $('ghForget').addEventListener('click', () => {
  */
 let hen = null;
 function chayMayXep() {
-  const L = E.level; if (!L) return;
+  const L = daDung(E.level); if (!L) return;
   const sv = $('solvable');
   if (!L.items.length) { sv.textContent = 'Chưa có món'; sv.className = 'solv'; return; }
   const d = difficulty(L, areaOf);
@@ -369,8 +369,10 @@ function chayMayXep() {
   else { sv.textContent = `Rất có thể không xếp nổi · ${sol.placedCount}/${sol.needCount} món, density ${(d.density * 100).toFixed(0)}%`; sv.className = 'solv bad'; }
 }
 
+/** Level với túi đã dựng như lúc chơi: túi dáng cố định có thêm vách ngăn in sẵn (data/bag.js) */
+const daDung = L => L && { ...L, container: resolveContainer(L.container || {}, BAG_SKINS) };
 function metrics() {
-  const L = E.level; if (!L) return;
+  const L = daDung(E.level); if (!L) return;
   const d = difficulty(L, areaOf);
   const sv = $('solvable');
   if (!L.items.length) { sv.textContent = 'Chưa có món'; sv.className = 'solv'; }

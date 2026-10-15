@@ -7,7 +7,7 @@ import { W, H, TABLE_Y, FLOOR_Y } from '../game/state.js';
 import { pointInPolygon, polygonArea } from '../util/geom.js';
 import { chapterItemIds, byChapterFirst } from './chapter-items.js';
 import { BAG_SKINS } from '../art/scene-registry.js';
-import { isFixedSkin, placeFixed, maxScale, MIN_SCALE } from '../data/bag.js';
+import { isFixedSkin, placeFixed, maxScale, MIN_SCALE, fixedWalls } from '../data/bag.js';
 import { blockPoly, blocksArea, BLOCK_KINDS, BLOCK_COLOR, darker } from '../data/blocks.js';
 
 const $ = id => document.getElementById(id);
@@ -302,8 +302,9 @@ export function initDraw({ E, onChange, status, areaOf: areaOfItem }) {
     const items = L.items.filter(i => i.id !== 0);
     if (!items.length) return status('Chưa có món nào để tính', 'bad');
     const itemArea = items.reduce((s, it) => { const k = coTrongLevel(L, it); return s + areaOfItem(it.id) * k * k; }, 0);
-    // lòng túi và vật cản phóng cùng nhau nên chỗ trống tỉ lệ bình phương cỡ túi
-    const s0 = L.container.scale || 1, cur = polygonArea(L.container.shape) - blocksArea(L.container.blocks);
+    // lòng túi và vật cản phóng cùng nhau nên chỗ trống tỉ lệ bình phương cỡ túi; vách ngăn in sẵn
+    // trong ảnh túi cũng chiếm chỗ (fixedWalls)
+    const s0 = L.container.scale || 1, cur = polygonArea(L.container.shape) - blocksArea([...(L.container.blocks || []), ...fixedWalls(skinOf(), s0)]);
     const s = datCo(s0 * Math.sqrt(itemArea / want / cur));
     if (Math.abs(s - s0 * Math.sqrt(itemArea / want / cur)) > .005) status(`Túi đã ở cỡ giới hạn ${Math.round(s * 100)}%, chưa đạt ${(want * 100).toFixed(0)}%. Bớt món hoặc giảm độ đầy.`, 'bad');
     else status(`Đã chọn cỡ túi ${Math.round(s * 100)}% cho độ đầy ${(want * 100).toFixed(0)}%`, 'ok');
