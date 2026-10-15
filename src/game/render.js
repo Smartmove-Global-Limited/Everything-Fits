@@ -4,6 +4,7 @@ import { S, BAG, partsOf, isHeld } from './state.js';
 import { ctx, VIEW } from './canvas.js';
 import { drawScene } from '../art/scenes.js';
 import { drawBag, drawBagFront } from '../art/bags.js';
+import { blockPoly } from '../data/blocks.js';
 import { moveHeld, tickRotation, rotateButtonPos, rotButtonR } from './input.js';
 import { checkEject, updateChecked } from './rules.js';
 import { tickPhone, checkUnlock, drawStrings } from './mechanics.js';
@@ -130,6 +131,18 @@ function drawBody(b) {
     }
     ctx.restore();
   }
+}
+
+/** ?colliders=1: lòng túi (đỏ) và vật cản (vách in sẵn xanh, vật cản level cam) vẽ đè lên túi */
+function veVungTui() {
+  if (BAG.poly.length < 3) return;
+  ctx.save(); ctx.lineJoin = 'round';
+  const neo = pts => { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); };
+  ctx.strokeStyle = '#FF2D7A'; ctx.lineWidth = 2; neo(BAG.poly); ctx.stroke();
+  for (const b of BAG.blocks || []) {
+    ctx.strokeStyle = b.fixed ? '#1E5BE6' : '#FB8C00'; ctx.lineWidth = 1.6; neo(blockPoly(b)); ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /** Món đang chọn: viền nét đứt + nút xoay ở góc trên phải */
@@ -283,6 +296,7 @@ function frame(now) {
     for (const b of order) drawBody(b);
     drawStrings();
     veTui(drawBagFront);
+    if (HIEN_COLLIDER) veTui(veVungTui);
     drawSelection();
     drawPuffs(dt);
     drawFx(dt);
