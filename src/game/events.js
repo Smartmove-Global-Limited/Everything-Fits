@@ -1,4 +1,4 @@
-// Event phân tích gửi lên Firebase Analytics (chỉ app Android). Kế hoạch đã chốt với team:
+// Event phân tích gửi lên Firebase Analytics và AppsFlyer (chỉ app Android). Kế hoạch đã chốt với team:
 //
 //   level_start   level · mode · play_type · lose_index
 //   level_end     level · lose_index · booster_use · result
@@ -41,7 +41,18 @@ D.thua = D.thua || {};
 const luu = () => ghi(D);
 
 // ---------- gửi ----------
-let plugin = null;
+// Mỗi event đi hai nơi: Firebase Analytics và AppsFlyer (cùng tên, cùng tham số).
+// AppsFlyer cần Dev Key: tools/build-www.mjs nhét vào index.html (window.__AF_DEV_KEY) lúc đóng gói
+// Android, đọc từ android/appsflyer.properties nằm ngoài git. Không có key thì bỏ qua AppsFlyer.
+let plugin = null, af = null;
+function khoiDongAF() {
+  const key = window.__AF_DEV_KEY;
+  if (!key) { console.warn('[AppsFlyer] không có Dev Key, không gửi'); return Promise.resolve(null); }
+  // Bọc trong object vì lý do như Firebase bên dưới (Proxy có "then")
+  return import('appsflyer-capacitor-plugin')
+    .then(async m => { await m.AppsFlyer.init({ devKey: key }); await m.AppsFlyer.start(); return { sdk: m.AppsFlyer }; })
+    .catch(e => { console.warn('[AppsFlyer] khởi động lỗi', e?.message || e); return null; });
+}
 function guiLen(name, params) {
   (window.__suKien = window.__suKien || []).push({ name, params, t: Date.now() });
   if (window.__suKien.length > 200) window.__suKien.shift();
@@ -50,7 +61,11 @@ function guiLen(name, params) {
   // nên trả thẳng nó ra từ Promise thì Promise tưởng là thenable, treo mãi, không event nào đi.
   plugin = plugin || import('@capacitor-firebase/analytics').then(m => ({ fa: m.FirebaseAnalytics })).catch(() => ({}));
   plugin.then(({ fa }) => fa?.logEvent({ name, params })).catch(e => console.warn('[event]', name, e?.message || e));
+  af = af || khoiDongAF();
+  af.then(a => a?.sdk.logEvent({ eventName: name, eventValues: params })).catch(e => console.warn('[AppsFlyer]', name, e?.message || e));
 }
+// Khởi động AppsFlyer ngay khi mở app (đo lượt cài, lượt mở), không đợi tới event đầu tiên
+if (duocGui()) af = khoiDongAF();
 
 // ---------- lượt chơi hiện tại ----------
 let daVaoPhien = false;    // lượt đầu tiên của lần mở app này đã bắt đầu chưa

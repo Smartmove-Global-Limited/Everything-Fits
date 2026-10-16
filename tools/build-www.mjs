@@ -72,10 +72,16 @@ writeFileSync(cfgFile, JSON.stringify({ ...JSON.parse(readFileSync(cfgFile, 'utf
 const levels = readFileSync(join(ROOT, 'public', 'content', 'cozy', 'levels.json'), 'utf8');
 const book = JSON.parse(levels);
 const htmlFile = join(WWW, 'index.html');
-const nhet = `<script>window.__LEVELS_MAC_DINH=${JSON.stringify(book).replace(/</g, '\\u003c')};</script>`;
+let nhet = `<script>window.__LEVELS_MAC_DINH=${JSON.stringify(book).replace(/</g, '\\u003c')};</script>`;
+// Dev Key AppsFlyer: đọc từ android/appsflyer.properties (ngoài git), chỉ bản Android mới có.
+// Không có file thì app vẫn chạy, chỉ không gửi gì lên AppsFlyer (game/events.js).
+let afKey = '';
+try { afKey = (readFileSync(join(ROOT, 'android', 'appsflyer.properties'), 'utf8').match(/^\s*devKey\s*=\s*(\S+)/m) || [])[1] || ''; } catch {}
+if (afKey) nhet += `<script>window.__AF_DEV_KEY=${JSON.stringify(afKey)};</script>`;
+else console.warn('!!! Không thấy android/appsflyer.properties (devKey=…): bản này KHÔNG gửi dữ liệu AppsFlyer');
 writeFileSync(htmlFile, readFileSync(htmlFile, 'utf8').replace('<head>', '<head>' + nhet));
 const soLevel = (book.chapters || []).reduce((n, c) => n + (c.levels?.length || 0), 0);
-console.log(`\n>>> App Android: bộ art COZY, ${soLevel} level nhét sẵn trong code, không tải gì từ GitHub`);
+console.log(`\n>>> App Android: bộ art COZY, ${soLevel} level nhét sẵn trong code, không tải gì từ GitHub · AppsFlyer ${afKey ? 'có Dev Key' : 'KHÔNG có Dev Key'}`);
 
 // Máy còn thiếu commit nội dung (đổi bộ art, sửa level) từ GitHub thì cảnh báo
 try {
