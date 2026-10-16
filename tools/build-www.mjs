@@ -37,6 +37,9 @@ function assetsOf(htmlName) {
 
 const game = assetsOf('index.html');
 const TOOL_PAGES = ['editor.html', 'creative.html'];
+// Bộ art KHÔNG đóng gói vào app Android: app ép cứng cozy (bên dưới), bộ casual chỉ dùng trên web,
+// để trong APK là thêm ~12 MB vô ích. Vẫn giữ trong repo và trên web; cần lại thì bỏ khỏi danh sách này.
+const BO_ART_KHONG_GOI = ['casual'];
 const editorOnly = [...new Set(TOOL_PAGES.flatMap(p => [...assetsOf(p)]))].filter(a => !game.has(a));
 
 rmSync(WWW, { recursive: true, force: true });
@@ -47,6 +50,7 @@ cpSync(DIST, WWW, {
     const rel = src.slice(DIST.length + 1);
     if (!rel) return true;
     if (TOOL_PAGES.includes(rel) || rel === '.DS_Store') return false;
+    if (BO_ART_KHONG_GOI.some(art => rel === `content/${art}` || rel.startsWith(`content/${art}/`))) return false;
     return !editorOnly.includes(rel);
   },
 });
@@ -59,7 +63,7 @@ let bytes = 0, files = 0;
     statSync(p).isDirectory() ? count(p) : (bytes += statSync(p).size, files++);
   }
 })(WWW);
-console.log(`www/ built — ${files} files, ${(bytes / 1024 / 1024).toFixed(2)} MB (editor left out: ${editorOnly.join(', ') || 'none'})`);
+console.log(`www/ built — ${files} files, ${(bytes / 1024 / 1024).toFixed(2)} MB (editor left out: ${editorOnly.join(', ') || 'none'}; art left out: ${BO_ART_KHONG_GOI.join(', ') || 'none'})`);
 
 // ---- Nội dung đóng gói ----
 // App Android KHÔNG gọi mạng: chạy cứng bộ art cozy với levels.json + ảnh đóng gói ngay lúc
