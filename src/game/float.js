@@ -52,9 +52,12 @@ export function tickFloat() {
     }
     // Bị đồ đè: có món khác đang CHẠM bóng mà tâm nằm cao hơn tâm bóng. Bóng thật bị đè thì nép
     // dưới, không bay; lực nổi cứ húc lên món đè là hai bên giật tung mãi (đo thực tế trên Level 4).
-    const tren = S.bodies.filter(o => o !== b && !o.isStatic && daVao(o) && !isHeld(o) && o.position.y < b.position.y - 2
+    // "Đè" = chạm từ PHÍA TRÊN (pháp tuyến va chạm gần thẳng đứng). Món đứng cạnh mà tâm cao hơn
+    // bóng (máy tính bảng dựng nghiêng kề bên) chỉ chạm ngang, không tính — đo thực tế: bóng kẹt
+    // dưới khay không bay dù chẳng có gì đè, vì bị tính nhầm là bị máy tính bảng đè.
+    const ke = S.bodies.filter(o => o !== b && !o.isStatic && daVao(o) && !isHeld(o) && o.position.y < b.position.y - 2
       && Matter.Bounds.overlaps(o.bounds, b.bounds));
-    if (tren.length && Query.collides(b, tren).length) b.biDeToi = t + GIU_BI_DE_MS;
+    if (ke.length && Query.collides(b, ke).some(c => Math.abs(c.normal.y) > .6)) b.biDeToi = t + GIU_BI_DE_MS;
     const biDe = b.biDeToi > t;
     b.frictionAir = biDe ? CAN_KHI_BI_DE : .06;
     // Bóng bị đè thì CHO NGỦ như món thường: bóng thức là vật đang "chuyển động" với Matter, món
