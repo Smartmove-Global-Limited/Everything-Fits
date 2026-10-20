@@ -36,6 +36,10 @@ export function tickFloat() {
   if (!S.engine || S.won || S.lost || S.paused) return;
   const g = S.engine.gravity, gA = g.y * g.scale;    // gia tốc trọng lực trên mỗi đơn vị khối lượng
   const t = S.clock || 0;
+  // Túi chưa hiện (đầu ván đồ đang mưa xuống) thì bóng rơi như món thường, chưa bay: bay sớm là
+  // lơ lửng đúng chỗ túi sắp hiện, túi dựng thành xong nhốt luôn bóng bên trong, ván vừa mở đã
+  // "xếp" được một món. Túi hiện rồi bóng mới dâng lên.
+  if (!S.tuiDaDung) return;
   for (const b of S.bodies) {
     if (!b.bay || b.isStatic || !daVao(b) || isHeld(b)) continue;
     let noi;
@@ -58,6 +62,7 @@ export function tickFloat() {
     // Level 4: 0/9 món ngủ khi bóng kẹt dưới máy tính bảng). Món đè bị nhấc đi là cả đám được
     // đánh thức (physics.js afterRemove), bóng lại bay.
     b.sleepThreshold = biDe ? 60 : Infinity;
+    if (!biDe && b.isSleeping) Matter.Sleeping.set(b, false);   // vừa hết bị đè: thức dậy mà bay, ngủ là không nhận lực nổi
     if (biDe) noi = Math.min(noi, NOI_KHI_BI_DE);
     const pha = (b.khoa ?? b.itemId) * 1.7;
     if (!biDe) noi += Math.sin(t * .0021 + pha) * .05;          // nhấp nhô
