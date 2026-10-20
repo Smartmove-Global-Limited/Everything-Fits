@@ -12,7 +12,9 @@ import { blockPoly, blocksArea } from '../data/blocks.js';
 
 const { Engine, World, Bodies, Body, Vertices, Events, Sleeping } = Matter;
 
-const MAT = { friction: .6, frictionStatic: .8, restitution: .26, density: .0018 };
+// Độ nảy .14 (trước .26): đồ thật rơi lên đống đồ gần như không nảy; nảy .26 là bàn chải rơi lên
+// bịt mắt còn tưng tưng nửa giây mới yên, nhìn như rung. Món 'bouncy' vẫn nảy riêng (makeItem).
+const MAT = { friction: .6, frictionStatic: .8, restitution: .14, density: .0018 };
 /** Nhóm va chạm của trần vô hình ngoài màn (mặc định của Matter là 1): đồ mưa từ trên đỉnh màn
  *  lúc mở màn xuyên qua trần này, còn túi và vật cản thì va như thật. */
 export const NHOM_TRAN = 0x0002;
@@ -41,7 +43,7 @@ function makePart(p, x, y) {
 
 /** Tạo body cho một món tại (x, y). body.origin = độ lệch từ tâm body về gốc toạ độ vẽ. */
 export function makeItem(def, x, y) {
-  const bo = { friction: .6, frictionStatic: .8, restitution: def.restitution ?? (def.meta?.physics === 'bouncy' ? .85 : .26) };
+  const bo = { friction: .6, frictionStatic: .8, restitution: def.restitution ?? (def.meta?.physics === 'bouncy' ? .85 : MAT.restitution) };
   let body;
   if (def.kind === 'compound') body = Body.create({ parts: def.parts.map(p => makePart(p, x, y)), ...bo });
   else if (def.extra) body = Body.create({ parts: [makePart(def, x, y), makePart(def.extra, x, y)], ...bo });
@@ -193,7 +195,7 @@ export function dungTui(world = S.world) {
 export function danhThucTatCa() { for (const b of S.bodies) if (b.isSleeping) Sleeping.set(b, false); }
 
 export function createWorld() {
-  const engine = Engine.create({ positionIterations: 8, velocityIterations: 6 });
+  const engine = Engine.create({ positionIterations: 10, velocityIterations: 8 });   // 8/6 → 10/8: đống đồ chèn nhau yên nhanh hơn, ≤11 món nên rẻ
   engine.gravity.y = 1.1;
   // Cho vật NGỦ khi đã nằm yên: không ngủ thì đống đồ chạm nhau cứ dao động li ti mãi (đo thực
   // tế Level 4: 8/9 món rung, bật ngủ là im hẳn). Vật ngủ không nhận lực, nên bóng bay và điện
