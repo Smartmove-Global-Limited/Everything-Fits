@@ -9,7 +9,7 @@ id,nameVi,gram,material,fragile,ghiChu
 8,Khăn tay,20,fabric,,
 9,Son dưỡng môi,15,plastic,,
 10,Khăn ướt,80,fabric,,
-11,Máy tính bảng,480,plastic,1,
+11,Máy tính bảng,480,plastic,,
 12,Máy tính bỏ túi,100,plastic,,
 13,Hộp tai nghe,50,plastic,,
 14,Củ sạc,50,plastic,,
@@ -63,7 +63,7 @@ id,nameVi,gram,material,fragile,ghiChu
 62,Chuột máy tính,90,plastic,,
 63,Bàn phím,500,plastic,,
 64,Bộ phát Wi-Fi,300,plastic,,
-65,Đèn bàn,900,metal,1,
+65,Đèn bàn,900,metal,,
 66,Hộp ngũ cốc,400,paper,,
 67,Gói mì Ý,500,paper,,
 68,Hộp trà,120,paper,,
@@ -74,9 +74,9 @@ id,nameVi,gram,material,fragile,ghiChu
 73,Ghim cài áo,15,metal,,
 74,Khung ảnh,300,glass,1,
 75,Cuốn sách,400,paper,,
-76,Cốc cà phê,350,ceramic,1,sứ
+76,Cốc cà phê,350,ceramic,,sứ
 77,Đồng hồ báo thức,300,plastic,,
-78,Chậu cây nhỏ,600,ceramic,1,có đất
+78,Chậu cây nhỏ,600,ceramic,,có đất
 79,Cuộn băng dính,150,plastic,,
 80,Tua vít,100,metal,,
 81,Quần yếm gấp,500,fabric,,

@@ -237,16 +237,18 @@ let nhipMoc = 0, nhipDem = 0;
 
 /** Bật tiếng và bụi mỗi khi có món tiếp đất. Chỉ game gọi, editor không. */
 // ---------- đồ dễ vỡ ----------
-// meta.fragile (lọ mứt, cốc sứ, gương, khung ảnh, đèn lồng, kính râm, chậu cây…): bị đồ nặng rơi
+// meta.fragile (đồ thuỷ tinh: lọ mứt, gương, khung ảnh, đèn lồng, kính râm, chai nước chanh): bị đồ nặng rơi
 // trúng, rơi mạnh xuống sàn, hay bị đồ nặng NẰM ĐÈ lâu là nứt. Nứt lần hai là vỡ → thua ván.
 const doVo = b => !!(b.realDef || b.def)?.meta?.fragile;
 const GRAM_DE_NUT = 300;      // món từng này gram rơi trúng là nứt
 const GRAM_DE_LAU = 500;      // món từng này gram nằm đè 1,5 s là nứt
 const DE_LAU_MS = 1500;
 let deTheoDoi = new Map();    // món dễ vỡ → { tu, moi } thời điểm bắt đầu bị đè và lần báo đè gần nhất
+const DAU_MAN_KHONG_NUT = 2500;   // ms đầu ván: đồ đang mưa xuống, món đặt sẵn rơi xuống đáy túi — không tính nứt
 function nut(b, diem) {
   const now = performance.now();
   if (b.vo || S.won || S.lost || (b.nutLuc && now - b.nutLuc < 600)) return;
+  if (!S.tuiDaDung || now - S.startTime < DAU_MAN_KHONG_NUT) return;
   b.nutLuc = now; b.nut = (b.nut || 0) + 1;
   const p = diem || b.position;
   if (b.nut < 2) {

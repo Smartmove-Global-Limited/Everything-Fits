@@ -11,8 +11,7 @@
     "canLink": false,
     "canLock": true,
     "gram": 480,
-    "material": "plastic",
-    "fragile": true
+    "material": "plastic"
   },
   "sprite": {
     "src": "assets/01-school-day/items/11.png",
