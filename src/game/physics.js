@@ -197,11 +197,11 @@ export function danhThucTatCa() { for (const b of S.bodies) if (b.isSleeping) Sl
 export function createWorld() {
   const engine = Engine.create({ positionIterations: 10, velocityIterations: 8 });   // 8/6 → 10/8: đống đồ chèn nhau yên nhanh hơn, ≤11 món nên rẻ
   engine.gravity.y = 1.1;
-  // Cho vật NGỦ khi đã nằm yên: không ngủ thì đống đồ chạm nhau cứ dao động li ti mãi (đo thực
-  // tế Level 4: 8/9 món rung, bật ngủ là im hẳn). Vật ngủ không nhận lực, nên bóng bay và điện
-  // thoại rung không được ngủ (makeItem), và mỗi lần thêm/bớt vật phải đánh thức cả đám: món
-  // đang kê lên món bị nhấc đi mới rơi xuống, món thả vào mới xô được hàng xóm.
-  engine.enableSleeping = true;
+  // KHÔNG cho vật ngủ. Đã thử bật ngủ để hết rung li ti, nhưng vật ngủ đứng chết tại chỗ: bóng bay
+  // chui ra khỏi bên dưới, hay món bên dưới trượt đi, là món trên treo lơ lửng giữa không trung
+  // (thấy thật trên Level 4). Hết rung bằng cách khác: độ nảy thấp (.14), vòng giải 10/8, đồ nhẹ
+  // không nảy hơn chuẩn, bóng bay giữ khối lượng cũ. Phần đánh thức bên dưới giữ lại, vô hại.
+  engine.enableSleeping = false;
   Events.on(engine.world, 'afterAdd', danhThucTatCa);
   Events.on(engine.world, 'afterRemove', danhThucTatCa);
   // Sàn và tường màn hình bám chắc, để đồ trên khay không trượt lung tung.
