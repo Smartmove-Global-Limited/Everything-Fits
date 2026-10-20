@@ -10,7 +10,8 @@
     "physics": "normal",
     "cost": 1,
     "canLink": true,
-    "canLock": true
+    "canLock": true,
+    "gram": 120
   },
   "sprite": {
     "src": "assets/04-picnic-home/items/68.png",

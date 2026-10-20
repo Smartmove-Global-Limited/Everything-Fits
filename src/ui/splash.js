@@ -54,11 +54,16 @@ export function showSplash({ khiKhep, logo = false } = {}) {
   if (!sanSang().length || !el) { hetSplashBoot(); if (el) el.classList.remove('show'); return Promise.resolve(); }
   if (run) { cancelAnimationFrame(run.raf); run = null; }
 
-  // Rút món theo bộ đã xáo: dùng hết cả bộ mới xáo lại, món lặp lại càng xa nhau càng tốt
-  let tui = [];
+  // Rút món: ưu tiên món CHƯA hiện lần nào. Ảnh các chương sau về dần trong lúc Splash đang
+  // chạy (main.js nạp không chờ), nên mỗi lần rút xét lại danh sách đã sẵn ảnh — món mới về
+  // là được rút ngay, không phải đợi dùng hết bộ cũ; hết sạch mới cho lặp lại từ đầu.
+  const daHien = new Set();
   const rutMon = () => {
-    if (!tui.length) { tui = sanSang(); for (let i = tui.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [tui[i], tui[j]] = [tui[j], tui[i]]; } }
-    return tui.pop();
+    let ds = sanSang().filter(d => !daHien.has(d.id));
+    if (!ds.length) { daHien.clear(); ds = sanSang(); }
+    const d = ds[Math.floor(Math.random() * ds.length)];
+    daHien.add(d.id);
+    return d;
   };
   const ctx = cv.getContext('2d');
   initAudio();   // app Android phát được ngay; web thì trình duyệt mở tiếng sau lần chạm đầu

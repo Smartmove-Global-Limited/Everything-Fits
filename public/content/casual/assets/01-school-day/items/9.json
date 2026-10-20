@@ -9,7 +9,8 @@
     "physics": "rolling",
     "cost": 2,
     "canLink": true,
-    "canLock": true
+    "canLock": true,
+    "gram": 15
   },
   "sprite": {
     "src": "assets/01-school-day/items/9.png",

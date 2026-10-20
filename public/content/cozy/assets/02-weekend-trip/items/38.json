@@ -9,7 +9,8 @@
     "physics": "vibrating",
     "cost": 2,
     "canLink": true,
-    "canLock": true
+    "canLock": true,
+    "gram": 190
   },
   "collider": {
     "kind": "poly",

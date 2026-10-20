@@ -94,6 +94,7 @@ export function initPool({ E, status, onSaved }) {
     fillSelect($('imShape'), SHAPES, def.meta.shape);
     fillSelect($('imPhys'), PHYS, def.meta.physics);
     $('imCost').value = def.meta.cost;
+    $('imGram').value = def.meta.gram ?? 150;
     $('imLink').checked = !!def.meta.canLink;
     $('imLock').checked = !!def.meta.canLock;
     scalePct = 100;
@@ -158,6 +159,7 @@ export function initPool({ E, status, onSaved }) {
     const meta = {
       size: $('imSize').value, shape: $('imShape').value, physics: $('imPhys').value,
       cost: +$('imCost').value || 0, canLink: $('imLink').checked, canLock: $('imLock').checked,
+      gram: Math.max(1, +$('imGram').value || 150),
     };
     const manifest = { id, slug: ($('imSlug').value || d.slug).trim(), code: d.code || null, name: ($('imName').value || d.name).trim(), meta };
     try {

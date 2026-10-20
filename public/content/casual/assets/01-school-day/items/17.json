@@ -9,7 +9,8 @@
     "physics": "rolling",
     "cost": 2,
     "canLink": true,
-    "canLock": false
+    "canLock": false,
+    "gram": 180
   },
   "collider": {
     "kind": "circle",

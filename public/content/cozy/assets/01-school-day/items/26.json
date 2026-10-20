@@ -9,7 +9,8 @@
     "physics": "normal",
     "cost": 3,
     "canLink": false,
-    "canLock": true
+    "canLock": true,
+    "gram": 600
   },
   "collider": {
     "kind": "poly",

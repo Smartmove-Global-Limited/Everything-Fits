@@ -48,6 +48,7 @@ export function makeItem(def, x, y) {
   else body = makePart(def, x, y);
   body.restitution = bo.restitution;
   body.restGoc = bo.restitution;    // độ nảy gốc, để tắt tạm lúc món nằm trong túi rồi trả lại
+  apDungCanNang(body, def);
   if (def.meta?.physics === 'rolling') { body.friction = .15; body.frictionStatic = .2; }
   // Bóng bay: nhẹ, trơn, hơi nảy, không khí cản mạnh. Lực nổi đặt mỗi bước ở float.js.
   if (def.meta?.physics === 'float') {
@@ -63,6 +64,34 @@ export function makeItem(def, x, y) {
   body.artScale = 1;
   body.origin = { x: x - body.position.x, y: y - body.position.y };
   return body;
+}
+
+// ---------------- cân nặng thật ----------------
+// Mỗi món có meta.gram (ước lượng đồ thật, tools/can_nang_mon.csv). Từ đó suy ra:
+//   khối lượng   đúng tỉ lệ gram: laptop 1500 g đè bẹp áo 150 g, hất văng gói giấy 30 g.
+//                Mốc GRAM_CHUAN giữ nguyên khối lượng cũ (area × 0.0018) cho món ~150 g,
+//                để các level đang có không đổi cảm giác nhiều.
+//   cản không khí theo gram trên mỗi đơn vị² diện tích hình (như "nặng trên mỗi cm²"):
+//                laptop, lon đậu rơi gần như tự do; áo gấp, khăn, giấy to mà nhẹ thì rơi chậm.
+//   độ nảy       giảm theo gram: đồ nhẹ nảy nhẹ, đồ nặng gần như không nảy.
+// Gram kẹp trong [GRAM_MIN, GRAM_MAX] cho vật lý: tỉ lệ khối lượng quá lớn thì Matter rung.
+export const GRAM_CHUAN = 150, GRAM_MIN = 10, GRAM_MAX = 2000, DIEN_TICH_CHUAN = 3500;
+export const gramCua = def => Math.max(GRAM_MIN, Math.min(GRAM_MAX, Number(def?.meta?.gram) || GRAM_CHUAN));
+const kep = (v, a, b) => Math.max(a, Math.min(b, v));
+function apDungCanNang(body, def) {
+  const gram = gramCua(def);
+  body.gram = gram;
+  // khối lượng CHỈ theo gram, không theo diện tích hình: món 150 g nặng đúng bằng món cỡ trung
+  // bình (3500 u²) theo mật độ cũ, dù hình to hay nhỏ
+  Body.setMass(body, DIEN_TICH_CHUAN * MAT.density * gram / GRAM_CHUAN);
+  // cản không khí theo gram / diện tích: mốc 0.04 g/u² (quả táo) giữ ~mặc định 0.01 của Matter;
+  // vé, giấy (~0.007) lên 0.06 → lượn xuống chậm; laptop, lon đậu (≥0.15) xuống 0.003 → rơi gần tự do
+  const ad = gram / Math.max(1, body.area);
+  body.frictionAir = kep(.012 * Math.pow(.04 / ad, .9), .003, .07);
+  // độ nảy: món chuẩn giữ nguyên; nặng gấp 10 còn ~0.45 lần; nhẹ hơn thì nảy hơn, kẹp .4
+  if (def.meta?.physics !== 'bouncy' && def.meta?.physics !== 'float') {
+    body.restitution = body.restGoc = kep(body.restGoc * Math.pow(GRAM_CHUAN / gram, .35), .08, .4);
+  }
 }
 
 /** Diện tích một món (đơn vị logic²) tính từ hình vật lý */

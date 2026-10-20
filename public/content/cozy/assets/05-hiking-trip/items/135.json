@@ -10,7 +10,8 @@
     "physics": "normal",
     "cost": 1,
     "canLink": true,
-    "canLock": true
+    "canLock": true,
+    "gram": 2000
   },
   "sprite": {
     "src": "assets/05-hiking-trip/items/135.png",

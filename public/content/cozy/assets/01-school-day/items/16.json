@@ -9,7 +9,8 @@
     "physics": "normal",
     "cost": 2,
     "canLink": true,
-    "canLock": true
+    "canLock": true,
+    "gram": 350
   },
   "sprite": {
     "src": "assets/01-school-day/items/16.png",

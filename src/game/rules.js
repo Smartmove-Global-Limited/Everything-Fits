@@ -245,18 +245,25 @@ export function bindImpacts() {
     if (now - nhipMoc > 90) { nhipMoc = now; nhipDem = 0; }
     if (++nhipDem > TOI_DA_MOT_NHIP) return;
 
-    const manh = Math.min(1, (v - VA_NHE) / 4.2);
-    // món càng to tiếng càng trầm, nghe ra được là vật nặng hay vật nhẹ
-    const [x0, , x1] = b.def.box;
-    const be = Math.max(16, (x1 - x0) * (b.artScale || 1));
-    sfx('land', {
-      gain: .3 + manh * .55,
-      rate: 1.34 - Math.min(.48, be / 150) + (Math.random() - .5) * .1,
+    // Cú va mạnh hay nhẹ theo ĐỘNG NĂNG (gram × tốc độ²): laptop rơi là "thụp" to, gói giấy
+    // rơi cùng tốc độ chỉ "phịch" khẽ. Thang log để 30 g và 1500 g đều còn nghe được.
+    const gram = b.gram || 150, k = b.levelScale || 1;
+    const nangLuong = gram * k * k * v * v / 1000;          // ~5 cho món 150 g rơi vừa, ~100 cho laptop
+    const manh = Math.min(1, Math.max(0, Math.log10(nangLuong + 1) / 2));
+    // Đồ mềm (vải, giấy: nhẹ so với diện tích) kêu "phịch" đục; đồ cứng kêu "cộp"
+    const mem = gram / Math.max(1, b.area) < .03 && gram < 300;
+    sfx(mem ? 'drop' : 'land', {
+      gain: (mem ? .12 : .18) + manh * .6,
+      // càng nặng càng trầm
+      rate: Math.max(.66, Math.min(1.4, 1.35 - .22 * Math.log10(gram))) + (Math.random() - .5) * .08,
     });
-    // Chạm sàn thì bụi bốc rõ, rơi trúng món khác thì chỉ lơ thơ vài hạt.
+    // Chạm sàn thì bụi bốc rõ, rơi trúng món khác thì chỉ lơ thơ vài hạt. Đồ mềm không bốc bụi mấy.
+    const buiK = mem ? .35 : 1;
     dust(diem.x, diem.y, vaoTuong
-      ? { n: 3 + Math.round(manh * 5), manh }
-      : { n: 2 + Math.round(manh * 2), manh: manh * .5 });
+      ? { n: Math.round((2 + manh * 8) * buiK), manh }
+      : { n: Math.round((1 + manh * 3) * buiK), manh: manh * .5 });
+    // Đồ nặng (từ 400 g) rơi mạnh xuống sàn / đáy túi: màn rung nhẹ, ngắn
+    if (vaoTuong && gram * k * k >= 400 && v >= 4.5) shake(gram >= 1000 ? 220 : 150);
   });
 }
 
