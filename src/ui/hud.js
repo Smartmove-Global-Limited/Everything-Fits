@@ -151,6 +151,10 @@ function renderScore(d) {
   // chỉ icon + số, không ghi nhãn "Completed" / "Coins earned" bên dưới
   const o = (icon, so) => `<div class="chip"><b>${icon}${so}</b></div>`;
   el.innerHTML = o(ICON_GIO, giay(d.dungGiay)) + o(ICON_COIN, `+${coin}`);
+  // Xếp đúng kiểu: khen một dòng, hoặc chỉ ra tối đa hai lỗi (laptop đè áo, đè đồ dễ vỡ)
+  const kieu = document.createElement('div'); kieu.className = 'win-kieu ' + (d.loi?.length ? 'bad' : 'ok');
+  kieu.innerHTML = d.loi?.length ? d.loi.slice(0, 2).map(x => `<div>⚠ ${esc(x)}</div>`).join('') : `<div>✓ ${esc(t('packedRight'))}</div>`;
+  el.appendChild(kieu);
   renderStars(d.sao);
 }
 
@@ -163,14 +167,19 @@ export function showWin(diem) {
   sfx('star', { delay: .1 });   // Star_get: đúng lúc bảng hiện và ngôi sao đầu bật ra
 }
 export function hideWin() { hide('win'); }
-export function showLose() {
+/** Thua. Mặc định là hết giờ (còn n món, có nút +60 giây); đồ vỡ thì ghi lý do và không cho thêm giờ. */
+export function showLose({ lyDo, choThemGio = true } = {}) {
   const left = S.ITEMS.length - S.checked.size;
-  $('loseText').textContent = t('leftInTray', { n: left });
+  $('loseText').textContent = lyDo || t('leftInTray', { n: left });
+  const tieuDe = document.querySelector('#lose h2'); if (tieuDe) tieuDe.textContent = lyDo ? t('brokenTitle') : t('soClose');
+  const them = $('extraTime'); if (them) them.hidden = !choThemGio;
   sfx('lose'); shake(420); duckMusic(true);
   show('lose');
 }
 export function hideLose() { hide('lose'); }
 export function hidePause() { hide('pause'); S.paused = false; }
+
+const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Gắn hành động kèm tiếng bấm — mọi nút trong game đều đi qua đây */
 function onTap(id, fn, sound = 'tap') {

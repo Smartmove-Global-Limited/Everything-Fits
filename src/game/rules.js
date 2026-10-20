@@ -3,13 +3,13 @@ import Matter from 'matter-js';
 import { KEY_ID } from '../data/items.js';
 import { S, BAG, PAD, W, TABLE_Y, FLOOR_Y, partsOf, isHeld, daVao } from './state.js';
 import { pointInPolygon, pointInPolygonTolerant } from '../util/geom.js';
-import { toast, renderList, showWin } from '../ui/hud.js';
+import { toast, renderList, showWin, showLose } from '../ui/hud.js';
 import { sfx, duckMusic } from '../ui/sfx.js';
 import { sparkle, ring, confetti, shake, floatText, dust } from './fx.js';
-import { onImpact } from './physics.js';
+import { onImpact, onPress, gramHieuDung } from './physics.js';
 import { markDone, setSpot } from './progress.js';
 import { chamDiem } from './score.js';
-import { t } from '../i18n.js';
+import { t, itemName } from '../i18n.js';
 import { ketThucLuot } from './events.js';
 
 const { Body, Bounds, Collision } = Matter;
@@ -236,9 +236,58 @@ const TOI_DA_MOT_NHIP = 3; // nhiều món chạm đất cùng lúc thì chỉ l
 let nhipMoc = 0, nhipDem = 0;
 
 /** Bật tiếng và bụi mỗi khi có món tiếp đất. Chỉ game gọi, editor không. */
+// ---------- đồ dễ vỡ ----------
+// meta.fragile (lọ mứt, cốc sứ, gương, khung ảnh, đèn lồng, kính râm, chậu cây…): bị đồ nặng rơi
+// trúng, rơi mạnh xuống sàn, hay bị đồ nặng NẰM ĐÈ lâu là nứt. Nứt lần hai là vỡ → thua ván.
+const doVo = b => !!(b.realDef || b.def)?.meta?.fragile;
+const GRAM_DE_NUT = 300;      // món từng này gram rơi trúng là nứt
+const GRAM_DE_LAU = 500;      // món từng này gram nằm đè 1,5 s là nứt
+const DE_LAU_MS = 1500;
+let deTheoDoi = new Map();    // món dễ vỡ → { tu, moi } thời điểm bắt đầu bị đè và lần báo đè gần nhất
+function nut(b, diem) {
+  const now = performance.now();
+  if (b.vo || S.won || S.lost || (b.nutLuc && now - b.nutLuc < 600)) return;
+  b.nutLuc = now; b.nut = (b.nut || 0) + 1;
+  const p = diem || b.position;
+  if (b.nut < 2) {
+    sfx('crack', { gain: .85 }); shake(130);
+    dust(p.x, p.y, { n: 5, manh: .6 }); floatText(p.x, p.y - 20, t('cracked'), '#E5484D');
+    return;
+  }
+  b.vo = true;
+  sfx('break', { gain: .95 }); shake(420);
+  dust(p.x, p.y, { n: 14, manh: 1 }); sparkle(p.x, p.y, 14);
+  S.lost = true; ketThucLuot('lose');
+  showLose({ lyDo: t('broken', { name: itemName(b.realDef || b.def) }), choThemGio: false });
+}
+/** Gọi mỗi khung hình: đồ dễ vỡ bị đồ nặng nằm đè đủ lâu thì nứt */
+export function theoDoiDe() {
+  const now = performance.now();
+  for (const [b, d] of deTheoDoi) {
+    if (b.vo || !S.bodies.includes(b)) { deTheoDoi.delete(b); continue; }
+    if (now - d.moi > 250) { deTheoDoi.delete(b); continue; }        // không còn bị đè
+    if (now - d.tu >= DE_LAU_MS) { nut(b); d.tu = now; }               // nứt, rồi đếm lại cho lần vỡ
+  }
+}
+export function resetDoVo() { deTheoDoi = new Map(); }
+
+// Tiếng chạm theo chất liệu (meta.material): thuỷ tinh/sứ lanh canh, kim loại keng, giấy sột
+// soạt, vải/đồ ăn phịch đục; nhựa, gỗ, điện tử là tiếng cộp mặc định.
+const TIENG = { glass: 'glass', ceramic: 'glass', metal: 'metal', paper: 'paper', fabric: 'drop', food: 'drop' };
+const MEM = new Set(['fabric', 'paper', 'food']);
+
 export function bindImpacts() {
-  onImpact((b, v, diem, vaoTuong) => {
+  onPress((tren, duoi) => {
+    if (!doVo(duoi) || isHeld(tren) || isHeld(duoi) || gramHieuDung(tren) < GRAM_DE_LAU) return;
+    const now = performance.now(), d = deTheoDoi.get(duoi);
+    if (d && now - d.moi <= 250) d.moi = now; else deTheoDoi.set(duoi, { tu: now, moi: now });
+  });
+  onImpact((b, v, diem, vaoTuong, khac) => {
     if (v < VA_NHE || b.chuaVao || isHeld(b)) return;
+    // đồ dễ vỡ: bị món nặng rơi trúng / rơi mạnh xuống sàn / rơi trúng món nặng cứng
+    const gramB = gramHieuDung(b);
+    if (khac && !khac.isStatic && doVo(khac) && !isHeld(khac) && gramB >= GRAM_DE_NUT && v >= 5) nut(khac, diem);
+    if (doVo(b) && ((vaoTuong && v >= 9) || (khac && !khac.isStatic && gramHieuDung(khac) >= GRAM_DE_NUT && v >= 7))) nut(b, diem);
     const now = performance.now();
     if (b.vaLuc > now - NGHI_MOI_MON) return;
     b.vaLuc = now;
@@ -250,9 +299,9 @@ export function bindImpacts() {
     const gram = b.gram || 150, k = b.levelScale || 1;
     const nangLuong = gram * k * k * v * v / 1000;          // ~5 cho món 150 g rơi vừa, ~100 cho laptop
     const manh = Math.min(1, Math.max(0, Math.log10(nangLuong + 1) / 2));
-    // Đồ mềm (vải, giấy: nhẹ so với diện tích) kêu "phịch" đục; đồ cứng kêu "cộp"
-    const mem = gram / Math.max(1, b.area) < .03 && gram < 300;
-    sfx(mem ? 'drop' : 'land', {
+    const vatLieu = (b.realDef || b.def)?.meta?.material;
+    const mem = MEM.has(vatLieu) || (!vatLieu && gram / Math.max(1, b.area) < .03 && gram < 300);
+    sfx(TIENG[vatLieu] || 'land', {
       gain: (mem ? .12 : .18) + manh * .6,
       // càng nặng càng trầm
       rate: Math.max(.66, Math.min(1.4, 1.35 - .22 * Math.log10(gram))) + (Math.random() - .5) * .08,
@@ -277,6 +326,7 @@ const LANG_DAU_MAN = 1000;
 
 /** Cập nhật packing list + điều kiện thắng */
 export function updateChecked() {
+  theoDoiDe();
   let changed = false;
   const now = performance.now();
   for (const b of S.bodies) {

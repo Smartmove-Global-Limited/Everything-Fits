@@ -137,6 +137,31 @@ const SOUNDS = {
   lose() { const o = buf(1.1); [[N.G4,0],[N.E4,.18],[N.C4,.36]].forEach(([f,at])=>
              tone(o,{at,dur:.7,f,gain:.24,wave:'tri',env:{a:.008,r:.6}}));
            tone(o,{at:.36,dur:.72,f:N.A3,gain:.16,wave:'sine',env:{a:.01,r:.62}}); return o; },
+  // ---- tiếng chạm theo chất liệu (rules.js chọn theo meta.material) ----
+  // thuỷ tinh, sứ: lanh canh, cao, tắt nhanh
+  glass() { const o = buf(.26);
+            tone(o,{dur:.22,f:p=>2650-120*p,gain:.3,env:{a:.001,r:.19,curve:3}});
+            tone(o,{dur:.14,f:3950,gain:.12,env:{a:.001,r:.12,curve:3}});
+            tone(o,{dur:.17,f:1720,gain:.1,env:{a:.001,r:.14}});
+            noise(o,{dur:.012,gain:.09,lp:.9,env:{a:.001,r:.01}}); return o; },
+  // kim loại: keng, các hoạ âm lệch nhau, ngân lâu hơn
+  metal() { const o = buf(.5);
+            [[760,.3,.42],[1180,.18,.36],[2010,.12,.3],[2900,.07,.22]].forEach(([f,g,r])=>tone(o,{dur:r+.04,f,gain:g,env:{a:.001,r,curve:2.4}}));
+            noise(o,{dur:.02,gain:.12,lp:.8,env:{a:.001,r:.018}}); return o; },
+  // giấy, bìa: sột soạt, không có nốt
+  paper() { const o = buf(.22);
+            noise(o,{dur:.07,gain:.26,lp:.7,env:{a:.002,r:.06}});
+            noise(o,{at:.05,dur:.12,gain:.16,lp:.45,env:{a:.004,r:.1}}); return o; },
+  // đồ dễ vỡ bị nứt: tách khô, ngắn
+  crack() { const o = buf(.2);
+            noise(o,{dur:.03,gain:.38,lp:.85,env:{a:.001,r:.028,curve:3}});
+            tone(o,{dur:.12,f:p=>1400-800*p,gain:.2,wave:'tri',env:{a:.001,r:.1,curve:3}});
+            noise(o,{at:.06,dur:.02,gain:.22,lp:.8,env:{a:.001,r:.018}}); return o; },
+  // vỡ tan: loảng xoảng
+  break() { const o = buf(.65);
+            noise(o,{dur:.38,gain:.3,lp:p=>.9-.5*p,env:{a:.002,r:.3}});
+            [2100,2700,3300,3900,4400,2400].forEach((f,i)=>tone(o,{at:.02+i*.045,dur:.3,f:f*(1-.03*i),gain:.11,env:{a:.001,r:.26,curve:3}}));
+            tone(o,{dur:.2,f:p=>300-180*p,gain:.2,wave:'tri',env:{a:.002,r:.16}}); return o; },
   // mở khoá level mới trên bản đồ
   unlockLv() { const o = buf(.5); [N.G5,N.B5,N.D6].forEach((f,i)=>
                  tone(o,{at:i*.06,dur:.34,f,gain:.22,env:{a:.004,r:.3}})); return o; },
@@ -164,16 +189,22 @@ function music() {
 }
 
 mkdirSync(OUT, { recursive: true });
+// Truyền tên tiếng để chỉ sinh lại đúng những tiếng đó (noise dùng Math.random nên sinh lại cả
+// bộ là mọi file đổi theo). Không truyền gì thì sinh cả bộ kèm bgm.
+const CHON = process.argv.slice(2);
 let total = 0;
 for (const [name, make] of Object.entries(SOUNDS)) {
+  if (CHON.length && !CHON.includes(name)) continue;
   const data = wav(make());
   writeFileSync(resolve(OUT, name + '.wav'), data);
   total += data.length;
   console.log(String(name).padEnd(10), (data.length / 1024).toFixed(1).padStart(7) + ' KB');
 }
-const m = wav(music(), .8);
-writeFileSync(resolve(OUT, 'bgm.wav'), m);
-total += m.length;
-console.log('bgm'.padEnd(10), (m.length / 1024).toFixed(1).padStart(7) + ' KB');
+if (!CHON.length) {
+  const m = wav(music(), .8);
+  writeFileSync(resolve(OUT, 'bgm.wav'), m);
+  total += m.length;
+  console.log('bgm'.padEnd(10), (m.length / 1024).toFixed(1).padStart(7) + ' KB');
+}
 console.log('—'.repeat(20));
 console.log('tổng'.padEnd(10), (total / 1024).toFixed(1).padStart(7) + ' KB ·', Object.keys(SOUNDS).length + 1, 'file');

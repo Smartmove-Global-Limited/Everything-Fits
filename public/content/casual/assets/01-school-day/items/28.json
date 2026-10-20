@@ -10,7 +10,8 @@
     "cost": 1,
     "canLink": true,
     "canLock": true,
-    "gram": 7
+    "gram": 7,
+    "material": "wood"
   },
   "collider": {
     "kind": "poly",

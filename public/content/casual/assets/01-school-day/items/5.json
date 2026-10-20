@@ -10,7 +10,8 @@
     "cost": 1,
     "canLink": true,
     "canLock": true,
-    "gram": 250
+    "gram": 250,
+    "material": "fabric"
   },
   "sprite": {
     "src": "assets/01-school-day/items/5.png",

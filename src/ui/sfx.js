@@ -6,7 +6,8 @@
 const BASE = './audio/';
 
 const NAMES = ['tap', 'tapBig', 'pick', 'drop', 'land', 'fit', 'nope', 'eject', 'jiggle',
-  'shrink', 'trash', 'unlock', 'tick', 'whoosh', 'star', 'win', 'lose', 'unlockLv'];
+  'shrink', 'trash', 'unlock', 'tick', 'whoosh', 'star', 'win', 'lose', 'unlockLv',
+  'glass', 'metal', 'paper', 'crack', 'break'];   // tiếng chạm theo chất liệu, nứt và vỡ (rules.js)
 
 // v2: đổi khoá để mọi máy về mặc định BẬT tiếng và nhạc. Android giữ dữ liệu app khi cài đè
 // cùng chữ ký, nên lựa chọn tắt lưu từ bản cũ (nút ở trang chủ đã bỏ) không còn kéo theo.

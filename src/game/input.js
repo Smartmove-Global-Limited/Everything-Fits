@@ -15,6 +15,8 @@ import { isFrozenTime, freezeBody } from './boosters.js';
 import { toast, hideHint } from '../ui/hud.js';
 import { t } from '../i18n.js';
 import { sfx } from '../ui/sfx.js';
+import { shake } from './fx.js';
+import { gramHieuDung } from './physics.js';
 
 const { Body, World, Query, Vector } = Matter;
 
@@ -68,8 +70,11 @@ export function pickUp(body, p, { touch = true } = {}) {
     lift: 0, liftTo: touch ? liftOf(body) : LIFT_CHUOT,
     ghost: true, lastValid: null,
   };
+  // Đồ nặng (từ 800 g): nhấc thấp hơn, tiếng nhấc trầm hơn, rung máy một nhịp — thấy "có sức nặng"
+  const gram = gramHieuDung(body), nang = gram >= 800;
+  if (nang) { S.drag.liftTo *= .6; S.drag.nang = true; shake(70); }
   body.pop = 0;                     // món nảy nhẹ một nhịp lúc rời tay khỏi mặt bàn
-  sfx('pick', { rate: 1 + (Math.random() - .5) * .12 });
+  sfx('pick', { rate: 1 + (Math.random() - .5) * .12 - Math.min(.3, Math.max(0, Math.log10(gram / 150) * .28)) });
   hideHint();
 }
 
@@ -126,6 +131,9 @@ export function moveHeld(dt = 16) {
   // có gì để nó phải đi từ từ: đặt thẳng vào vị trí ngón là hết trượt.
   const want = Vector.sub(d.target, Vector.rotate(d.offsetLocal, b.angle));
   want.y -= d.lift;
+  // Riêng đồ nặng cố ý cho trễ tay một chút (mỗi khung đi 60% quãng còn lại): cảm giác ì của
+  // vật nặng; món nhẹ vẫn bám đúng ngón như ghi chú trên.
+  if (d.nang) { want.x = b.position.x + (want.x - b.position.x) * .6; want.y = b.position.y + (want.y - b.position.y) * .6; }
   Body.setPosition(b, want);
   syncGroup(d);
   d.ghost = d.group.some(x => computeGhost(x, d.group));

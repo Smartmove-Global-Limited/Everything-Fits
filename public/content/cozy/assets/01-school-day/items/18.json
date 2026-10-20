@@ -10,7 +10,8 @@
     "cost": 2,
     "canLink": true,
     "canLock": false,
-    "gram": 120
+    "gram": 120,
+    "material": "food"
   },
   "sprite": {
     "src": "assets/01-school-day/items/18.png",

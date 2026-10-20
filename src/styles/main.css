@@ -693,7 +693,7 @@ html.tay-gia, html.tay-gia *{cursor:none !important}
 .win-card h2{font-size:1.85em;margin:0 0 .25em}
 .win-card .stars{gap:.35em;margin:.15em 0 .8em}
 .win-card .star,.win-card .star svg{width:2.75em;height:2.75em}   /* to hơn 10% */
-.win-stats{display:flex;justify-content:center;gap:2.2em;margin:0 0 1.25em}
+.win-stats{display:flex;justify-content:center;gap:2.2em;margin:0 0 1.25em;flex-wrap:wrap}
 .win-stats .chip{display:flex;flex-direction:column;align-items:center;gap:.2em;background:none!important;border:0!important;padding:0;box-shadow:none}
 .win-stats .chip b{display:flex;align-items:center;gap:.28em;font:700 1.4em "Baloo 2";line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
 .win-stats svg{width:1.05em;height:1.05em;flex:none}
@@ -703,3 +703,8 @@ html[data-art="cozy"] .win-stats .chip b{color:var(--wood)}
 .win-card #again{margin-top:.75em;font-weight:800}
 #winText.win-khen{margin:0 auto .5em;max-width:94%;font:700 .855em/1.4 "Nunito";text-wrap:balance}   /* nhỏ hơn 5% */
 #winText.win-khen b{font-size:1.25em}
+
+/* bảng thắng: dòng "xếp đúng kiểu" / lỗi xếp (nặng đè nhẹ, đè đồ dễ vỡ) */
+.win-kieu{flex-basis:100%;width:100%;margin-top:.45em;font:700 .78em "Nunito";line-height:1.35;text-align:center}
+.win-kieu.ok{color:#2E9E5B}
+.win-kieu.bad{color:#C8463F}

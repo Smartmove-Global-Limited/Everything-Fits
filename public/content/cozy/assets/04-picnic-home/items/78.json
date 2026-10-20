@@ -11,7 +11,9 @@
     "cost": 1,
     "canLink": true,
     "canLock": true,
-    "gram": 600
+    "gram": 600,
+    "material": "ceramic",
+    "fragile": true
   },
   "sprite": {
     "src": "assets/04-picnic-home/items/78.png",

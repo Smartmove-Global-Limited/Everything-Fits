@@ -10,7 +10,8 @@
     "cost": 2,
     "canLink": true,
     "canLock": true,
-    "gram": 600
+    "gram": 600,
+    "material": "metal"
   },
   "sprite": {
     "src": "assets/01-school-day/items/15.png",

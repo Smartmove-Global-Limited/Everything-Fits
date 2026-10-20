@@ -219,6 +219,7 @@ export function applyManifest(m) {
     ITEM_DEFS.push(def);
   }
   if (m.name) def.name = m.name;
+  if (m.nameEn) def.nameEn = m.nameEn;   // tên tiếng Anh cho giao diện English (i18n itemName)
   if (m.meta) def.meta = { ...def.meta, ...m.meta };
   applyCollider(def, m.collider);
   def.outline = m.outline?.length > 2 ? m.outline : null;   // viền để vẽ, bám mép ảnh hơn collider

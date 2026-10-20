@@ -10,7 +10,8 @@
     "cost": 3,
     "canLink": false,
     "canLock": true,
-    "gram": 600
+    "gram": 600,
+    "material": "paper"
   },
   "collider": {
     "kind": "poly",

@@ -7,6 +7,7 @@ import { makeItem, createWorld, dungTui, NHOM_TRAN } from './physics.js';
 import { dust, ring } from './fx.js';
 import { resolveContainer } from '../data/bag.js';
 import { batDauLuot } from './events.js';
+import { resetDoVo } from './rules.js';
 import { soThuTuLevel } from '../content/loader.js';
 import { BAG_SKINS } from '../art/scene-registry.js';
 import { createTethers } from './mechanics.js';
@@ -47,6 +48,7 @@ export function build(level) {
   // trạng thái
   S.drag = null; S.selected = null; S.luuTui = null;
   S.checked = new Set(); S.gone = new Set(); S.winFrames = 0; S.won = false; S.lost = false; S.paused = false;
+  resetDoVo();   // đồ dễ vỡ của ván trước không còn bị theo dõi
   S.unlockFrames = 0; S.unlockHinted = false; S.puffs = [];
   clearFx(); duckMusic(false);
   S.startTime = performance.now(); S.shownSec = -1;

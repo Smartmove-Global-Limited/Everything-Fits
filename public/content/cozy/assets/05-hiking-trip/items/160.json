@@ -11,7 +11,8 @@
     "cost": 1,
     "canLink": true,
     "canLock": true,
-    "gram": 10
+    "gram": 10,
+    "material": "food"
   },
   "sprite": {
     "src": "assets/05-hiking-trip/items/160.png",

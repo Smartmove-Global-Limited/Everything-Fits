@@ -11,7 +11,8 @@
     "cost": 1,
     "canLink": true,
     "canLock": true,
-    "gram": 100
+    "gram": 100,
+    "material": "paper"
   },
   "sprite": {
     "src": "assets/05-hiking-trip/items/127.png",

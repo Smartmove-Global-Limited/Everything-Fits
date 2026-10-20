@@ -155,8 +155,12 @@ function polygonArea2(poly) {
  * Đi vòng qua callback chứ không gọi thẳng module tiếng và hiệu ứng: file này được
  * Level Editor dùng chung, mà hai module kia lại bám vào canvas của game.
  */
-let baoVaCham = null;
+let baoVaCham = null, baoDe = null;
 export const onImpact = fn => { baoVaCham = fn; };
+/** Ai muốn biết món nào đang NẰM ĐÈ lên món nào (mỗi bước vật lý, cả hai gần như đứng yên) */
+export const onPress = fn => { baoDe = fn; };
+/** Gram thật của thân đang có trên màn: gram của món nhân với cỡ riêng trong level (bình phương) */
+export const gramHieuDung = b => (b.gram || GRAM_CHUAN) * (b.levelScale || 1) ** 2;
 
 /** Thân vật lý của một vật cản: chữ nhật dựng thẳng, hình khác dựng từ đa giác lồi của nó */
 const blockBody = opt => b => {
@@ -214,7 +218,19 @@ export function createWorld() {
       const mon = A.isStatic ? B : B.isStatic ? A : (A.speed >= B.speed ? A : B);
       if (mon.isStatic) continue;
       const p = pair.activeContacts?.[0]?.vertex;
-      baoVaCham(mon, mon.speed, p ? { x: p.x, y: p.y } : mon.position, A.isStatic || B.isStatic);
+      baoVaCham(mon, mon.speed, p ? { x: p.x, y: p.y } : mon.position, A.isStatic || B.isStatic, mon === A ? B : A);
+    }
+  });
+  // Món đè lên món: cặp đang chạm nhau mà cả hai gần đứng yên, món trên cao hơn món dưới.
+  // Dùng cho đồ dễ vỡ bị đồ nặng nằm đè lâu (rules.js).
+  Events.on(engine, 'collisionActive', e => {
+    if (!baoDe) return;
+    for (const pair of e.pairs) {
+      const A = pair.bodyA.parent, B = pair.bodyB.parent;
+      if (A.isStatic || B.isStatic || A.speed > 1.5 || B.speed > 1.5) continue;   // 1.5: đồ nằm đè vẫn hơi nhúc nhích
+      const [tren, duoi] = A.position.y < B.position.y ? [A, B] : [B, A];
+      if (duoi.position.y - tren.position.y < 4) continue;
+      baoDe(tren, duoi);
     }
   });
 

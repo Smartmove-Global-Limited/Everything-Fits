@@ -11,7 +11,9 @@
     "cost": 1,
     "canLink": true,
     "canLock": true,
-    "gram": 450
+    "gram": 450,
+    "material": "glass",
+    "fragile": true
   },
   "sprite": {
     "src": "assets/05-hiking-trip/items/123.png",

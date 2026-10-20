@@ -99,6 +99,7 @@ function drawBody(b) {
   ctx.scale(k * pop, k * pop);
   ctx.lineJoin = 'round';
   drawArt(b);
+  if (b.nut) veNut(b);
   ctx.restore();
 
   if (b.frozen && !held) {   // đang đóng băng: phủ một lớp băng mỏng theo đúng hình món
@@ -141,6 +142,37 @@ function veVungTui() {
   ctx.strokeStyle = '#FF2D7A'; ctx.lineWidth = 2; neo(BAG.poly); ctx.stroke();
   for (const b of BAG.blocks || []) {
     ctx.strokeStyle = b.fixed ? '#1E5BE6' : '#FB8C00'; ctx.lineWidth = 1.6; neo(blockPoly(b)); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * Vết nứt trên đồ dễ vỡ (b.nut = 1 nứt, 2 vỡ). Vẽ trong hệ toạ độ ảnh của món (đã dịch, xoay, co).
+ * Hình nứt cố định theo khoá món (không đổi mỗi khung hình): vài tia gãy khúc toả từ một điểm
+ * lệch tâm, nét trắng mảnh kèm bóng tối để thấy trên cả nền sáng lẫn tối.
+ */
+function veNut(b) {
+  const d = b.def, [x0, y0, x1, y1] = d.box || [-20, -20, 20, 20];
+  const w = x1 - x0, h = y1 - y0, k = b.artScale || 1;
+  let seed = (b.khoa ?? b.itemId ?? 1) * 9301 + 49297;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const cx = (x0 + x1) / 2 + (rnd() - .5) * w * .3, cy = (y0 + y1) / 2 + (rnd() - .5) * h * .3;
+  const soTia = 3 + b.nut * 3, dai = Math.min(w, h) * (b.nut >= 2 ? .5 : .32);
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const [mau, rong, lech] of [['rgba(40,22,34,.5)', 2.6, .8], ['rgba(255,255,255,.9)', 1.3, 0]]) {
+    ctx.strokeStyle = mau; ctx.lineWidth = rong / k;
+    ctx.beginPath();
+    let s2 = seed;
+    const r2 = () => (s2 = (s2 * 9301 + 49297) % 233280) / 233280;
+    for (let i = 0; i < soTia; i++) {
+      const goc = (i / soTia) * Math.PI * 2 + r2() * .9, L = dai * (.55 + r2() * .45);
+      let px = cx + lech, py = cy + lech; ctx.moveTo(px, py);
+      for (let j = 1; j <= 3; j++) {
+        const g = goc + (r2() - .5) * .7;
+        px += Math.cos(g) * L / 3; py += Math.sin(g) * L / 3; ctx.lineTo(px, py);
+      }
+    }
+    ctx.stroke();
   }
   ctx.restore();
 }

@@ -10,7 +10,9 @@
     "cost": 2,
     "canLink": true,
     "canLock": false,
-    "gram": 30
+    "gram": 30,
+    "material": "glass",
+    "fragile": true
   },
   "collider": {
     "kind": "poly",

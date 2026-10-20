@@ -19,6 +19,8 @@
 //    Người chơi xếp bằng máy là điểm tuyệt đối; xếp hơn máy cũng chỉ tính tối đa.
 import Matter from 'matter-js';
 import { S, BAG, partsOf } from './state.js';
+import { gramHieuDung } from './physics.js';
+import { itemName, t } from '../i18n.js';
 import { coTrongLevel } from '../data/items.js';
 import { pointInPolygon, pointInPolygonTolerant } from '../util/geom.js';
 import { DEFAULT_BOOSTS } from './boosters.js';
@@ -85,6 +87,31 @@ function docChuanCuaMan() {
 
 const kep = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 
+/**
+ * "Xếp đúng kiểu": nặng dưới, nhẹ trên, đồ dễ vỡ không bị đè. Xét từng cặp món A nằm NGAY TRÊN
+ * món B (đáy A sát đỉnh B, chồng nhau theo chiều ngang). Lỗi khi:
+ *   - B dễ vỡ mà A từ 300 g đè lên
+ *   - A từ 500 g nằm trên B dưới 120 g (laptop đè áo phông)
+ * Trả về danh sách câu mô tả lỗi để hiện ở bảng thắng.
+ */
+export function loiXep() {
+  const ds = S.bodies.filter(b => !b.chuaVao && b.itemId > 0);
+  const loi = [];
+  for (const A of ds) for (const B of ds) {
+    if (A === B) continue;
+    if (A.position.y >= B.position.y) continue;
+    const dayA = A.bounds.max.y, dinhB = B.bounds.min.y;
+    if (dayA < dinhB - 6 || dayA > dinhB + 14) continue;
+    const chong = Math.min(A.bounds.max.x, B.bounds.max.x) - Math.max(A.bounds.min.x, B.bounds.min.x);
+    const rongNho = Math.min(A.bounds.max.x - A.bounds.min.x, B.bounds.max.x - B.bounds.min.x);
+    if (chong < rongNho * .3) continue;
+    const gA = gramHieuDung(A), gB = gramHieuDung(B), defA = A.realDef || A.def, defB = B.realDef || B.def;
+    if (defB.meta?.fragile && gA >= 300) loi.push(t('onFragile', { a: itemName(defA), b: itemName(defB) }));
+    else if (gA >= 500 && gB < 120) loi.push(t('onTop', { a: itemName(defA), b: itemName(defB) }));
+  }
+  return loi;
+}
+
 /** Chấm ván vừa thắng. Trả về các tỉ lệ 0..1, điểm 0..100 và số sao 1..3. */
 export function chamDiem() {
   const cua = docHienTai();
@@ -117,11 +144,15 @@ export function chamDiem() {
   const dungBooster = Math.max(0, tongBooster - conBooster);
   const tietKiem = tongBooster > 0 ? kep(conBooster / tongBooster) : 1;
 
+  // Xếp đúng kiểu (nặng dưới nhẹ trên, không đè đồ dễ vỡ): không lỗi trọn điểm, 1 lỗi nửa, từ 2 lỗi là 0
+  const loi = loiXep();
+  const dungKieu = loi.length === 0 ? 1 : loi.length === 1 ? .5 : 0;
+
   // Xếp gọn nặng nhất: đó mới là kỹ năng chính của trò này.
-  const diem = Math.round(gon * 55 + thoiGian * 30 + tietKiem * 15);
+  const diem = Math.round(gon * 50 + thoiGian * 25 + tietKiem * 10 + dungKieu * 15);
   // Năm sao, bước nửa sao. Thắng rồi thì ít nhất cũng được một sao, không để trắng tay.
   const sao = Math.max(1, Math.round(diem / 100 * 5 * 2) / 2);
 
-  return { gon, gonThuc, chuan, tiLeDung, tiLeGon: chuan ? kep(gonThuc / chuan) : 0, trong, thoiGian, tietKiem, diem, sao,
+  return { gon, gonThuc, chuan, tiLeDung, tiLeGon: chuan ? kep(gonThuc / chuan) : 0, trong, thoiGian, tietKiem, dungKieu, loi, diem, sao,
            dungGiay, tongGiay, dungBooster, tongBooster };
 }

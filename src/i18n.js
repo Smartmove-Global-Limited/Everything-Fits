@@ -29,7 +29,8 @@ const D = {
     brag: 'You beat <b>{pct}%</b> of players on this level',
     scorePts: 'points', scoreTime: 'time', scoreBoost: 'boosters',
     // Lose
-    soClose: 'So close!', timeUp: "Time's up.", leftInTray: '{n} items still out of the bag.', tryAgain: 'Try again', extraTime: '+60 sec', extraTimeDone: '+60 sec!',
+    soClose: 'So close!', timeUp: "Time's up.", leftInTray: '{n} items still out of the bag.',
+    broken: '{name} broke!', brokenTitle: 'Oops!', cracked: 'Crack!', packedRight: 'Packed the right way', onTop: '{a} on top of {b}', onFragile: '{a} on fragile {b}', tryAgain: 'Try again', extraTime: '+60 sec', extraTimeDone: '+60 sec!',
     // Toasts
     noFit: "Doesn't fit!", noFitPushed: "Doesn't fit! Pushed back out", pairTogether: 'Tied items must go in together',
     noFitReturned: "Doesn't fit! Put {n} items back", unlockHint: 'Drag the mystery box onto the key in the bag',
@@ -60,7 +61,8 @@ const D = {
     rank99: 'Hoàn hảo!', rank93: 'Khít như in!', rank84: 'Cực gọn!', rank72: 'Gọn gàng!', rank0: 'Vừa khít!',
     brag: 'Bạn vừa vượt <b>{pct}%</b> người chơi ở màn này',
     scorePts: 'điểm', scoreTime: 'thời gian', scoreBoost: 'booster',
-    soClose: 'Suýt nữa rồi!', timeUp: 'Hết giờ.', leftInTray: 'Còn {n} món chưa vào túi.', tryAgain: 'Thử lại', extraTime: '+60 giây', extraTimeDone: '+60 giây!',
+    soClose: 'Suýt nữa rồi!', timeUp: 'Hết giờ.', leftInTray: 'Còn {n} món chưa vào túi.',
+    broken: '{name} vỡ mất rồi!', brokenTitle: 'Ôi không!', cracked: 'Nứt!', packedRight: 'Xếp đúng kiểu', onTop: '{a} đè lên {b}', onFragile: '{a} đè lên {b} dễ vỡ', tryAgain: 'Thử lại', extraTime: '+60 giây', extraTimeDone: '+60 giây!',
     noFit: 'Không vừa!', noFitPushed: 'Không vừa! Đồ bị đẩy ra ngoài', pairTogether: 'Đồ buộc chung phải vào túi cùng nhau',
     noFitReturned: 'Không vừa! Đã trả {n} món về chỗ cũ', unlockHint: 'Kéo hộp bí ẩn chạm vào chìa khóa trong túi',
     unlocked: 'Mở khóa: {name}!', unlockedNoFit: 'Mở khóa: {name} — không vừa chỗ đó!',

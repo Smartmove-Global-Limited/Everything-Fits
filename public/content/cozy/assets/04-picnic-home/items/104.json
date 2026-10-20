@@ -11,7 +11,8 @@
     "cost": 1,
     "canLink": true,
     "canLock": true,
-    "gram": 80
+    "gram": 80,
+    "material": "plastic"
   },
   "sprite": {
     "src": "assets/04-picnic-home/items/104.png",

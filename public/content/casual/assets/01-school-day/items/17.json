@@ -10,7 +10,8 @@
     "cost": 2,
     "canLink": true,
     "canLock": false,
-    "gram": 180
+    "gram": 180,
+    "material": "food"
   },
   "collider": {
     "kind": "circle",

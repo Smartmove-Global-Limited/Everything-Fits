@@ -1,4 +1,5 @@
 // Điểm vào của game. Tải content pack, dựng level, chạy loop. Nghe postMessage từ Level Editor để live preview.
+import Matter from 'matter-js';
 import { S, BAG } from './game/state.js';
 import { defById } from './data/items.js';
 import { resize } from './game/canvas.js';
@@ -7,6 +8,7 @@ import { bindBoosters } from './game/boosters.js';
 import { bindShake, goiYLacMotLan, shakeImpulse } from './game/shake.js';
 import { build, loadAndBuild, restart, nextLevel, prevLevel } from './game/level.js';
 import { startLoop } from './game/render.js';
+import { makeItem } from './game/physics.js';
 import { bindOverlayButtons, hideLose, toast, renderList } from './ui/hud.js';
 import { bindImpacts } from './game/rules.js';
 import { BAG_SKINS } from './art/scene-registry.js';
@@ -278,6 +280,8 @@ if (import.meta.env?.DEV) {
   window.__game = {
     S, BAG, FX, RULES, SCORE, shakeImpulse, restart, nextLevel, prevLevel, autoplay, stopAutoplay, autoState, autoLog, chanDoan,
     body: id => S.bodies.find(b => b.label === id),
+    // thêm một món vào màn đang chơi để thử (mã món, toạ độ tuyệt đối)
+    them(id, x = 210, y = 200) { const b = makeItem(defById(id), x, y); b.khoa = 900 + S.bodies.length; S.bodies.push(b); Matter.World.add(S.world, b); return b; },
     async drag(id, tx, ty, steps = 10) {
       const cv = document.getElementById('game'), r = cv.getBoundingClientRect();
       const b = S.bodies.find(x => x.label === id); if (!b) return 'not found: ' + id;
