@@ -53,6 +53,11 @@ export function tickFloat() {
     if (tren.length && Query.collides(b, tren).length) b.biDeToi = t + GIU_BI_DE_MS;
     const biDe = b.biDeToi > t;
     b.frictionAir = biDe ? CAN_KHI_BI_DE : .06;
+    // Bóng bị đè thì CHO NGỦ như món thường: bóng thức là vật đang "chuyển động" với Matter, món
+    // nào chạm nó cũng bị đánh thức theo, cả khay đồ không món nào ngủ được, rung li ti mãi (đo
+    // Level 4: 0/9 món ngủ khi bóng kẹt dưới máy tính bảng). Món đè bị nhấc đi là cả đám được
+    // đánh thức (physics.js afterRemove), bóng lại bay.
+    b.sleepThreshold = biDe ? 60 : Infinity;
     if (biDe) noi = Math.min(noi, NOI_KHI_BI_DE);
     const pha = (b.khoa ?? b.itemId) * 1.7;
     if (!biDe) noi += Math.sin(t * .0021 + pha) * .05;          // nhấp nhô
