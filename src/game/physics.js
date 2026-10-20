@@ -10,7 +10,7 @@ import { S, BAG, W, H, FLOOR_Y, PAD } from './state.js';
 import { polygonArea } from '../util/geom.js';
 import { blockPoly, blocksArea } from '../data/blocks.js';
 
-const { Engine, World, Bodies, Body, Vertices, Events } = Matter;
+const { Engine, World, Bodies, Body, Vertices, Events, Sleeping } = Matter;
 
 const MAT = { friction: .6, frictionStatic: .8, restitution: .26, density: .0018 };
 /** Nhóm va chạm của trần vô hình ngoài màn (mặc định của Matter là 1): đồ mưa từ trên đỉnh màn
@@ -57,6 +57,8 @@ export function makeItem(def, x, y) {
     body.friction = .08; body.frictionStatic = .1; body.frictionAir = .06;
     body.restitution = body.restGoc = .35;
   }
+  // bóng bay (lực nổi mỗi bước) và điện thoại rung (lực ngẫu nhiên) không được ngủ, ngủ là hết lực
+  if (def.meta?.physics === 'float' || def.meta?.physics === 'vibrating') body.sleepThreshold = Infinity;
   body.itemId = def.id;        // khoá chính (số), dùng để so khớp với level JSON
   body.label = def.slug;       // tên ngắn, tiện khi xem log
   body.def = def;
@@ -81,6 +83,10 @@ const kep = (v, a, b) => Math.max(a, Math.min(b, v));
 function apDungCanNang(body, def) {
   const gram = gramCua(def);
   body.gram = gram;
+  // Bóng bay giữ cách tính cũ (mật độ chuẩn × 0.35 ở nhánh float): tính theo 5 g thì nó nhẹ gấp
+  // 10 lần món bình thường, một món đè lên là cặp khối lượng 40:1, Matter giải không nổi, bóng
+  // giật tung dưới món đè. Lực nổi trong float.js tỉ lệ khối lượng nên cảm giác bay không đổi.
+  if (def.meta?.physics === 'float') return;
   // khối lượng CHỈ theo gram, không theo diện tích hình: món 150 g nặng đúng bằng món cỡ trung
   // bình (3500 u²) theo mật độ cũ, dù hình to hay nhỏ
   Body.setMass(body, DIEN_TICH_CHUAN * MAT.density * gram / GRAM_CHUAN);
@@ -88,9 +94,11 @@ function apDungCanNang(body, def) {
   // vé, giấy (~0.007) lên 0.06 → lượn xuống chậm; laptop, lon đậu (≥0.15) xuống 0.003 → rơi gần tự do
   const ad = gram / Math.max(1, body.area);
   body.frictionAir = kep(.012 * Math.pow(.04 / ad, .9), .003, .07);
-  // độ nảy: món chuẩn giữ nguyên; nặng gấp 10 còn ~0.45 lần; nhẹ hơn thì nảy hơn, kẹp .4
+  // độ nảy: món chuẩn giữ nguyên, nặng gấp 10 còn ~0.45 lần. KHÔNG cho món nhẹ nảy hơn mức
+  // chuẩn: đã thử .4 cho vé, giấy, bịt mắt — đồ nhẹ nằm dưới đồ nặng nảy li ti mãi không yên,
+  // cả màn rung rung (đo thực tế: 8/9 món rung, hạ về .26 là im hết).
   if (def.meta?.physics !== 'bouncy' && def.meta?.physics !== 'float') {
-    body.restitution = body.restGoc = kep(body.restGoc * Math.pow(GRAM_CHUAN / gram, .35), .08, .4);
+    body.restitution = body.restGoc = kep(body.restGoc * Math.pow(GRAM_CHUAN / gram, .35), .08, body.restGoc);
   }
 }
 
@@ -181,9 +189,19 @@ export function dungTui(world = S.world) {
 }
 
 /** Engine mới + tường quanh màn + thành túi theo polygon + block chặn */
+/** Đánh thức mọi món: gọi khi thêm/bớt vật khỏi thế giới (nhấc, thả, bỏ món, túi hiện) hay lắc túi */
+export function danhThucTatCa() { for (const b of S.bodies) if (b.isSleeping) Sleeping.set(b, false); }
+
 export function createWorld() {
   const engine = Engine.create({ positionIterations: 8, velocityIterations: 6 });
   engine.gravity.y = 1.1;
+  // Cho vật NGỦ khi đã nằm yên: không ngủ thì đống đồ chạm nhau cứ dao động li ti mãi (đo thực
+  // tế Level 4: 8/9 món rung, bật ngủ là im hẳn). Vật ngủ không nhận lực, nên bóng bay và điện
+  // thoại rung không được ngủ (makeItem), và mỗi lần thêm/bớt vật phải đánh thức cả đám: món
+  // đang kê lên món bị nhấc đi mới rơi xuống, món thả vào mới xô được hàng xóm.
+  engine.enableSleeping = true;
+  Events.on(engine.world, 'afterAdd', danhThucTatCa);
+  Events.on(engine.world, 'afterRemove', danhThucTatCa);
   // Sàn và tường màn hình bám chắc, để đồ trên khay không trượt lung tung.
   const wallOpt = { isStatic: true, friction: .8, restitution: .1, label: 'wall' };
   // Thành túi thì trơn. Để dính như sàn thì món bị ép vào thành là ma sát ghì cứng luôn,

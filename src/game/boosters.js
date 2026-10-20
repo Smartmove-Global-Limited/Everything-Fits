@@ -109,6 +109,7 @@ export function freezeBody(b) {
 function unfreezeBody(b) {
   b.frozen = false;
   if (b.isStatic) Body.setStatic(b, false);
+  Matter.Sleeping.set(b, false);
   Body.setVelocity(b, { x: 0, y: 0 }); Body.setAngularVelocity(b, 0);
 }
 

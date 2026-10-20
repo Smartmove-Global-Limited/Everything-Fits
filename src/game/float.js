@@ -15,7 +15,10 @@ import Matter from 'matter-js';
 import { S, BAG, isHeld, daVao } from './state.js';
 import { pointInPolygon } from '../util/geom.js';
 
-const { Body } = Matter;
+const { Body, Query } = Matter;
+const CAN_KHI_BI_DE = .22;    // không khí cản khi đang bị đồ đè (bình thường .06): bóng nằm im thay vì giật
+const NOI_KHI_BI_DE = .92;    // lực nổi khi bị đè: non trọng lực một chút, bóng nép dưới món đè, không húc lên
+const GIU_BI_DE_MS = 350;     // thôi bị đè rồi vẫn giữ trạng thái này thêm chút cho khỏi bật tắt liên tục
 
 const NOI_TRONG_TUI = 1.45;   // lực nổi trong túi, tính theo trọng lực: 1.45 = dâng lên với 0,45g
 // Trần của bóng ngoài túi (tâm bóng): ngay dưới cụm tên màn + đồng hồ (kết thúc ~y 100)
@@ -43,9 +46,17 @@ export function tickFloat() {
       const lech = b.position.y - TRAN;              // dương: còn ở dưới trần
       noi = 1 + Math.max(-LO_LUNG_TRAN, Math.min(LO_LUNG_TRAN, lech * LO_LUNG_CUNG));
     }
+    // Bị đồ đè: có món khác đang CHẠM bóng mà tâm nằm cao hơn tâm bóng. Bóng thật bị đè thì nép
+    // dưới, không bay; lực nổi cứ húc lên món đè là hai bên giật tung mãi (đo thực tế trên Level 4).
+    const tren = S.bodies.filter(o => o !== b && !o.isStatic && daVao(o) && !isHeld(o) && o.position.y < b.position.y - 2
+      && Matter.Bounds.overlaps(o.bounds, b.bounds));
+    if (tren.length && Query.collides(b, tren).length) b.biDeToi = t + GIU_BI_DE_MS;
+    const biDe = b.biDeToi > t;
+    b.frictionAir = biDe ? CAN_KHI_BI_DE : .06;
+    if (biDe) noi = Math.min(noi, NOI_KHI_BI_DE);
     const pha = (b.khoa ?? b.itemId) * 1.7;
-    noi += Math.sin(t * .0021 + pha) * .05;          // nhấp nhô
-    let gio = Math.sin(t * .0013 + pha * 2.3) * .035;   // đung đưa ngang
+    if (!biDe) noi += Math.sin(t * .0021 + pha) * .05;          // nhấp nhô
+    let gio = biDe ? 0 : Math.sin(t * .0013 + pha * 2.3) * .035;   // đung đưa ngang
     // ngay dưới đáy túi (trong bề ngang túi, thấp hơn đáy): trôi sang cạnh gần hơn
     if (noi !== NOI_TRONG_TUI && BAG.poly && b.position.y > BAG.bottom - 4
         && b.position.x > BAG.left - 24 && b.position.x < BAG.right + 24) {

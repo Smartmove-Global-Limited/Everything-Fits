@@ -227,7 +227,7 @@ function thaGocDaGiu() {
     }
     if (now < b.giuToi) continue;
     b.giuToi = 0;
-    Body.setStatic(b, false);
+    Body.setStatic(b, false); Matter.Sleeping.set(b, false);
     Body.setVelocity(b, { x: 0, y: 0 });
     Body.setAngularVelocity(b, 0);
   }

@@ -215,6 +215,7 @@ export function tickShake() {
     let len = Math.max(0, -doc) + nhac + Math.max(0, rung);
     if (len > TRAN_LEN) len = TRAN_LEN;
     const y = doc > 0 ? doc - Math.min(len, nhac + Math.max(0, rung)) : -len;
+    if (b.isSleeping) Matter.Sleeping.set(b, false);   // vật ngủ không nhận lực
     Body.applyForce(b, b.position, { x: -a * don * b.mass, y: y * don * b.mass });
     co = true;
   }

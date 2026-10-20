@@ -103,7 +103,7 @@ async function moveTo(body, tx, ty, targetAngle, ms = NHIP.bay) {
 }
 
 /** Món đang được giữ góc sau khi người chơi xoay (đứng yên trên khay) thì thả ra trước khi máy nhấc */
-function boGiu(b) { if (b.giuToi) { b.giuToi = 0; if (b.isStatic) Body.setStatic(b, false); } }
+function boGiu(b) { if (b.giuToi) { b.giuToi = 0; if (b.isStatic) Body.setStatic(b, false); Matter.Sleeping.set(b, false); } }
 
 // ---------- KIỂU NGƯỜI ----------
 // Máy chơi như người thật, dùng cho Creative quay video. Khác kiểu máy ở chỗ:
