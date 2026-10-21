@@ -72,9 +72,7 @@ export function makeItem(def, x, y) {
 
 // ---------------- cân nặng thật ----------------
 // Mỗi món có meta.gram (ước lượng đồ thật, tools/can_nang_mon.csv). Từ đó suy ra:
-//   khối lượng   đúng tỉ lệ gram: laptop 1500 g đè bẹp áo 150 g, hất văng gói giấy 30 g.
-//                Mốc GRAM_CHUAN giữ nguyên khối lượng cũ (area × 0.0018) cho món ~150 g,
-//                để các level đang có không đổi cảm giác nhiều.
+//   khối lượng   KHÔNG theo gram nữa: mọi món cùng một khối lượng (xem apDungCanNang).
 //   cản không khí theo gram trên mỗi đơn vị² diện tích hình (như "nặng trên mỗi cm²"):
 //                laptop, lon đậu rơi gần như tự do; áo gấp, khăn, giấy to mà nhẹ thì rơi chậm.
 //   độ nảy       giảm theo gram: đồ nhẹ nảy nhẹ, đồ nặng gần như không nảy.
@@ -89,9 +87,11 @@ function apDungCanNang(body, def) {
   // 10 lần món bình thường, một món đè lên là cặp khối lượng 40:1, Matter giải không nổi, bóng
   // giật tung dưới món đè. Lực nổi trong float.js tỉ lệ khối lượng nên cảm giác bay không đổi.
   if (def.meta?.physics === 'float') return;
-  // khối lượng CHỈ theo gram, không theo diện tích hình: món 150 g nặng đúng bằng món cỡ trung
-  // bình (3500 u²) theo mật độ cũ, dù hình to hay nhỏ
-  Body.setMass(body, DIEN_TICH_CHUAN * MAT.density * gram / GRAM_CHUAN);
+  // Khối lượng vật lý: MỌI món như nhau, không theo gram (thử 2026-10-21). Theo gram thì giày 700 g
+  // nặng gấp ~70 lần bút chì 7 g; món nặng đè lên món nhẹ mỏng là Matter đẩy qua đẩy lại, món nhẹ
+  // rung rồi phọt ra (đo ở Level 2: bút chì bị đẩy 37–50 đơn vị; khối lượng bằng nhau còn 2–9).
+  // Gram vẫn giữ trong body.gram cho luật đồ dễ vỡ bị đè, cản không khí và độ nảy bên dưới.
+  Body.setMass(body, DIEN_TICH_CHUAN * MAT.density);
   // cản không khí theo gram / diện tích: mốc 0.04 g/u² (quả táo) giữ ~mặc định 0.01 của Matter;
   // vé, giấy (~0.007) lên 0.06 → lượn xuống chậm; laptop, lon đậu (≥0.15) xuống 0.003 → rơi gần tự do
   const ad = gram / Math.max(1, body.area);
