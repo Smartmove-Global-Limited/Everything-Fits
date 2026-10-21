@@ -22,6 +22,7 @@ import Matter from 'matter-js';
 import { S, isHeld, daVao } from './state.js';
 import { bagZone } from './rules.js';
 import { Haptics } from '@capacitor/haptics';
+import { isVibOn } from '../ui/sfx.js';
 
 const { Body } = Matter;
 
@@ -182,9 +183,24 @@ function traMaSat(now, tatCa = false) {
   }
 }
 
+// ---------- năng lượng lắc ----------
+// Thanh "Shake energy" trên HUD (Figma: EF / Shake energy). Mỗi ván bắt đầu đầy; lắc thật
+// (có đồ trong túi bị lắc) thì tụt dần, đủ CAN_SAU mili giây lắc là cạn. Cạn thì khoá lắc;
+// người chơi còn lắc tiếp thì gọi khiCan để mở popup "Shake energy empty" (xem quảng cáo để
+// hồi đầy). Creative Tool và khung xem thử của editor không tính năng lượng.
+const CAN_SAU = 8000;
+const KHONG_TINH = new URLSearchParams(location.search).get('creative') === '1';
+let nangLuong = 1, tickTruoc = 0;
+let khiCan = () => {}, khiDoi = () => {};
+export const nangLuongLac = () => nangLuong;
+export function datNangLuong(v) { nangLuong = Math.max(0, Math.min(1, v)); khiDoi(nangLuong); }
+/** Đăng ký: fnCan khi người chơi lắc lúc thanh đã cạn; fnDoi mỗi khi mức năng lượng đổi */
+export function onShakeEnergy({ can, doi }) { if (can) khiCan = can; if (doi) khiDoi = doi; }
+
 export function tickShake() {
   if (!S.world) return;
   const now = performance.now();
+  const dt = Math.min(50, now - (tickTruoc || now)); tickTruoc = now;
   if (S.won || S.lost || S.paused) { traMaSat(now, true); return; }
   traMaSat(now);
   let a = ax, doc = ay;
@@ -192,6 +208,8 @@ export function tickShake() {
   if (Math.abs(a) < VUNG_CHET) a = 0;
   if (Math.abs(doc) < VUNG_CHET_DOC) doc = 0;
   if (!a && !doc) return;
+  const tinhNangLuong = !KHONG_TINH && !S.preview;
+  if (tinhNangLuong && nangLuong <= 0) { khiCan(); return; }   // cạn: không lắc được nữa
   a = Math.max(-TRAN, Math.min(TRAN, a));
   doc = Math.max(-TRAN_LEN, Math.min(TRAN, doc));      // âm là hất đồ lên: chặn thấp hơn
 
@@ -223,6 +241,11 @@ export function tickShake() {
   // CHIỀU lắc là lúc đồ trong túi đập vào thành, rung một nhịp ngắn, lắc càng mạnh nhịp càng dài.
   // Không rung đều liên tục, giữa hai nhịp có quãng nghỉ cho khỏi thành rè rè.
   if (co) rungTheoLac(a, doc, manh, now);
+  if (co && tinhNangLuong) {
+    const truoc = Math.round(nangLuong * 100);
+    nangLuong = Math.max(0, nangLuong - dt / CAN_SAU);
+    if (Math.round(nangLuong * 100) !== truoc || nangLuong === 0) khiDoi(nangLuong);
+  }
 }
 
 const RUNG_TU = 3.5;          // m/s²: đổi chiều mạnh hơn mức này mới rung
@@ -239,5 +262,6 @@ function rungTheoLac(a, doc, manh, now) {
 }
 /** Rung máy ms mili giây: app dùng bộ rung thật qua plugin Haptics, web dùng navigator.vibrate */
 function rung(ms) {
+  if (!isVibOn()) return;   // Settings › Vibration tắt
   Haptics.vibrate({ duration: ms }).catch(() => { try { navigator.vibrate?.(ms); } catch {} });
 }

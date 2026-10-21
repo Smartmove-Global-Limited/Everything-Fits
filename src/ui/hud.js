@@ -2,11 +2,17 @@
 import { S } from '../game/state.js';
 import { sfx, duckMusic } from './sfx.js';
 import { shake } from '../game/fx.js';
-import { t, cauKhenNgauNhien } from '../i18n.js';
+import { t } from '../i18n.js';
 import { soThuTuLevel } from '../content/loader.js';
+import { getGold, addGold, onGoldChange } from '../game/wallet.js';
+import { coQuangCao, xemQuangCao } from '../game/ads.js';
+import { onShakeEnergy, datNangLuong } from '../game/shake.js';
+import { openSettings, closeSettings } from './settings.js';
+import { efToast } from './eftoast.js';
 
 const $ = id => document.getElementById(id);
 const hint = $('hint'), countEl = $('count'), clockEl = $('clock');
+const fmtSo = n => n.toLocaleString('en-US');
 
 // ---------- toast ----------
 let toastTimer = null;
@@ -31,15 +37,17 @@ export function renderHeader({ eyebrow, title, cls }) {
 }
 
 // ---------- tiến độ ----------
-let shownLeft = -1;
+// Thanh tiến trình dưới đồng hồ: phần trăm món đã nằm gọn trong túi (cùng con số rules.js dùng
+// để xét thắng). Thanh và số cập nhật cùng nhau; thắng là 100%. Không hiện số món còn lại.
+let shownPct = -1;
 export function renderList() {
-  const left = Math.max(0, S.ITEMS.length - S.checked.size);
-  if (left === shownLeft) return;
-  shownLeft = left;
-  countEl.textContent = left;
-  // con số nảy một nhịp mỗi lần đổi, để mắt bắt được là vừa xếp thêm được một món
-  countEl.classList.remove('bump'); void countEl.offsetWidth; countEl.classList.add('bump');
-  countEl.parentElement.classList.toggle('clear', left === 0);
+  const tong = S.ITEMS.length || 1;
+  const pct = Math.max(0, Math.min(100, Math.round(S.checked.size / tong * 100)));
+  countEl.textContent = Math.max(0, S.ITEMS.length - S.checked.size);   // giữ cho máy tự chơi / Creative đọc
+  if (pct === shownPct) return;
+  shownPct = pct;
+  $('progFill').style.width = pct + '%';
+  $('progPct').textContent = pct + '%';
 }
 /** Giữ tên cũ cho các module khác gọi khi mở hộp bí ẩn (không còn thumbnail để vẽ lại) */
 export function repaintSlot() {}
@@ -73,17 +81,16 @@ const HINH_SAO = '<svg viewBox="0 0 24 24"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5
  * ngang — cắt 50% thì ra nửa sao. Làm bằng cách này nên nửa sao trông đúng là một ngôi
  * sao bị lấp một nửa, chứ không phải một hình sao méo.
  */
-const SO_SAO = 3;   // bảng thắng mới: ba ngôi sao; điểm tính theo thang 5 sao nên quy đổi
+const SO_SAO = 3;   // bảng thắng: ba ngôi sao, không có nửa sao; điểm tính theo thang 5 nên quy đổi
 function renderStars(sao) {
   const el = $('winStars'); if (!el) return;
+  const sang = Math.max(1, Math.min(SO_SAO, Math.round((sao || 0) * SO_SAO / 5)));
   el.innerHTML = '';
-  const tren3 = sao * SO_SAO / 5;
   for (let i = 0; i < SO_SAO; i++) {
-    const day = Math.max(0, Math.min(1, tren3 - i));
-    const o = document.createElement('span');
-    o.className = 'star';
-    o.style.animationDelay = (.1 + i * .11) + 's';
-    o.innerHTML = HINH_SAO + `<span class="fill" style="width:${day * 100}%">${HINH_SAO}</span>`;
+    const o = document.createElement('img');
+    o.className = 'star'; o.alt = ''; o.draggable = false;
+    o.src = `./ui/icons/${i < sang ? 'star' : 'star-off'}.webp`;
+    o.style.animationDelay = (.1 + i * .12) + 's';
     el.appendChild(o);
   }
 }
@@ -141,45 +148,62 @@ function danhGia(d) {
  * mừng xong thì không ngồi đọc bảng thống kê. Giữ một câu nói rõ vừa làm được gì, ba
  * con số phụ thu thành ba ô nhỏ bên dưới.
  */
-// Hai ô ở bảng thắng: thời gian hoàn thành và coin nhận được (thưởng của level). Bỏ điểm và
-// số booster đã dùng theo bố cục mới.
-const ICON_GIO = '<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" fill="#F2C14E"/><circle cx="12" cy="13" r="5.6" fill="#FFF8E7"/><path d="M12 13V9.6M12 13l2.6 1.4" stroke="#5A3A22" stroke-width="1.8" stroke-linecap="round"/><rect x="9.5" y="2.6" width="5" height="2.6" rx="1.3" fill="#F2C14E"/></svg>';
-const ICON_COIN = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#F2B530"/><circle cx="12" cy="12" r="6.6" fill="#FFD25E"/><path d="M12 8.4v7.2M9.8 10.2h3.6a1.4 1.4 0 0 1 0 2.8h-2.8a1.4 1.4 0 0 0 0 2.8h3.6" stroke="#C47F10" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>';
+// Ô kết quả ở bảng thắng: thời gian ĐÃ CHƠI để xong level và vàng thưởng của level.
+// Dưới ô: "Packed the right way", hoặc lỗi xếp đầu tiên nếu có (laptop đè áo, đè đồ dễ vỡ).
+const anh = ten => `<img src="./ui/icons/${ten}.webp" alt="" draggable="false">`;
+let thuongVan = 0, daX2 = false;
 function renderScore(d) {
   const el = $('winScore'); if (!el || !d) return;
-  const coin = S.LEVEL?.reward?.coin ?? 20;
-  // chỉ icon + số, không ghi nhãn "Completed" / "Coins earned" bên dưới
-  const o = (icon, so) => `<div class="chip"><b>${icon}${so}</b></div>`;
-  el.innerHTML = o(ICON_GIO, giay(d.dungGiay)) + o(ICON_COIN, `+${coin}`);
-  // Xếp đúng kiểu: khen một dòng, hoặc chỉ ra tối đa hai lỗi (laptop đè áo, đè đồ dễ vỡ)
-  const kieu = document.createElement('div'); kieu.className = 'win-kieu ' + (d.loi?.length ? 'bad' : 'ok');
-  kieu.innerHTML = d.loi?.length ? d.loi.slice(0, 2).map(x => `<div>⚠ ${esc(x)}</div>`).join('') : `<div>✓ ${esc(t('packedRight'))}</div>`;
-  el.appendChild(kieu);
+  thuongVan = S.LEVEL?.reward?.coin ?? 20;
+  el.innerHTML = `<span>${anh('timer')}<b>${giay(d.dungGiay)}</b></span><span><img src="./ui/menu/coin.webp" alt="" draggable="false"><b id="winCoin">+${thuongVan}</b></span>`;
+  const kieu = $('winKieu');
+  kieu.textContent = d.loi?.length ? d.loi[0] : 'Packed the right way';
+  kieu.classList.toggle('bad', !!d.loi?.length);
   renderStars(d.sao);
 }
 
 export function showWin(diem) {
-  $('winLevel').textContent = t('winLevel', { n: soThuTuLevel(S.mapId, S.levelIdx) });
-  $('winRank').textContent = `✨ ${t('winPacked')} ✨`;
-  $('winText').innerHTML = cauKhenNgauNhien();   // câu cố định trong i18n.js, không có dữ liệu người dùng
+  $('winLevel').textContent = `LEVEL ${soThuTuLevel(S.mapId, S.levelIdx)} COMPLETE!`;
+  $('winRank').textContent = 'Packed!';
+  // Tài liệu: tỷ lệ phải lấy từ dữ liệu thật; chưa có dữ liệu nên tạm để cố định 18%.
+  $('winPct').textContent = 'Only 18% made it this far.';
+  $('winText').textContent = 'Nice packing!';
+  renderList();      // thắng thì thanh tiến trình luôn đứng ở 100%
   renderScore(diem);
+  daX2 = false;
+  const x2 = $('winX2'); x2.disabled = false; x2.classList.remove('done'); x2.querySelector('span').textContent = 'Collect ×2';
   show('win');
   sfx('star', { delay: .1 });   // Star_get: đúng lúc bảng hiện và ngôi sao đầu bật ra
+}
+
+/** Collect ×2: xem đủ quảng cáo thì cộng thêm đúng một lần thưởng cơ bản, nút thành Collected */
+async function nhanX2() {
+  const x2 = $('winX2');
+  if (daX2 || x2.disabled) return;
+  if (!coQuangCao()) { efToast('Ad unavailable. Try again later.'); return; }
+  x2.disabled = true;
+  const du = await xemQuangCao();
+  if (!du || !S.won) { x2.disabled = false; return; }   // đóng sớm / lỗi: giữ thưởng cơ bản, cho thử lại
+  daX2 = true;
+  addGold(thuongVan);
+  x2.classList.add('done'); x2.querySelector('span').textContent = 'Collected';
+  const c = $('winCoin'); if (c) c.textContent = `+${thuongVan * 2}`;
+  sfx('unlockLv', { gain: .7 });
 }
 export function hideWin() { hide('win'); }
 /** Thua. Mặc định là hết giờ (còn n món, có nút +60 giây); đồ vỡ thì ghi lý do và không cho thêm giờ. */
 export function showLose({ lyDo, choThemGio = true } = {}) {
   const left = S.ITEMS.length - S.checked.size;
-  $('loseText').textContent = lyDo || t('leftInTray', { n: left });
-  const tieuDe = document.querySelector('#lose h2'); if (tieuDe) tieuDe.textContent = lyDo ? t('brokenTitle') : t('soClose');
-  const them = $('extraTime'); if (them) them.hidden = !choThemGio;
+  $('loseText').textContent = lyDo || `${left} ${left === 1 ? 'item' : 'items'} still out of the bag.`;
+  const tieuDe = document.querySelector('#lose h2'); if (tieuDe) tieuDe.textContent = lyDo ? t('brokenTitle') : 'So close!';
+  $('loseSub').hidden = !choThemGio;
+  const them = $('extraTime'); if (them) { them.hidden = !choThemGio; them.disabled = false; }
   sfx('lose'); shake(420); duckMusic(true);
   show('lose');
 }
 export function hideLose() { hide('lose'); }
 export function hidePause() { hide('pause'); S.paused = false; }
 
-const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Gắn hành động kèm tiếng bấm — mọi nút trong game đều đi qua đây */
 function onTap(id, fn, sound = 'tap') {
@@ -194,13 +218,64 @@ export function bindOverlayButtons({ onAgain, onNext, onExtraTime, onPrev, onHom
   onTap('next', onNext, 'tapBig');
   onTap('nextLv', () => { hidePause(); onNext(); });
   onTap('prevLv', () => { hidePause(); onPrev(); });
-  onTap('extraTime', onExtraTime, 'tapBig');
-  onTap('pauseBtn', () => { if (S.won || S.lost) return; S.paused = true; duckMusic(true); show('pause'); });
+  onTap('winX2', nhanX2, 'tapBig');
+  // +60 sec: xem đủ quảng cáo mới cộng giờ; trong lúc xem khoá nút, đóng sớm / lỗi thì giữ bảng thua
+  onTap('extraTime', async () => {
+    const nut = $('extraTime');
+    if (nut.disabled || !S.lost) return;
+    if (!coQuangCao()) { efToast('Ad unavailable. Try again later.'); return; }
+    nut.disabled = true;
+    const du = await xemQuangCao();
+    nut.disabled = false;
+    if (du && S.lost) onExtraTime();
+  }, 'tapBig');
+  // Bánh răng trong ván mở Settings (popup tự dừng đồng hồ và thao tác)
+  onTap('pauseBtn', () => { if (S.won || S.lost) return; openSettings(); });
   onTap('resumeBtn', () => { hidePause(); duckMusic(false); });
   for (const id of ['homeBtn', 'winHome', 'loseHome']) {
-    onTap(id, () => { hidePause(); hideWin(); hideLose(); duckMusic(false); onHome && onHome(); });
+    onTap(id, () => { hidePause(); hideWin(); hideLose(); closeSettings(); duckMusic(false); onHome && onHome(); });
   }
+
+  // Vàng trên HUD
+  $('hudGold').textContent = fmtSo(getGold());
+  onGoldChange(n => { $('hudGold').textContent = fmtSo(n); });
+
+  // ---------- năng lượng lắc ----------
+  onShakeEnergy({
+    doi: v => {
+      $('shakeFill').style.width = Math.round(v * 100) + '%';
+      $('shakeHud').classList.toggle('empty', v <= 0);
+      $('shakeHud').classList.toggle('low', v > 0 && v < .25);
+    },
+    can: () => moPopupLac(),
+  });
+  onTap('shakeAd', async () => {
+    if (!coQuangCao()) { efToast('Ad unavailable. Try again later.'); return; }
+    const nut = $('shakeAd'); nut.disabled = true;
+    const du = await xemQuangCao();
+    nut.disabled = false;
+    if (du) { datNangLuong(1); dongPopupLac(); }   // đầy lại, mở lại tính năng lắc
+  }, 'tapBig');
+  onTap('shakeNo', dongPopupLac);
+  onTap('shakeX', dongPopupLac);
 }
+
+// Popup "Shake energy empty": mở khi thanh đã cạn mà người chơi còn lắc. Mở thì dừng đồng hồ
+// và thao tác; đóng (Not now / X) thì chơi tiếp, lắc vẫn khoá. Vừa đóng thì nghỉ một nhịp mới
+// cho mở lại, không thì tay đang lắc dở lại bật popup ngay lập tức.
+let lacNghiToi = 0, lacDungVan = false;
+function moPopupLac() {
+  if ($('shakePop').classList.contains('show') || performance.now() < lacNghiToi) return;
+  if (S.won || S.lost || S.paused) return;
+  S.paused = true; lacDungVan = true;
+  show('shakePop');
+}
+function dongPopupLac() {
+  hide('shakePop');
+  lacNghiToi = performance.now() + 2500;
+  if (lacDungVan) { lacDungVan = false; S.paused = false; }
+}
+export function hideShakePopup() { if ($('shakePop').classList.contains('show')) dongPopupLac(); }
 
 // Không còn dùng, giữ để tương thích lời gọi cũ
 export function setRotateEnabled() {}

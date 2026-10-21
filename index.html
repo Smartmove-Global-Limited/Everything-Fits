@@ -50,70 +50,44 @@
   <div id="phone">
     <canvas id="game"></canvas>
 
-    <!-- Thanh trên: tên level bên trái, nút tạm dừng bên phải -->
-    <div class="hud top">
-      <div class="titleblock">
-        <div class="eyebrow" id="eyebrow">LEVEL 1</div>
-        <div class="title" id="title">Sunny escape</div>
+    <!-- ================= HUD gameplay (Figma "EF · Gameplay / UI only") =================
+         Trên trái: Lv. N · trên phải: vàng + Settings · giữa: đồng hồ · dưới đồng hồ: thanh tiến
+         trình %. Đáy: Freeze — Resize — Throw out. Không hiện số món còn lại, không có Home/Shop. -->
+    <div class="hud efh-top">
+      <div class="efh-lv"><span id="eyebrow" hidden></span><b id="title">Lv. 1</b></div>
+      <div class="efh-shake" id="shakeHud" title="Shake energy">
+        <span class="efh-shake-ic"><img src="./ui/icons/shake.webp" alt="" draggable="false"><img class="efh-shake-lock" src="./ui/icons/lock.webp" alt="" draggable="false"></span>
+        <span class="efh-shake-bar"><i id="shakeFill"></i></span>
       </div>
-      <button class="pause" id="pauseBtn" data-art-icon="pause" data-i18n-aria="pauseAria" aria-label="Pause">
-        <svg viewBox="0 0 24 24"><rect x="7" y="5.4" width="3.6" height="13.2" rx="1.7"/><rect x="13.4" y="5.4" width="3.6" height="13.2" rx="1.7"/></svg>
-      </button>
+      <div class="efh-right">
+        <div class="efh-gold"><img src="./ui/menu/coin.webp" alt="" draggable="false"><b id="hudGold">0</b></div>
+        <button class="efh-gear" id="pauseBtn" aria-label="Settings"><img src="./ui/menu/gear.webp" alt="" draggable="false"></button>
+      </div>
     </div>
-
-    <!-- Đồng hồ + số món còn lại: đặt cạnh nhau ở vùng luôn trống, không bao giờ đè lên túi -->
-    <div class="hud timerwrap">
-      <div class="timer" id="clock" data-art-icon="timer">1:30</div>
-      <div class="counter"><b id="count">0</b><span data-i18n="itemsLeft">items<br>left</span></div>
+    <div class="hud efh-timerwrap">
+      <div class="efh-timer" id="clock-box"><img src="./ui/icons/timer.webp" alt="" draggable="false"><b id="clock">01:30</b></div>
+      <div class="efh-prog"><span class="efh-track"><i id="progFill"></i></span><b id="progPct">0%</b><b id="count" hidden>0</b></div>
     </div>
 
     <!-- Toast -->
     <div class="hint hide" id="hint"></div>
 
-    <!-- Booster: mỗi nút một màu và một icon đặc, nhìn là hiểu -->
-    <div class="hud dock">
-      <button class="boost b-freeze" id="bFreeze" data-art-icon="snow">
-        <span class="ic">
-          <svg viewBox="0 0 40 40">
-            <!-- bông tuyết: đồ trong túi đứng yên -->
-            <g stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none">
-              <path d="M20 5v30M7 12.5l26 15M7 27.5l26-15"/>
-              <path d="M15.5 7.5 20 11l4.5-3.5M15.5 32.5 20 29l4.5 3.5M6.2 18.2l5.4 1.8L10 25M33.8 18.2 28.4 20 30 25M9.4 8.9l2 5.3-5.6 1.1M30.6 8.9l-2 5.3 5.6 1.1" stroke-width="2.2"/>
-            </g>
-          </svg>
-        </span>
-        <span class="nm" data-i18n="boostFreeze">Freeze</span><b class="badge">2</b>
+    <!-- Booster: thẻ kem, icon ảnh, số lượt ở góc; chưa tới level mở khoá thì xám + ổ khoá + "Lv. N" -->
+    <div class="hud efh-dock">
+      <button class="efb" id="bFreeze">
+        <img class="efb-ic" src="./ui/icons/freeze.webp" alt="" draggable="false">
+        <img class="efb-lock" src="./ui/icons/lock.webp" alt="" draggable="false"><span class="efb-lv">Lv. 3</span>
+        <span class="nm">Freeze</span><b class="badge">2</b>
       </button>
-
-      <button class="boost b-resize" id="bResize" data-art-icon="small">
-        <span class="ic">
-          <svg viewBox="0 0 40 40">
-            <!-- món to thu lại thành món nhỏ -->
-            <rect x="6.5" y="6.5" width="27" height="27" rx="4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="4 3.4" opacity=".75"/>
-            <rect x="14" y="14" width="12" height="12" rx="2.6" fill="currentColor"/>
-            <g stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
-              <path d="M10 10.5 13.4 14M13.4 10.5H10v3.4"/>
-              <path d="M30 29.5 26.6 26M26.6 29.5H30v-3.4"/>
-            </g>
-          </svg>
-        </span>
-        <span class="nm" data-i18n="boostResize">Shrink</span><b class="badge">2</b>
+      <button class="efb" id="bResize">
+        <img class="efb-ic" src="./ui/icons/resize.webp" alt="" draggable="false">
+        <img class="efb-lock" src="./ui/icons/lock.webp" alt="" draggable="false"><span class="efb-lv">Lv. 6</span>
+        <span class="nm">Resize</span><b class="badge">2</b>
       </button>
-
-      <button class="boost b-throw" id="bThrow" data-art-icon="delete">
-        <span class="ic">
-          <svg viewBox="0 0 40 40">
-            <!-- món đồ đang rơi vào thùng rác -->
-            <rect x="14.5" y="3" width="11" height="8" rx="2" fill="currentColor" opacity=".55" transform="rotate(18 20 7)"/>
-            <path d="M9 14h22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-            <path d="M16 14v-2h8v2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-            <path d="M11.6 17h16.8l-1.5 16a2 2 0 0 1-2 1.8H15.1a2 2 0 0 1-2-1.8z" fill="currentColor"/>
-            <g stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8">
-              <path d="M17 21.5v8M23 21.5v8"/>
-            </g>
-          </svg>
-        </span>
-        <span class="nm" data-i18n="boostThrow">Throw out</span><b class="badge">1</b>
+      <button class="efb" id="bThrow">
+        <img class="efb-ic" src="./ui/icons/throw.webp" alt="" draggable="false">
+        <img class="efb-lock" src="./ui/icons/lock.webp" alt="" draggable="false"><span class="efb-lv">Lv. 9</span>
+        <span class="nm">Throw out</span><b class="badge">1</b>
       </button>
     </div>
 
@@ -126,6 +100,30 @@
         <p class="splash-tag" data-i18n="splashTag">Pack it all in!</p>
       </div>
       <div class="splash-bar"><i></i></div>
+    </div>
+
+    <!-- ================= Main Menu (Figma "EF · Main Menu") ================= -->
+    <div class="screen efmenu" id="efmenu">
+      <div class="efm-bg"></div>
+      <div class="efm-top">
+        <div class="efm-gold">
+          <img src="./ui/menu/coin.webp" alt="" draggable="false">
+          <b id="mGold">0</b>
+          <button class="efm-add" id="mAddGold" aria-label="Get more gold">+</button>
+        </div>
+        <button class="efm-gear" id="mSettings" aria-label="Settings"><img src="./ui/menu/gear.webp" alt="" draggable="false"></button>
+      </div>
+      <div class="efm-mid">
+        <img class="efm-art" src="./ui/menu/mascot.webp" alt="" draggable="false">
+        <button class="efm-play" id="mPlay" data-kind="easy">
+          <span class="efm-play-t">Play</span>
+          <span class="efm-play-lv" id="mPlayLv">Level 1</span>
+        </button>
+      </div>
+      <nav class="efm-nav">
+        <button class="efm-tab" id="mTabShop"><img src="./ui/menu/nav-shop.webp" alt="" draggable="false"><span>Shop</span></button>
+        <button class="efm-tab on" id="mTabHome" aria-current="page"><img src="./ui/menu/nav-home.webp" alt="" draggable="false"><span>Home</span></button>
+      </nav>
     </div>
 
     <!-- ================= Màn chủ ================= -->
@@ -197,32 +195,104 @@
       </div>
     </div>
 
-    <!-- Win -->
-    <div class="overlay" id="win">
-      <!-- Bố cục: LEVEL N COMPLETE! · ✨ Packed! ✨ · 3 sao · thời gian + coin · Next level · Replay -->
-      <div class="card win-card">
-        <div class="win-lv" id="winLevel">LEVEL 1 COMPLETE!</div>
-        <h2 id="winRank">✨ Packed! ✨</h2>
-        <p class="win-khen" id="winText"></p>
-        <div class="stars" id="winStars"></div>
-        <div class="win-stats" id="winScore"></div>
-        <button class="cta win-next" id="next" data-i18n="winNext">Next level →</button>
-        <!-- bố cục mới không có Replay / Home ở bảng thắng; giữ nút ẩn để code gắn sự kiện không lỗi -->
-        <button class="linkbtn" id="again" data-i18n="winReplay" hidden>Replay</button>
-        <button class="linkbtn" id="winHome" data-i18n="home" hidden>Home</button>
+    <!-- ================= Reward: hoàn thành level (Figma "EF · Reward / Popup overlay") ================= -->
+    <div class="overlay efp" id="win">
+      <div class="efp-card">
+        <button class="efp-x" id="winHome" aria-label="Close"><img src="./ui/icons/close.webp" alt="" draggable="false"></button>
+        <div class="efp-eyebrow" id="winLevel">LEVEL 1 COMPLETE!</div>
+        <h2 class="efp-title" id="winRank">Packed!</h2>
+        <div class="efw-stars" id="winStars"></div>
+        <p class="efw-msg"><span id="winPct">Only 18% made it this far.</span><br><span id="winText">Nice packing!</span></p>
+        <div class="efw-stats" id="winScore"></div>
+        <p class="efw-kieu" id="winKieu">Packed the right way</p>
+        <div class="efp-row">
+          <button class="efbtn green" id="next">Continue</button>
+          <button class="efbtn cream" id="winX2"><img src="./ui/icons/ads.webp" alt="" draggable="false"><span>Collect ×2</span></button>
+        </div>
+        <button class="linkbtn" id="again" hidden>Replay</button>
       </div>
     </div>
 
-    <!-- Lose -->
-    <div class="overlay" id="lose">
-      <div class="card">
-        <div class="clockicon"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg></div>
-        <h2 data-i18n="soClose">So close!</h2>
-        <p id="loseText">Time's up.</p>
-        <div class="actions"><button class="cta ghost" id="retry" data-i18n="tryAgain">Try again</button><button class="cta" id="extraTime" data-i18n="extraTime">+60 sec</button></div>
-        <button class="linkbtn" id="loseHome" data-i18n="home">Home</button>
+    <!-- ================= Lose: hết thời gian (Figma "EF · Lose / Popup overlay") ================= -->
+    <div class="overlay efp" id="lose">
+      <div class="efp-card">
+        <button class="efp-x" id="loseHome" aria-label="Close"><img src="./ui/icons/close.webp" alt="" draggable="false"></button>
+        <img class="efl-ic" src="./ui/icons/timer.webp" alt="" draggable="false">
+        <h2 class="efp-title">So close!</h2>
+        <p class="efl-text" id="loseText">6 items still out of the bag.</p>
+        <p class="efl-sub" id="loseSub">A little more time to make it fit.</p>
+        <div class="efp-row">
+          <button class="efbtn cream" id="retry">Try again</button>
+          <button class="efbtn green" id="extraTime"><img src="./ui/icons/ads.webp" alt="" draggable="false"><span>+60 sec</span></button>
+        </div>
       </div>
     </div>
+
+    <!-- ================= Shake energy empty (Figma "EF · Shake energy / Refill popup") ================= -->
+    <div class="overlay efp" id="shakePop">
+      <div class="efp-card">
+        <button class="efp-x" id="shakeX" aria-label="Close"><img src="./ui/icons/close.webp" alt="" draggable="false"></button>
+        <img class="efs-ic" src="./ui/icons/shake.webp" alt="" draggable="false">
+        <h2 class="efp-title sm">Shake energy empty</h2>
+        <p class="efl-sub">Watch an ad to refill your shake bar.</p>
+        <button class="efbtn green wide" id="shakeAd"><img src="./ui/icons/ads.webp" alt="" draggable="false"><span>Watch Ad · Refill</span></button>
+        <button class="efp-link" id="shakeNo">Not now</button>
+      </div>
+    </div>
+
+    <!-- ================= Shop (Figma "EF · Shop" + "Shop catalogue / Full review") ================= -->
+    <div class="screen efmenu efshop" id="efshop">
+      <div class="efm-bg"></div>
+      <div class="efm-top">
+        <div class="efm-gold">
+          <img src="./ui/menu/coin.webp" alt="" draggable="false">
+          <b id="sGold">0</b>
+          <button class="efm-add" id="sAddGold" aria-label="Gold packs">+</button>
+        </div>
+        <button class="efm-gear" id="sSettings" aria-label="Settings"><img src="./ui/menu/gear.webp" alt="" draggable="false"></button>
+      </div>
+      <div class="efs-head"><h1>Shop</h1><p>Packs, perks &amp; little helpers</p></div>
+      <div class="efs-scroll" id="shopScroll">
+        <div class="efs-list" id="shopList"></div>
+      </div>
+      <nav class="efm-nav">
+        <button class="efm-tab on" id="sTabShop" aria-current="page"><img src="./ui/menu/nav-shop.webp" alt="" draggable="false"><span>Shop</span></button>
+        <button class="efm-tab" id="sTabHome"><img src="./ui/menu/nav-home.webp" alt="" draggable="false"><span>Home</span></button>
+      </nav>
+    </div>
+
+    <!-- ================= Settings (Figma "EF · Settings / Popup overlay") =================
+         Mở từ bánh răng ở Main Menu, Shop, Gameplay. Bấm vùng tối hoặc X để đóng. -->
+    <div class="overlay efp efset" id="settings">
+      <div class="efp-card efset-card">
+        <button class="efp-x" id="setX" aria-label="Close"><img src="./ui/icons/close.webp" alt="" draggable="false"></button>
+        <h2 class="efp-title sm">Settings</h2>
+      <div class="efset-row">
+        <span class="efset-ic"><img src="./ui/icons/bgm.webp" alt="" draggable="false"></span>
+        <span class="efset-t"><b>BGM</b><small>Background music</small></span>
+        <button class="eftog" id="togBgm" role="switch" aria-checked="true" aria-label="BGM"><span>ON</span><i></i></button>
+      </div>
+      <div class="efset-row">
+        <span class="efset-ic"><img src="./ui/icons/sfx.webp" alt="" draggable="false"></span>
+        <span class="efset-t"><b>SFX</b><small>Sound effects</small></span>
+        <button class="eftog" id="togSfx" role="switch" aria-checked="true" aria-label="SFX"><span>ON</span><i></i></button>
+      </div>
+      <div class="efset-row">
+        <span class="efset-ic"><img src="./ui/icons/vibration.webp" alt="" draggable="false"></span>
+        <span class="efset-t"><b>Vibration</b><small>Haptic feedback</small></span>
+        <button class="eftog" id="togVib" role="switch" aria-checked="true" aria-label="Vibration"><span>ON</span><i></i></button>
+      </div>
+      </div>
+    </div>
+
+    <!-- Quảng cáo GIẢ LẬP (game/ads.js) cho tới khi gắn SDK quảng cáo thật -->
+    <div class="adsim" id="adSim">
+      <div><small>TEST AD</small><p>Rewarded ad playing…</p><b>3</b></div>
+      <button>Close ad</button>
+    </div>
+
+    <!-- Thông báo ngắn dùng chung cho Main Menu, Shop, popup -->
+    <div class="eftoast" id="efToast"></div>
   </div>
 
   <script type="module" src="./src/main.js"></script>

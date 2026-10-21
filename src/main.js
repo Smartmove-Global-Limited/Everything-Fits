@@ -19,8 +19,11 @@ import { autoplay, stopAutoplay, autoState, autoLog, chanDoan } from './game/aut
 import * as FX from './game/fx.js';
 import * as RULES from './game/rules.js';
 import * as SCORE from './game/score.js';
-import { initHome, showHome, hideHome, showMap } from './ui/home.js';
+import { initHome, hideHome, showMap } from './ui/home.js';
 import { showSplash, hetSplashBoot } from './ui/splash.js';
+import { initMenu, showMenu, hideMenu } from './ui/menu.js';
+import { initShop, hideShop } from './ui/shop.js';
+import { initSettings } from './ui/settings.js';
 import { applyStatic, t } from './i18n.js';
 import { initCreative, isCreative } from './game/creative.js';
 import { setSilent, unlockOnFirstGesture, initAudio, startMusic, duckMusic } from './ui/sfx.js';
@@ -28,10 +31,10 @@ import { chuyenMan, moMan } from './ui/veil.js';
 
 const params = new URLSearchParams(location.search);
 
-// TẠM THỜI: bỏ qua trang chủ. Splash tắt là vào thẳng ván đang chơi dở, mạch chơi liền
-// một hơi, không có nút nào đưa người chơi về Home hay nhảy màn. Trang chủ vẫn còn nguyên
-// trong mã — muốn trả lại thì đổi cờ này về false.
-const BO_QUA_HOME = true;
+// Bỏ qua Main Menu: Splash tắt là vào thẳng ván đang chơi dở, mạch chơi liền một hơi,
+// không có nút nào đưa người chơi về menu hay nhảy màn. Đổi về true là quay lại kiểu đó.
+// Tắt (mặc định): Splash xong lộ ra Main Menu mới (ui/menu.js), bấm Play mới vào ván.
+const BO_QUA_HOME = false;
 
 // TẠM THỜI: bản gửi bên design. Ẩn cụm đồng hồ + số món + nút tạm dừng và thanh booster,
 // đồng hồ không đếm (không thua vì hết giờ). Áp cho cả web, editor, Creative và app Android.
@@ -57,7 +60,7 @@ applyStatic();
  * ngồi nhìn tấm màn mãi.
  */
 async function moManLanDau() {
-  const anh = [...document.querySelectorAll('#home img')]
+  const anh = [...document.querySelectorAll('#home img, #efmenu img')]
     .filter(n => n.src && !n.complete)
     .map(n => new Promise(r => { n.addEventListener('load', r, { once: true }); n.addEventListener('error', r, { once: true }); }));
   const hetGio = new Promise(r => setTimeout(r, 6000));
@@ -73,6 +76,7 @@ async function boot() {
     onExtraTime: extraTime,
     onHome: goHome,
   });
+  initSettings();
   bindInput();
   bindBoosters();
   bindShake();
@@ -99,8 +103,6 @@ async function boot() {
   // loadBook có thể đã lùi về cozy nếu bộ được chọn chưa có level: gắn lại bảng màu cho khớp
   document.documentElement.dataset.art = artStyle();
   applyArtIcons();
-  // Nút tạm dừng nằm cùng hàng với đồng hồ và số món (ba viên căn giữa một cụm), cả hai bộ art.
-  document.querySelector('.timerwrap')?.appendChild(document.getElementById('pauseBtn'));
 
   // Live preview từ editor: level gửi qua postMessage, không tải từ content
   window.addEventListener('message', e => {
@@ -131,6 +133,8 @@ async function boot() {
   }
 
   initHome({ chapters: chapters(), onPlay: startLevel });
+  initMenu({ chapters: chapters(), onPlay: startLevel });
+  initShop({ onHome: showMenu });
   initCreative({ startLevel, vaoNgay, choiSplash, goHome, showMap, chapterById });
 
   // Mở thẳng một level qua địa chỉ (?level=… hoặc ?i=…) thì bỏ qua trang chủ
@@ -154,8 +158,11 @@ async function boot() {
       await startLevel(spot.chapter, spot.index);
     }
   } else {
-    showHome();
-    // Splash phủ trên trang chủ: đồ của chương đầu rơi thành đống, bấm Chơi là lộ trang chủ.
+    // Main Menu mới thay trang chủ cũ. Trang chủ cũ (ui/home.js) còn trong mã cho bản đồ chương.
+    // Bảng tạm dừng không còn cho nhảy level trước / sau; nút Home ở đó và ở bảng thua về menu.
+    document.querySelectorAll('.lvnav').forEach(el => { el.hidden = true; });
+    showMenu();
+    // Splash phủ trên menu: đồ của chương đầu rơi thành đống, đồ rơi hết là lộ menu.
     // Creative Tool tự điều khiển màn hình nên bỏ qua.
     // Logo Splash đã hiện sẵn từ khung đầu (index.html); nạp xong đồ của chương đầu là đồ rơi.
     if (!isCreative) {
@@ -178,7 +185,7 @@ async function startLevel(ch, idx) {
       S.mapId = ch.id; S.map = ch;
       await loadChapterAssets(ch);
     }
-    hideHome();
+    hideHome(); hideMenu(); hideShop();
     await initAudio();
     startMusic();
     await loadAndBuild(idx);
@@ -200,7 +207,7 @@ async function vaoNgay(ch, idx, level = null) {
   startMusic();
   if (level) { S.levelIdx = idx; await buildWithArt(level); }
   else await loadAndBuild(idx);
-  hideHome();
+  hideHome(); hideMenu();
 }
 
 /**
@@ -251,7 +258,7 @@ function goHome() {
   return chuyenMan(async () => {
     S.paused = true; S.drag = null; S.selected = null;
     duckMusic(false);
-    showHome();
+    showMenu();
   });
 }
 

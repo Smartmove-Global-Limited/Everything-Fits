@@ -12,7 +12,8 @@ import { soThuTuLevel } from '../content/loader.js';
 import { BAG_SKINS } from '../art/scene-registry.js';
 import { createTethers } from './mechanics.js';
 import { resetBoosts } from './boosters.js';
-import { renderHeader, renderList, hideWin, hideLose, hidePause } from '../ui/hud.js';
+import { datNangLuong } from './shake.js';
+import { renderHeader, renderList, hideWin, hideLose, hidePause, hideShakePopup } from '../ui/hud.js';
 import { clearFx } from './fx.js';
 import { duckMusic, sfx } from '../ui/sfx.js';
 import { setSpot } from './progress.js';
@@ -32,6 +33,7 @@ export function build(level) {
   const cTui = resolveContainer(level.container || {}, BAG_SKINS);
   if (cTui !== level.container) level = { ...level, container: cTui };
   S.LEVEL = level;
+  datNangLuong(1);   // mỗi ván (kể cả chơi lại) bắt đầu với thanh năng lượng lắc đầy
   S.phienVan = (S.phienVan || 0) + 1; S.mayNghi = false;   // máy tự chơi đang chạy cho ván cũ thấy số này đổi thì tự dừng
   setContainer(level.container);
   theme.ink = level.ink || SCENE_INK[Number(level.background)] || '#3B2A4A';
@@ -43,7 +45,7 @@ export function build(level) {
 
   // HUD
   veThanhTen();
-  hideWin(); hideLose(); hidePause();
+  hideWin(); hideLose(); hidePause(); hideShakePopup();
 
   // trạng thái
   S.drag = null; S.selected = null; S.luuTui = null;
@@ -87,7 +89,7 @@ function veThanhTen() {
   const level = S.LEVEL; if (!level) return;
   renderHeader({
     eyebrow: S.map ? t('eyebrow', { no: S.map.no || 1, name: chapterName(S.map), n: S.levelIdx + 1 }) : t('level', { n: S.levelIdx + 1 }),
-    title: `Level ${soThuTuLevel(S.mapId, S.levelIdx)}`,   // không còn tên level riêng
+    title: `Lv. ${soThuTuLevel(S.mapId, S.levelIdx)}`,   // ô level góc trên trái HUD (Figma: "Lv. 8")
     cls: SCENE_CLS[Number(level.background)] || '',
   });
 }

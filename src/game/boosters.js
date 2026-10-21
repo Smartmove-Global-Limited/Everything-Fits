@@ -11,6 +11,7 @@ import { sfx } from '../ui/sfx.js';
 import { sparkle, ring, floatText } from './fx.js';
 import { t, itemName } from '../i18n.js';
 import { dungBooster } from './events.js';
+import { soThuTuLevel } from '../content/loader.js';
 
 const { Body } = Matter;
 
@@ -29,7 +30,10 @@ export const DEFAULT_BOOSTS = { freeze: 2, resize: 2, throw: 1 };
 // nút xám đi, không bấm được (sau này xem quảng cáo để nhận thêm: gọi themBooster).
 // Editor (xem thử) và Creative vẫn đặt lại mỗi màn như cũ, để thử level và quay video không bị hết.
 const KHO = 'snug.boosts.v1';
-const dungKho = () => !S.preview && new URLSearchParams(location.search).get('creative') !== '1';
+const PARAMS = new URLSearchParams(location.search);
+// Đọc thẳng từ địa chỉ chứ không qua S.preview: module này nạp trước khi boot() đặt cờ đó,
+// mà kho phải có ngay từ đầu cho Shop cộng booster được cả lúc chưa vào ván.
+const dungKho = () => PARAMS.get('preview') !== '1' && PARAMS.get('creative') !== '1';
 function docKho() {
   try { const k = JSON.parse(localStorage.getItem(KHO)); if (k && typeof k === 'object') return { ...DEFAULT_BOOSTS, ...k }; } catch {}
   return { ...DEFAULT_BOOSTS };
@@ -38,21 +42,36 @@ function luuKho() {
   if (!dungKho() || !S.boosts) return;
   try { localStorage.setItem(KHO, JSON.stringify(S.boosts)); } catch {}
 }
-/** Cộng thêm lượt vào kho (dùng sau này khi xem quảng cáo nhận booster) */
+if (dungKho()) S.boosts = docKho();
+
+/** Cộng thêm lượt vào kho: mua ở Shop, gói bundle, phần thưởng. Gọi được cả khi chưa vào ván. */
 export function themBooster(loai, n = 1) {
-  if (!S.boosts || !(loai in DEFAULT_BOOSTS)) return;
+  if (!(loai in DEFAULT_BOOSTS)) return;
   S.boosts[loai] = (S.boosts[loai] || 0) + n;
   renderBoosts();
 }
+
+// ---------- mở khoá theo level ----------
+// Tài liệu UI mục 5: Freeze mở từ Level 3, Resize từ Level 6, Throw out từ Level 9 (số level
+// đếm liền qua các chương). Chưa mở thì nút xám, icon khoá, chữ "Lv. N", không bấm được — kể cả
+// khi người chơi đã có lượt từ gói mua. Editor, Creative và ?all=1 mở sẵn hết để thử level.
+export const MO_KHOA = { freeze: 3, resize: 6, throw: 9 };
+const moHet = () => !dungKho() || PARAMS.get('all') === '1';
+const soLevelDangChoi = () => (S.LEVEL ? soThuTuLevel(S.mapId, S.levelIdx) : 0);
+export const daMoKhoa = loai => moHet() || soLevelDangChoi() >= MO_KHOA[loai];
 
 export function renderBoosts() {
   luuKho();   // mọi lần đổi số lượt đều đi qua đây: ghi kho luôn
   for (const k of Object.keys(els)) {
     const el = els[k];
+    if (!el) continue;
+    const khoa = !daMoKhoa(k);
     const dangBang = k === 'freeze' && freezeLeft() > 0;
     el.querySelector('.badge').textContent = dangBang ? Math.ceil(freezeLeft() / 1000) + 's' : S.boosts[k] ?? 0;
     el.classList.toggle('on', dangBang);
-    el.disabled = dangBang || (S.boosts[k] ?? 0) <= 0;
+    el.classList.toggle('locked', khoa);
+    el.classList.toggle('empty', !khoa && !dangBang && (S.boosts[k] ?? 0) <= 0);
+    el.disabled = khoa || dangBang || (S.boosts[k] ?? 0) <= 0;
   }
 }
 
@@ -78,7 +97,7 @@ function throwableItems() {
 
 /** Throw Out: bỏ ngẫu nhiên một món thường, ưu tiên món còn nằm ngoài túi */
 function useThrow() {
-  if (S.boosts.throw <= 0 || S.won || S.lost) return;
+  if (!daMoKhoa('throw') || S.boosts.throw <= 0 || S.won || S.lost) return;
   const all = throwableItems();
   if (!all.length) { sfx('nope'); return toast(t('nothingToThrow')); }
   const outside = all.filter(b => !bagZone(b).fullyInside);
@@ -114,7 +133,7 @@ function unfreezeBody(b) {
 }
 
 function useFreeze() {
-  if (S.boosts.freeze <= 0 || S.won || S.lost || isFrozenTime()) return;
+  if (!daMoKhoa('freeze') || S.boosts.freeze <= 0 || S.won || S.lost || isFrozenTime()) return;
   S.boosts.freeze--; dungBooster('freeze');
   S.freezeUntil = S.clock + FREEZE_MS;
   for (const b of S.bodies) if (daVao(b) && !isHeld(b) && !b.giuToi && bagZone(b).fullyInside) freezeBody(b);
@@ -142,7 +161,7 @@ export function tickFreeze() {
 }
 
 function useResize() {
-  if (S.boosts.resize <= 0 || S.won || S.lost) return;
+  if (!daMoKhoa('resize') || S.boosts.resize <= 0 || S.won || S.lost) return;
   const cands = S.bodies.filter(b => daVao(b) && !bagZone(b).fullyInside && !isHeld(b) && b.label !== 'key');
   if (!cands.length) { sfx('nope'); return toast(t('nothingOutside')); }
   const b = cands.sort((x, y) => y.area - x.area)[0];

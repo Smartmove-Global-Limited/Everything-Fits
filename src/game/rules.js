@@ -8,6 +8,7 @@ import { sfx, duckMusic } from '../ui/sfx.js';
 import { sparkle, ring, confetti, shake, floatText, dust } from './fx.js';
 import { onImpact, onPress, gramHieuDung } from './physics.js';
 import { markDone, setSpot } from './progress.js';
+import { addGold } from './wallet.js';
 import { chamDiem } from './score.js';
 import { t, itemName } from '../i18n.js';
 import { ketThucLuot } from './events.js';
@@ -378,6 +379,8 @@ export function updateChecked() {
         // lần đầu qua được và còn level phía sau → báo có màn mới mở
         if (lanDau && S.levelIdx + 1 < S.map.levels.length) sfx('unlockLv', { delay: 1.15, gain: .9 });
       }
+      // thưởng cơ bản của level, cộng đúng một lần mỗi lần thắng (số hiện ở bảng thắng)
+      if (!S.preview) addGold(S.LEVEL?.reward?.coin ?? 20);
       confetti(90); sfx('win'); duckMusic(true);
       floatText(210, 300, t('fits'), { color: '#5FBF9B', size: 26, life: 1200 });
       // Bảng thắng có lớp mờ phủ kín màn: hiện ngay thì che mất pháo giấy vừa bắn.

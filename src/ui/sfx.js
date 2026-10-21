@@ -12,7 +12,7 @@ const NAMES = ['tap', 'tapBig', 'pick', 'drop', 'land', 'fit', 'nope', 'eject', 
 // v2: đổi khoá để mọi máy về mặc định BẬT tiếng và nhạc. Android giữ dữ liệu app khi cài đè
 // cùng chữ ký, nên lựa chọn tắt lưu từ bản cũ (nút ở trang chủ đã bỏ) không còn kéo theo.
 const KEY = 'snug.audio.v2';
-const prefs = { sfx: true, music: true, ...readPrefs() };
+const prefs = { sfx: true, music: true, vib: true, ...readPrefs() };   // vib: rung máy (Settings › Vibration)
 function readPrefs() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
 function savePrefs() { try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch {} }
 
@@ -25,6 +25,7 @@ const laApp = () => !!window.Capacitor?.isNativePlatform?.();                 //
 export function setSilent(v) { silent = v; }
 export const isSfxOn = () => prefs.sfx;
 export const isMusicOn = () => prefs.music;
+export const isVibOn = () => prefs.vib !== false;
 
 // Tiếng do bên âm thanh làm (m4a), thay cho tiếng tự sinh cùng tên. Tiếng không có trong bảng
 // này vẫn là file .wav sinh bằng build_audio.mjs.
@@ -224,6 +225,7 @@ function nhacThe(toi, giay) {
 
 // ---------- bật tắt ----------
 export function setSfxOn(v) { prefs.sfx = !!v; savePrefs(); if (v) sfx('tap'); }
+export function setVibOn(v) { prefs.vib = !!v; savePrefs(); }
 export function setMusicOn(v) {
   prefs.music = !!v; savePrefs();
   v ? startMusic() : stopMusic();
