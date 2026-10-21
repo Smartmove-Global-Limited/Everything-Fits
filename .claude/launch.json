@@ -34,6 +34,21 @@
         "--strictPort"
       ],
       "port": 5174
+    },
+    {
+      "name": "creative",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "/Users/buiduy/Documents/game/EverythingFits-Tool-Creative",
+        "--",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
     }
   ]
 }
