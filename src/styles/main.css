@@ -409,10 +409,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 /* ==========================================================================
    CREATIVE TOOL: ẩn từng phần HUD để lấy ảnh nền sạch. Mặc định hiện đủ như game.
    ========================================================================== */
-#phone.hide-timer .efh-timerwrap,#phone.hide-timer .efh-shake{display:none}   /* đồng hồ + thanh tiến trình + năng lượng lắc */
+#phone.hide-timer .efh-timerwrap,#phone.hide-timer .efh-shake{display:none}   /* đồng hồ + năng lượng lắc */
 #phone.hide-dock .efh-dock{display:none}
 #phone.hide-title .efh-lv{visibility:hidden}
-#phone.hide-pause .efh-right{visibility:hidden}   /* vàng + bánh răng */
+#phone.hide-pause .efh-gear{visibility:hidden}   /* bánh răng */
 
 
 /* ==========================================================================
@@ -782,40 +782,36 @@ html[data-art="cozy"] .win-stats .chip b{color:var(--wood)}
 .efh-lv{flex:none;height:calc(var(--u) * 32);min-width:calc(var(--u) * 82);box-sizing:border-box;padding:0 calc(var(--u) * 12);
   border-radius:calc(var(--u) * 16);background:rgba(233,222,197,.92);display:grid;place-items:center;pointer-events:none}
 .efh-lv b{font-weight:800;font-size:calc(var(--u) * 18);line-height:1;padding-top:calc(var(--u) * 2)}
-/* năng lượng lắc: viên nhỏ giữa hàng trên (thiết kế đặt trên thanh booster nhưng chỗ đó là sàn đồ) */
-.efh-shake{flex:1;min-width:0;max-width:calc(var(--u) * 118);height:calc(var(--u) * 30);margin:0 auto;box-sizing:border-box;
-  display:flex;align-items:center;gap:calc(var(--u) * 4);padding:0 calc(var(--u) * 9) 0 calc(var(--u) * 2);
-  border-radius:calc(var(--u) * 15);background:rgba(255,248,233,.92);pointer-events:none;transition:background .3s}
-.efh-shake img{width:calc(var(--u) * 28);height:calc(var(--u) * 28);object-fit:contain;flex:none}
+/* năng lượng lắc: góc trên phải, cạnh bánh răng (chỗ ô vàng cũ của Figma, cùng cỡ 112×34) */
+.efh-shake{width:calc(var(--u) * 76);height:calc(var(--u) * 30);box-sizing:border-box;
+  display:flex;align-items:center;gap:calc(var(--u) * 4);padding:0 calc(var(--u) * 9) 0 calc(var(--u) * 3);
+  border-radius:calc(var(--u) * 17);background:#FFF8E9;pointer-events:none;transition:background .3s, transform .08s}
+.efh-shake img{width:calc(var(--u) * 24);height:calc(var(--u) * 24);object-fit:contain;flex:none}
 .efh-shake-bar{flex:1;height:calc(var(--u) * 8);border-radius:99px;background:#D7D5D1;overflow:hidden}
 .efh-shake-bar i{display:block;height:100%;width:100%;border-radius:99px;background:#8C7AD0;transition:width .2s linear}
 .efh-shake.low .efh-shake-bar i{background:#C9654F}
-.efh-shake.empty{background:#D7D5D1;box-shadow:inset 0 0 0 calc(var(--u) * 1.3) #8C918C}
+.efh-shake.empty{background:#D7D5D1;box-shadow:inset 0 0 0 calc(var(--u) * 1.3) #8C918C;pointer-events:auto;cursor:pointer;
+  animation:efhNhac 1.6s ease-in-out infinite}   /* cạn: bấm được để mở popup xem quảng cáo, nhún nhẹ để gợi ý */
+.efh-shake.empty:active{transform:scale(.94);animation:none}
+@keyframes efhNhac{0%,70%,100%{transform:none}80%{transform:scale(1.06)}90%{transform:scale(.98)}}
 .efh-shake.empty img{filter:grayscale(1);opacity:.7}
 .efh-shake-ic{position:relative;flex:none;display:block}
 .efh-shake-lock{position:absolute;right:calc(var(--u) * -3);bottom:calc(var(--u) * -1);width:calc(var(--u) * 14) !important;height:calc(var(--u) * 14) !important;display:none !important;filter:none !important;opacity:1 !important}
 .efh-shake.empty .efh-shake-lock{display:block !important}
-.efh-right{flex:none;display:flex;align-items:center;gap:calc(var(--u) * 10);margin-left:calc(var(--u) * 8)}
-.efh-gold{position:relative;width:calc(var(--u) * 112);height:calc(var(--u) * 34);border-radius:calc(var(--u) * 17);background:#FFF8E9;
-  display:flex;align-items:center;justify-content:center;padding-left:calc(var(--u) * 22);box-sizing:border-box;pointer-events:none}
-.efh-gold img{position:absolute;left:calc(var(--u) * -8);top:calc(var(--u) * -3);width:calc(var(--u) * 40);height:calc(var(--u) * 40);object-fit:contain}
-.efh-gold b{font-weight:800;font-size:calc(var(--u) * 21);line-height:1;padding-top:calc(var(--u) * 2)}
-#phone .efh-gear{width:calc(var(--u) * 44);height:calc(var(--u) * 44);border-radius:calc(var(--u) * 16);background:#FFF8E9;display:grid;place-items:center}
-.efh-gear img{width:calc(var(--u) * 30);height:calc(var(--u) * 30);object-fit:contain}
+.efh-right{flex:none;display:flex;align-items:center;gap:calc(var(--u) * 8);margin-left:auto}
+#phone .efh-gear{width:calc(var(--u) * 40);height:calc(var(--u) * 40);border-radius:calc(var(--u) * 16);background:#FFF8E9;display:grid;place-items:center}
+.efh-gear img{width:calc(var(--u) * 28);height:calc(var(--u) * 28);object-fit:contain}
 #phone .efh-gear:active{transform:scale(.94)}
 
-.efh-timerwrap{top:calc(var(--u) * 73 + var(--sat));display:flex;flex-direction:column;align-items:center;gap:calc(var(--u) * 12);pointer-events:none}
+/* đồng hồ nằm GIỮA hàng trên (cùng hàng Lv · năng lượng · bánh răng), nhỏ lại cho cân hàng */
+.efh-timerwrap{top:calc(var(--u) * 25 + var(--sat));display:flex;flex-direction:column;align-items:center;gap:calc(var(--u) * 12);pointer-events:none}
 .efh-timerwrap > *{pointer-events:none}
-.efh-timer{width:calc(var(--u) * 146);height:calc(var(--u) * 48);border-radius:calc(var(--u) * 18);background:#FFF8E9;box-sizing:border-box;
-  display:flex;align-items:center;padding:0 calc(var(--u) * 6)}
-.efh-timer img{width:calc(var(--u) * 38);height:calc(var(--u) * 38);object-fit:contain}
-.efh-timer b{flex:1;text-align:center;font-weight:800;font-size:calc(var(--u) * 26);line-height:1;padding-top:calc(var(--u) * 3);font-variant-numeric:tabular-nums}
+.efh-timer{width:calc(var(--u) * 106);height:calc(var(--u) * 40);border-radius:calc(var(--u) * 15);background:#FFF8E9;box-sizing:border-box;
+  display:flex;align-items:center;padding:0 calc(var(--u) * 5)}
+.efh-timer img{width:calc(var(--u) * 30);height:calc(var(--u) * 30);object-fit:contain}
+.efh-timer b{flex:1;text-align:center;font-weight:800;font-size:calc(var(--u) * 21);line-height:1;padding-top:calc(var(--u) * 3);font-variant-numeric:tabular-nums}
 .efh-timer b.urgent{color:#C9454F;animation:efhPulse .5s ease-in-out infinite alternate}
 @keyframes efhPulse{to{transform:scale(1.08)}}
-.efh-prog{width:100%;box-sizing:border-box;display:flex;align-items:center;gap:calc(var(--u) * 4);padding:0 calc(var(--u) * 24) 0 calc(var(--u) * 38)}
-.efh-track{flex:1;height:calc(var(--u) * 6);border-radius:3px;background:#D7D5D1;overflow:hidden}
-.efh-track i{display:block;height:100%;width:0;border-radius:3px;background:#347450;transition:width .35s ease}
-.efh-prog b{width:calc(var(--u) * 42);text-align:center;font-weight:800;font-size:calc(var(--u) * 14);line-height:1}
 
 .efh-dock{bottom:0;display:flex;justify-content:center;gap:calc(var(--u) * 16);padding-bottom:calc(var(--u) * 34 + var(--sab))}
 #phone .efb{position:relative;width:calc(var(--u) * 88);height:calc(var(--u) * 90);box-sizing:border-box;border-radius:calc(var(--u) * 20);
@@ -896,6 +892,11 @@ html[data-art="cozy"] .win-stats .chip b{color:var(--wood)}
 #phone .eftog.off{background:#B9B4A8}
 .eftog.off span{left:auto;right:calc(var(--u) * 12)}
 .eftog.off i{right:calc(var(--u) * 52)}
+#phone .efset-home{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u) * 4);margin:calc(var(--u) * 22) auto 0;
+  padding:calc(var(--u) * 4) calc(var(--u) * 20);font-weight:800;font-size:calc(var(--u) * 14);color:#35413F}
+#phone .efset-home[hidden]{display:none}
+.efset-home img{width:calc(var(--u) * 40);height:calc(var(--u) * 40);object-fit:contain}
+#phone .efset-home:active img{transform:scale(.92)}
 
 /* ---------- Shop ---------- */
 .efs-scroll{position:relative;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;

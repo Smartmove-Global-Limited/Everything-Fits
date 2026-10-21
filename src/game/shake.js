@@ -185,8 +185,9 @@ function traMaSat(now, tatCa = false) {
 
 // ---------- năng lượng lắc ----------
 // Thanh "Shake energy" trên HUD (Figma: EF / Shake energy). Mỗi ván bắt đầu đầy; lắc thật
-// (có đồ trong túi bị lắc) thì tụt dần, đủ CAN_SAU mili giây lắc là cạn. Cạn thì khoá lắc;
-// người chơi còn lắc tiếp thì gọi khiCan để mở popup "Shake energy empty" (xem quảng cáo để
+// (có đồ trong túi bị lắc) thì tụt dần, đủ CAN_SAU mili giây lắc là cạn. Cạn thì khoá lắc và
+// gọi khiCan ĐÚNG MỘT LẦN để mở popup "Shake energy empty"; lắc tiếp không bật lại nữa (user chốt
+// 2026-10-21), muốn xem quảng cáo hồi thì bấm vào viên năng lượng trên HUD (xem quảng cáo để
 // hồi đầy). Creative Tool và khung xem thử của editor không tính năng lượng.
 const CAN_SAU = 8000;
 const KHONG_TINH = new URLSearchParams(location.search).get('creative') === '1';
@@ -209,7 +210,7 @@ export function tickShake() {
   if (Math.abs(doc) < VUNG_CHET_DOC) doc = 0;
   if (!a && !doc) return;
   const tinhNangLuong = !KHONG_TINH && !S.preview;
-  if (tinhNangLuong && nangLuong <= 0) { khiCan(); return; }   // cạn: không lắc được nữa
+  if (tinhNangLuong && nangLuong <= 0) return;   // cạn: không lắc được nữa
   a = Math.max(-TRAN, Math.min(TRAN, a));
   doc = Math.max(-TRAN_LEN, Math.min(TRAN, doc));      // âm là hất đồ lên: chặn thấp hơn
 
@@ -245,6 +246,7 @@ export function tickShake() {
     const truoc = Math.round(nangLuong * 100);
     nangLuong = Math.max(0, nangLuong - dt / CAN_SAU);
     if (Math.round(nangLuong * 100) !== truoc || nangLuong === 0) khiDoi(nangLuong);
+    if (nangLuong === 0) khiCan();   // vừa cạn: báo một lần (lần sau đã return ở trên)
   }
 }
 

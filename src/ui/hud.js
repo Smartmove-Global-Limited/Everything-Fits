@@ -4,7 +4,7 @@ import { sfx, duckMusic } from './sfx.js';
 import { shake } from '../game/fx.js';
 import { t } from '../i18n.js';
 import { soThuTuLevel } from '../content/loader.js';
-import { getGold, addGold, onGoldChange } from '../game/wallet.js';
+import { addGold } from '../game/wallet.js';
 import { coQuangCao, xemQuangCao } from '../game/ads.js';
 import { onShakeEnergy, datNangLuong } from '../game/shake.js';
 import { openSettings, closeSettings } from './settings.js';
@@ -12,7 +12,6 @@ import { efToast } from './eftoast.js';
 
 const $ = id => document.getElementById(id);
 const hint = $('hint'), countEl = $('count'), clockEl = $('clock');
-const fmtSo = n => n.toLocaleString('en-US');
 
 // ---------- toast ----------
 let toastTimer = null;
@@ -37,17 +36,10 @@ export function renderHeader({ eyebrow, title, cls }) {
 }
 
 // ---------- tiến độ ----------
-// Thanh tiến trình dưới đồng hồ: phần trăm món đã nằm gọn trong túi (cùng con số rules.js dùng
-// để xét thắng). Thanh và số cập nhật cùng nhau; thắng là 100%. Không hiện số món còn lại.
-let shownPct = -1;
+// HUD không còn thanh % xếp đồ (đã bỏ theo yêu cầu). Vẫn ghi số món còn lại vào #count (ẩn)
+// cho máy tự chơi và Creative Tool đọc.
 export function renderList() {
-  const tong = S.ITEMS.length || 1;
-  const pct = Math.max(0, Math.min(100, Math.round(S.checked.size / tong * 100)));
-  countEl.textContent = Math.max(0, S.ITEMS.length - S.checked.size);   // giữ cho máy tự chơi / Creative đọc
-  if (pct === shownPct) return;
-  shownPct = pct;
-  $('progFill').style.width = pct + '%';
-  $('progPct').textContent = pct + '%';
+  countEl.textContent = Math.max(0, S.ITEMS.length - S.checked.size);
 }
 /** Giữ tên cũ cho các module khác gọi khi mở hộp bí ẩn (không còn thumbnail để vẽ lại) */
 export function repaintSlot() {}
@@ -168,7 +160,6 @@ export function showWin(diem) {
   // Tài liệu: tỷ lệ phải lấy từ dữ liệu thật; chưa có dữ liệu nên tạm để cố định 18%.
   $('winPct').textContent = 'Only 18% made it this far.';
   $('winText').textContent = 'Nice packing!';
-  renderList();      // thắng thì thanh tiến trình luôn đứng ở 100%
   renderScore(diem);
   daX2 = false;
   const x2 = $('winX2'); x2.disabled = false; x2.classList.remove('done'); x2.querySelector('span').textContent = 'Collect ×2';
@@ -236,10 +227,6 @@ export function bindOverlayButtons({ onAgain, onNext, onExtraTime, onPrev, onHom
     onTap(id, () => { hidePause(); hideWin(); hideLose(); closeSettings(); duckMusic(false); onHome && onHome(); });
   }
 
-  // Vàng trên HUD
-  $('hudGold').textContent = fmtSo(getGold());
-  onGoldChange(n => { $('hudGold').textContent = fmtSo(n); });
-
   // ---------- năng lượng lắc ----------
   onShakeEnergy({
     doi: v => {
@@ -256,23 +243,24 @@ export function bindOverlayButtons({ onAgain, onNext, onExtraTime, onPrev, onHom
     nut.disabled = false;
     if (du) { datNangLuong(1); dongPopupLac(); }   // đầy lại, mở lại tính năng lắc
   }, 'tapBig');
+  // bấm viên năng lượng trên HUD lúc đã cạn: mở lại popup để xem quảng cáo hồi đầy
+  onTap('shakeHud', () => { if ($('shakeHud').classList.contains('empty')) moPopupLac(); });
   onTap('shakeNo', dongPopupLac);
   onTap('shakeX', dongPopupLac);
 }
 
-// Popup "Shake energy empty": mở khi thanh đã cạn mà người chơi còn lắc. Mở thì dừng đồng hồ
-// và thao tác; đóng (Not now / X) thì chơi tiếp, lắc vẫn khoá. Vừa đóng thì nghỉ một nhịp mới
-// cho mở lại, không thì tay đang lắc dở lại bật popup ngay lập tức.
-let lacNghiToi = 0, lacDungVan = false;
+// Popup "Shake energy empty": tự mở một lần lúc thanh vừa cạn; sau đó người chơi bấm vào viên
+// năng lượng trên HUD để mở lại. Mở thì dừng đồng hồ và thao tác; đóng (Not now / X) thì chơi
+// tiếp, lắc vẫn khoá cho tới khi xem quảng cáo hồi đầy.
+let lacDungVan = false;
 function moPopupLac() {
-  if ($('shakePop').classList.contains('show') || performance.now() < lacNghiToi) return;
+  if ($('shakePop').classList.contains('show')) return;
   if (S.won || S.lost || S.paused) return;
   S.paused = true; lacDungVan = true;
   show('shakePop');
 }
 function dongPopupLac() {
   hide('shakePop');
-  lacNghiToi = performance.now() + 2500;
   if (lacDungVan) { lacDungVan = false; S.paused = false; }
 }
 export function hideShakePopup() { if ($('shakePop').classList.contains('show')) dongPopupLac(); }

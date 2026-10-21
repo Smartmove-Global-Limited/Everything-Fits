@@ -76,7 +76,7 @@ async function boot() {
     onExtraTime: extraTime,
     onHome: goHome,
   });
-  initSettings();
+  initSettings({ onHome: goHome });
   bindInput();
   bindBoosters();
   bindShake();

@@ -51,22 +51,21 @@
     <canvas id="game"></canvas>
 
     <!-- ================= HUD gameplay (Figma "EF · Gameplay / UI only") =================
-         Trên trái: Lv. N · trên phải: vàng + Settings · giữa: đồng hồ · dưới đồng hồ: thanh tiến
-         trình %. Đáy: Freeze — Resize — Throw out. Không hiện số món còn lại, không có Home/Shop. -->
+         Trên trái: Lv. N · trên phải: năng lượng lắc + Settings · giữa: đồng hồ. Đáy: Freeze — Resize —
+         Throw out. Theo yêu cầu: không có thanh % xếp đồ, không hiện vàng; không hiện số món còn lại. -->
     <div class="hud efh-top">
       <div class="efh-lv"><span id="eyebrow" hidden></span><b id="title">Lv. 1</b></div>
-      <div class="efh-shake" id="shakeHud" title="Shake energy">
-        <span class="efh-shake-ic"><img src="./ui/icons/shake.webp" alt="" draggable="false"><img class="efh-shake-lock" src="./ui/icons/lock.webp" alt="" draggable="false"></span>
-        <span class="efh-shake-bar"><i id="shakeFill"></i></span>
-      </div>
       <div class="efh-right">
-        <div class="efh-gold"><img src="./ui/menu/coin.webp" alt="" draggable="false"><b id="hudGold">0</b></div>
+        <div class="efh-shake" id="shakeHud" role="button" aria-label="Shake energy · tap to refill when empty">
+          <span class="efh-shake-ic"><img src="./ui/icons/shake.webp" alt="" draggable="false"><img class="efh-shake-lock" src="./ui/icons/lock.webp" alt="" draggable="false"></span>
+          <span class="efh-shake-bar"><i id="shakeFill"></i></span>
+        </div>
         <button class="efh-gear" id="pauseBtn" aria-label="Settings"><img src="./ui/menu/gear.webp" alt="" draggable="false"></button>
       </div>
     </div>
     <div class="hud efh-timerwrap">
       <div class="efh-timer" id="clock-box"><img src="./ui/icons/timer.webp" alt="" draggable="false"><b id="clock">01:30</b></div>
-      <div class="efh-prog"><span class="efh-track"><i id="progFill"></i></span><b id="progPct">0%</b><b id="count" hidden>0</b></div>
+      <b id="count" hidden>0</b>
     </div>
 
     <!-- Toast -->
@@ -282,6 +281,8 @@
         <span class="efset-t"><b>Vibration</b><small>Haptic feedback</small></span>
         <button class="eftog" id="togVib" role="switch" aria-checked="true" aria-label="Vibration"><span>ON</span><i></i></button>
       </div>
+      <!-- Chỉ hiện khi mở Settings giữa ván: bỏ ván đang chơi, về Main Menu -->
+      <button class="efset-home" id="setHome" hidden><img src="./ui/menu/nav-home.webp" alt="" draggable="false"><span>Home</span></button>
       </div>
     </div>
 
