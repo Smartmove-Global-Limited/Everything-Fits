@@ -97,7 +97,7 @@ export const clearAreaCache = () => areaCache.clear();
 export const E = { mapId: null, book: null, map: null, level: null, previewReady: false, liveArt: 'cozy' };
 
 // ---------- status ----------
-export function status(text, cls = '') { const s = $('status'); s.textContent = text; s.className = 'status ' + cls; if (text) setTimeout(() => { if (s.textContent === text) s.textContent = ''; }, 3000); }
+export function status(text, cls = '', ms = 3000) { const s = $('status'); s.textContent = text; s.className = 'status ' + cls; if (text) setTimeout(() => { if (s.textContent === text) s.textContent = ''; }, ms); }
 
 // ---------- level model ----------
 export function blankLevel(id) {
@@ -190,7 +190,46 @@ function moLevel(lv) {
 }
 const soChuaLuu = () => DA_SUA.size - (DA_SUA.has(E.level?.id) ? 1 : 0) + (daSua(E.level?.id) ? 1 : 0);
 
+// ---------- bản nháp trong trình duyệt ----------
+// Editor trên web không ghi lên GitHub được nữa (repo đã sang tài khoản công ty). Mọi chỗ sửa —
+// sửa level, chuyển level, thêm / xoá / nhân bản / đổi thứ tự — được giữ trong localStorage, nên
+// tải lại trang hay đóng tab cũng không mất. Cách đưa vào game: bấm "Tải JSON" → push levels.json.
+// Bản nháp gắn với dấu vân tay của levels.json trên web lúc bắt đầu sửa: file trên web đổi (đã
+// push bản mới) thì lần mở sau bỏ bản nháp, nhận file mới.
+const KHOA_NHAP = () => `snug.editor.nhap.${E.bookArt}`;
+let VAN_TAY = '';                    // dấu vân tay levels.json trên web lúc mở editor
+function vanTay(sach) {
+  const t = JSON.stringify(sach);
+  let h = 2166136261;
+  for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36) + '.' + t.length;
+}
+let henNhap = 0;
+function ghiNhap(ngay = false) {
+  const lam = () => {
+    if (!E.book || !VAN_TAY) return;
+    luuTam();
+    const sua = [...DA_SUA]; if (daSua(E.level?.id) && !sua.includes(E.level.id)) sua.push(E.level.id);
+    try { localStorage.setItem(KHOA_NHAP(), JSON.stringify({ goc: VAN_TAY, luc: Date.now(), mo: [E.mapId, E.level?.id], sua, book: E.book })); }
+    catch (e) { console.warn('không ghi được bản nháp', e); }
+  };
+  clearTimeout(henNhap);
+  if (ngay) lam(); else henNhap = setTimeout(lam, 400);
+}
+function docNhap() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KHOA_NHAP()));
+    if (!d?.book?.chapters?.length) return null;
+    if (d.goc !== VAN_TAY) { localStorage.removeItem(KHOA_NHAP()); return 'cu'; }   // web đã có levels.json mới
+    return d;
+  } catch { return null; }
+}
+// đóng tab / chuyển app trên điện thoại: ghi ngay, không chờ hẹn giờ
+window.addEventListener('pagehide', () => ghiNhap(true));
+document.addEventListener('visibilitychange', () => { if (document.hidden) ghiNhap(true); });
+
 export function markDirty() {
+  ghiNhap();
   const n = E.level ? soChuaLuu() : 0;
   $('publishBtn').classList.toggle('dirty', n > 0);
   $('dirtyDot').hidden = n === 0;
@@ -201,7 +240,7 @@ export function markDirty() {
   if (o) { const co = o.textContent.startsWith('• '), can = daSua(E.level?.id); if (co !== can) o.textContent = (can ? '• ' : '') + o.textContent.replace(/^• /, ''); }
 }
 // còn level chưa lưu mà đóng / tải lại trang thì trình duyệt hỏi lại
-window.addEventListener('beforeunload', e => { if (E.level && soChuaLuu() > 0) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if (canWrite && E.level && soChuaLuu() > 0) { e.preventDefault(); e.returnValue = ''; } });
 /** Số "Level N" và mã level của level đang mở (thay cho hai ô tên cũ) */
 function veSoLevel() {
   if (!E.level || !E.map) return;
@@ -249,6 +288,21 @@ window.addEventListener('message', e => { if (e.data?.type === 'ready') { E.prev
 export async function publish(note = '') {
   // Chặn ghi nhầm bộ: level đang mở đọc từ bộ nào thì chỉ ghi trả về đúng bộ đó
   if (E.bookArt !== artStyle()) throw new Error(`level đang mở thuộc bộ ${E.bookArt}, không ghi vào bộ ${artStyle()}. Tải lại trang.`);
+  const b = chuanBiSach(note);
+  if (!canWrite) { ghiNhap(true); return b.version; }   // web: giữ trong bản nháp, Tải JSON để lấy file
+  const text = JSON.stringify(b, null, 2);
+  await saveContent('levels.json', text);                // chạy ở máy: ghi thẳng ra file
+  VAN_TAY = vanTay(b);                                   // file đã đổi: bản nháp từ giờ gắn với bản này
+  chupGoc();                                             // mọi level đã sửa giờ đã lưu
+  ghiNhap(true);
+  return b.version;
+}
+
+/**
+ * Chép level đang sửa về chương, tăng số bản, tính lại danh sách ảnh mỗi chương cần nạp
+ * (ch.assets: thiếu món mới ở đây thì game không nạp ảnh của nó). Dùng cho Lưu và Tải JSON.
+ */
+function chuanBiSach(note = '') {
   syncLevelIntoChapter();     // level đang sửa là bản chép riêng, phải trả về chương trước khi ghi
   const b = E.book;
   b.version = (b.version || 0) + 1;
@@ -263,12 +317,7 @@ export async function publish(note = '') {
     }
     ch.assets = { items: [...items].sort((a, c) => a - c), backgrounds: [...bgs].sort((a, c) => a - c), bags: [...bags].sort() };
   }
-  const text = JSON.stringify(b, null, 2);
-  if (!canWrite && !gh.hasToken()) throw new Error('chưa nối GitHub — bấm nút 🔑 để dán token');
-  if (canWrite) await saveContent('levels.json', text);          // chạy ở máy: ghi thẳng ra file
-  else await gh.putBook(b);                                       // trên web: commit lên GitHub
-  chupGoc();                                                      // mọi level đã sửa giờ đã lưu
-  return b.version;
+  return b;
 }
 
 // Trang tĩnh (GitHub Pages, vite preview) không có cầu ghi file. Dò một lần lúc khởi động.
@@ -292,7 +341,7 @@ async function saveAll() {
     markDirty();
     const art = artStyle(), bo = art.toUpperCase();
     if (canWrite) status(`Đã lưu level ${bo} · bản v${v}`, 'ok');
-    else theoDoiWeb(`Level ${bo} bản v${v}`, async () => ((await docWeb(`${art}/levels.json`))?.version || 0) >= v);
+    else status('Đã giữ trong bản nháp của trình duyệt (tải lại trang không mất). Bấm Tải JSON → push levels.json để đưa vào game.', 'ok');
     frame.contentWindow.postMessage({ type: 'assets' }, '*');
   } catch (e) { status('Lỗi lưu: ' + e.message, 'bad'); }
   finally { btn.disabled = false; }
@@ -306,12 +355,14 @@ window.addEventListener('keydown', e => {
 
 // Tải file JSON về máy, dùng khi editor chạy trên web và không ghi thẳng được
 $('downloadBtn').addEventListener('click', () => {
-  luuTam();
-  const blob = new Blob([JSON.stringify(E.book, null, 2)], { type: 'application/json' });
+  const b = chuanBiSach();
+  ghiNhap(true);
+  const blob = new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `levels-${artStyle()}.json`; a.click();
+  // Giờ chỉ làm bộ cozy: file tải về đúng tên levels.json, chép thẳng vào public/content/cozy/ không cần đổi tên
+  a.href = URL.createObjectURL(blob); a.download = 'levels.json'; a.click();
   URL.revokeObjectURL(a.href);
-  status(`Đã tải levels-${artStyle()}.json — đổi tên thành levels.json rồi chép vào snug/public/content/${artStyle()}/`, 'ok');
+  status(`Đã tải levels.json — chép vào public/content/${artStyle()}/ của game, Creative tool và sync Android`, 'ok');
 });
 
 // ---------- nối GitHub ----------
@@ -579,9 +630,24 @@ async function boot() {
   chupGoc();
   // loadBook có thể đã lùi về cozy nếu bộ được chọn chưa có level
   E.bookArt = artStyle();       // file sắp xếp này thuộc bộ nào: chỉ được ghi trả về đúng bộ đó
+  VAN_TAY = vanTay(E.book);
+  const nhap = docNhap();
+  let moLai = null, coNhap = false;
+  const sachWeb = E.book;
+  if (nhap && nhap !== 'cu') {
+    // Level không nằm trong danh sách đã sửa thì lấy lại đúng bản trên web (GOC), để dấu • chỉ
+    // đánh vào level sửa thật. Level mới / đã sửa / thứ tự / chương lấy theo bản nháp.
+    const web = new Map(); for (const c of E.book.chapters) for (const lv of c.levels) web.set(lv.id, lv);
+    const sua = new Set(nhap.sua || []);
+    for (const c of nhap.book.chapters) c.levels = c.levels.map(lv => (!sua.has(lv.id) && web.has(lv.id) ? web.get(lv.id) : lv));
+    E.book = nhap.book;
+    DA_SUA.clear(); for (const id of sua) DA_SUA.add(id);
+    moLai = nhap.mo;
+    coNhap = sua.size > 0 || JSON.stringify(E.book.chapters) !== JSON.stringify(sachWeb.chapters);   // có gì khác bản trên web
+  }
   veBoArt();
   if (!E.book?.chapters?.length) throw new Error('levels.json chưa có chương nào');
-  E.mapId = new URLSearchParams(location.search).get('map') || E.book.chapters[0].id;
+  E.mapId = new URLSearchParams(location.search).get('map') || moLai?.[0] || E.book.chapters[0].id;
 
   await Promise.all([loadItemManifests(), loadBackgrounds(), loadBags()]);
   refreshPickers();
@@ -600,15 +666,14 @@ async function boot() {
     onLevelPicked: id => openLevel(id),
   });
 
-  await openChapter(E.mapId);
+  await openChapter(E.mapId, moLai?.[1]);
   $('liveTag').textContent = `v${E.book.version || 1}`;
 
   await probeWriter();
-  if (!canWrite) {
-    // Trang tĩnh: lưu bằng cách commit lên GitHub, cần token dán một lần
-    $('ghBtn').hidden = false;
-    paintGhTag();
-    if (!gh.hasToken()) status('Bấm 🔑 để nối GitHub, sau đó Lưu sắp xếp sẽ đẩy thẳng lên.', '');
-  }
+  const soSua = soChuaLuu();
+  if (coNhap) status(`Đã mở lại bản nháp chưa đưa vào game${soSua ? ` (${soSua} level đã sửa)` : ''}. Bấm Tải JSON → push levels.json khi xong.`, 'ok', 8000);
+  else if (nhap === 'cu') status('levels.json trên web đã đổi: bỏ bản nháp cũ, đang sửa trên bản mới.', 'ok', 8000);
+  else if (!canWrite) status('Sửa thoải mái, Editor tự giữ bản nháp. Xong thì bấm Tải JSON → push levels.json.', '', 8000);
+  markDirty();
 }
 boot().catch(e => { console.error(e); status('Lỗi khởi động: ' + e.message, 'bad'); });
