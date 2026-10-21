@@ -59,10 +59,16 @@ const assetPath = src => artUrl(src);
 
 async function getJSON(path, { fresh = false, noStore = false } = {}) {
   if (!fresh && !noStore && cache.has(path)) return cache.get(path);
-  const res = await fetch(base() + path + (fresh || noStore ? `?t=${Date.now()}` : dauBan()),
-    noStore ? { cache: 'no-store' } : undefined);
-  if (!res.ok) throw new Error(`Không tải được ${path} (${res.status})`);
-  const data = await res.json();
+  const tai = async (boCache) => {
+    const res = await fetch(base() + path + (fresh || noStore || boCache ? `?t=${Date.now()}` : dauBan()),
+      noStore || boCache ? { cache: 'no-store' } : undefined);
+    if (!res.ok) throw new Error(`Không tải được ${path} (${res.status})`);
+    return res.json();
+  };
+  let data;
+  // Lỗi lần đầu (mạng chập, bản cache hỏng trên GitHub Pages) thì tải lại một lần bỏ qua cache:
+  // một manifest hỏng là món đó thành ô xám trong editor lẫn game suốt phiên.
+  try { data = await tai(false); } catch (e) { console.warn('tải lại', path, e.message); data = await tai(true); }
   cache.set(path, data);
   return data;
 }
@@ -204,9 +210,17 @@ export async function loadChapterAssets(ch) {
 }
 
 const loadImage = src => { const el = new Image(); el.src = assetPath(src); return el; };
+// Ảnh lỗi (mạng chập, cache hỏng) thì thử lại một lần bỏ qua cache rồi mới chịu; không thì món
+// hiện ô xám suốt phiên, cả editor lẫn khung xem thử.
 const whenLoaded = el => new Promise(res => {
   if (el.complete && el.naturalWidth) return res();
-  el.onload = el.onerror = res;
+  let daThu = false;
+  el.onload = res;
+  el.onerror = () => {
+    if (daThu) return res();
+    daThu = true; console.warn('tải lại ảnh', el.src);
+    el.src = el.src.replace(/([?&])r=\d+/, '').replace(/\?$/, '') + (el.src.includes('?') ? '&' : '?') + 'r=' + Date.now();
+  };
 });
 
 /** Gộp manifest vào ITEM_DEFS: tạo def mới nếu mã chưa có (món chỉ có ảnh) */
