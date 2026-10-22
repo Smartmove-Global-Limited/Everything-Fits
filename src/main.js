@@ -15,7 +15,7 @@ import { BAG_SKINS } from './art/scene-registry.js';
 import { loadBook, chapters, chapterById, loadChapterAssets, loadItemManifests, loadBags, whenSpriteReady, setArtStyle, artStyle, applyArtIcons, loadConfig } from './content/loader.js';
 import { useArtProgress, getSpot } from './game/progress.js';
 import { lyDoVao, tiepTucLuot } from './game/events.js';
-import { autoplay, stopAutoplay, autoState, autoLog, chanDoan } from './game/autoplay.js';
+import { autoplay, stopAutoplay, autoState, autoLog, chanDoan, setAutoHuman } from './game/autoplay.js';
 import * as FX from './game/fx.js';
 import * as RULES from './game/rules.js';
 import * as SCORE from './game/score.js';
@@ -116,7 +116,8 @@ async function boot() {
       buildWithArt(m.level);
     }
     if (m.type === 'restart') { stopAutoplay(); restart(); }
-    if (m.type === 'autoplay') autoplay();
+    // Máy chơi trong editor mặc định kiểu tay người: cầm, lia tới, thả cho món rơi, chờ lắng
+    if (m.type === 'autoplay') { setAutoHuman(m.human !== false); autoplay(); }
     if (m.type === 'assets') { // editor vừa thêm/sửa art → nạp lại rồi dựng lại level
       loadBook({ fresh: true }).then(() => loadChapterAssets(S.map)).then(() => { if (S.LEVEL) build(S.LEVEL); });
     }

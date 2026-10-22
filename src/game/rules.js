@@ -238,12 +238,16 @@ let nhipMoc = 0, nhipDem = 0;
 
 /** Bật tiếng và bụi mỗi khi có món tiếp đất. Chỉ game gọi, editor không. */
 // ---------- đồ dễ vỡ ----------
-// meta.fragile (đồ thuỷ tinh: lọ mứt, gương, khung ảnh, đèn lồng, kính râm, chai nước chanh): bị đồ nặng rơi
-// trúng, rơi mạnh xuống sàn, hay bị đồ nặng NẰM ĐÈ lâu là nứt. Nứt lần hai là vỡ → thua ván.
+// meta.fragile (đồ thuỷ tinh: lọ mứt, gương, khung ảnh, đèn lồng, kính râm, chai nước chanh): bị đồ CỨNG
+// rơi trúng nhanh, hay tự rơi mạnh xuống sàn / vào đồ cứng, là nứt. Nứt lần hai là vỡ → thua ván.
+// Không tính theo trọng lượng (game đã bỏ trọng lượng): đồ MỀM (quần áo, vải, giấy, đồ ăn) rơi
+// trúng không bao giờ làm vỡ, và bị đè nằm yên không còn nứt (áo gấp nằm lên kính mà kính vỡ là vô lý).
 const doVo = b => !!(b.realDef || b.def)?.meta?.fragile;
-const GRAM_DE_NUT = 300;      // món từng này gram rơi trúng là nứt
-const GRAM_DE_LAU = 500;      // món từng này gram nằm đè 1,5 s là nứt
-const DE_LAU_MS = 1500;
+const doMem = b => MEM.has((b.realDef || b.def)?.meta?.material);
+const V_DO_CUNG_NUT = 7;      // đồ cứng rơi trúng đồ dễ vỡ nhanh từng này là nứt
+const V_SAN_NUT = 9;          // đồ dễ vỡ tự rơi xuống sàn / vào đồ cứng nhanh từng này là nứt
+const NUT_KHI_DE = false;     // luật cũ: bị đồ nặng nằm đè 1,5 s là nứt (tắt, xem trên)
+const GRAM_DE_LAU = 500, DE_LAU_MS = 1500;
 let deTheoDoi = new Map();    // món dễ vỡ → { tu, moi } thời điểm bắt đầu bị đè và lần báo đè gần nhất
 const DAU_MAN_KHONG_NUT = 2500;   // ms đầu ván: đồ đang mưa xuống, món đặt sẵn rơi xuống đáy túi — không tính nứt
 function nut(b, diem) {
@@ -281,16 +285,15 @@ const MEM = new Set(['fabric', 'paper', 'food']);
 
 export function bindImpacts() {
   onPress((tren, duoi) => {
-    if (!doVo(duoi) || isHeld(tren) || isHeld(duoi) || gramHieuDung(tren) < GRAM_DE_LAU) return;
+    if (!NUT_KHI_DE || !doVo(duoi) || isHeld(tren) || isHeld(duoi) || gramHieuDung(tren) < GRAM_DE_LAU) return;
     const now = performance.now(), d = deTheoDoi.get(duoi);
     if (d && now - d.moi <= 250) d.moi = now; else deTheoDoi.set(duoi, { tu: now, moi: now });
   });
   onImpact((b, v, diem, vaoTuong, khac) => {
     if (v < VA_NHE || b.chuaVao || isHeld(b)) return;
-    // đồ dễ vỡ: bị món nặng rơi trúng / rơi mạnh xuống sàn / rơi trúng món nặng cứng
-    const gramB = gramHieuDung(b);
-    if (khac && !khac.isStatic && doVo(khac) && !isHeld(khac) && gramB >= GRAM_DE_NUT && v >= 5) nut(khac, diem);
-    if (doVo(b) && ((vaoTuong && v >= 9) || (khac && !khac.isStatic && gramHieuDung(khac) >= GRAM_DE_NUT && v >= 7))) nut(b, diem);
+    // đồ dễ vỡ: bị đồ cứng rơi trúng nhanh / tự rơi mạnh xuống sàn hay vào đồ cứng
+    if (khac && !khac.isStatic && doVo(khac) && !isHeld(khac) && !doMem(b) && v >= V_DO_CUNG_NUT) nut(khac, diem);
+    if (doVo(b) && ((vaoTuong && v >= V_SAN_NUT) || (khac && !khac.isStatic && !doMem(khac) && v >= V_SAN_NUT))) nut(b, diem);
     const now = performance.now();
     if (b.vaLuc > now - NGHI_MOI_MON) return;
     b.vaLuc = now;

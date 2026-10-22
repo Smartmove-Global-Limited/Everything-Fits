@@ -6,6 +6,7 @@ import { isFixedSkin, placeFixed, maxScale, MIN_SCALE, resolveContainer } from '
 import { itemArea } from '../game/physics.js';
 import { difficulty } from '../gen/difficulty.js';
 import { solve } from '../gen/solver.js';
+import { loiGiaiHopLe } from '../gen/solution.js';
 import { pointInPolygon } from '../util/geom.js';
 import { initDraw } from './draw.js';
 import { initGenerate } from './generate.js';
@@ -414,6 +415,8 @@ function chayMayXep() {
   const sv = $('solvable');
   if (!L.items.length) { sv.textContent = 'Chưa có món'; sv.className = 'solv'; return; }
   const d = difficulty(L, areaOf);
+  const giai = loiGiaiHopLe(L);
+  if (giai) { sv.textContent = `Có lời giải lưu sẵn · ${giai.length}/${giai.length} món (Máy chơi xếp theo lời giải này)`; sv.className = 'solv ok'; return; }
   const sol = solve(L, { tries: 300 });
   if (sol.solvable) { sv.textContent = `Xếp được · ${sol.needCount}/${sol.needCount} món, sau ${sol.tries} lần thử`; sv.className = 'solv ok'; }
   else if (d.density <= .88) { sv.textContent = `Chặt tay · máy chỉ xếp được ${sol.placedCount}/${sol.needCount} món`; sv.className = 'solv warn'; }
@@ -506,7 +509,7 @@ $('tabs').addEventListener('click', e => {
 
 // ---------- xem thử: máy chơi hộ ----------
 $('autoplayBtn').addEventListener('click', () => {
-  frame.contentWindow.postMessage({ type: 'autoplay' }, '*');
+  frame.contentWindow.postMessage({ type: 'autoplay', human: true }, '*');
   status('Máy đang xếp thử…', '');
 });
 // Chơi lại: dừng máy (nếu đang chạy) rồi dựng lại màn từ đầu, đồ mưa xuống như mở màn
