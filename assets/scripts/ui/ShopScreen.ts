@@ -52,6 +52,11 @@ export class ShopScreen extends Component {
       this.buys.push(buy);
     });
     tap(findNode(n, 'shopRestore'), () => this.restore(), 'tap', this);
+    const restore = labelIn(findNode(n, 'shopRestore'));
+    if (restore) restore.isUnderline = true;               // web .efs-restore: text-decoration underline
+    // web .efs-scroll padding-bottom 20: room under the last row
+    const content = this.scroll.content!.getComponent(UITransform)!;
+    content.height += 20;
     tap(findNode(n, 'sAddGold'), () => this.scrollToGold(), 'tap', this);
     tap(findNode(n, 'sSettings'), () => this.actions?.onSettings(), 'tap', this);
     tap(findNode(n, 'sTabShop'), () => this.scroll.scrollToTop(.3), 'tap', this);

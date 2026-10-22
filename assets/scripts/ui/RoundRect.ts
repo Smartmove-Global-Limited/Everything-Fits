@@ -17,6 +17,8 @@ export class RoundRect extends Component {
   @property private _shadowY = 0;
   @property private _shadowBlur = 0;
   @property private _shadowColor = new Color(71, 77, 64, 46);
+  @property private _glow = 0;
+  @property private _glowColor = new Color(127, 200, 240, 115);
 
   @property({ tooltip: 'Background (CSS background)' }) get fill() { return this._fill; }
   set fill(v: Color) { this._fill.set(v); this.redraw(); }
@@ -36,6 +38,11 @@ export class RoundRect extends Component {
   set shadowBlur(v: number) { this._shadowBlur = v; this.redraw(); }
   @property get shadowColor() { return this._shadowColor; }
   set shadowColor(v: Color) { this._shadowColor.set(v); this.redraw(); }
+
+  @property({ tooltip: 'Solid ring around the box (CSS box-shadow: 0 0 0 <glow>px <color>)' }) get glow() { return this._glow; }
+  set glow(v: number) { this._glow = v; this.redraw(); }
+  @property get glowColor() { return this._glowColor; }
+  set glowColor(v: Color) { this._glowColor.set(v); this.redraw(); }
 
   private g: Graphics | null = null;
   private static readonly tmp = new Color();
@@ -69,6 +76,12 @@ export class RoundRect extends Component {
         g.roundRect(x - grow, y - this._shadowY - grow, w + grow * 2, h + grow * 2, r + grow);
         g.fill();
       }
+    }
+    if (this._glow > 0) {
+      const e = this._glow;
+      g.fillColor = this._glowColor;
+      g.roundRect(x - e, y - e - this._lip, w + e * 2, h + e * 2 + this._lip, r + e);
+      g.fill();
     }
     if (this._lip > 0) {
       g.fillColor = this._lipColor;

@@ -89,6 +89,7 @@ export class GameController extends Component {
 
   async start() {
     const S = GameState;
+    const covered = Overlays.startCoveredIfPending();
     const book = await ContentLoader.loadBook();
     let idx = this.startLevel;
     if (S.fromMenu && S.chapter) { idx = S.levelIndex; S.fromMenu = false; }
@@ -101,6 +102,7 @@ export class GameController extends Component {
     await ContentLoader.preloadChapter(S.chapter);
     Sound.startMusic();
     await this.openLevel(idx);
+    if (covered) Overlays.uncover();
   }
 
   async openLevel(index: number) {
@@ -164,10 +166,10 @@ export class GameController extends Component {
     this.fx?.ring(p.x, p.y, { color: '#5FBF9B', r1: 46 });
     this.fx?.sparkle(p.x, p.y, { n: 10, color: '#8FE0C1', life: 520 });
   }
-  /** Small white puff where an item vanished / reappeared (web S.puffs) */
+  /** Pink puff where an item vanished / reappeared (web S.puffs) */
   private puff(it: any) {
     const p = it.node.position;
-    this.fx?.ring(p.x, p.y, { color: '#FFFFFF', r0: 6, r1: 34, life: 380, width: 5 });
+    this.fx?.puff(p.x, p.y);
   }
   /** Tell once, on touch devices, that shaking the phone settles the bag (web goiYLacMotLan) */
   private shakeHintOnce() {
@@ -278,7 +280,7 @@ export class GameController extends Component {
   goHome() {
     GameState.paused = true;
     Sound.duckMusic(false);
-    director.loadScene('Main');
+    Overlays.cover(true).then(() => director.loadScene('Main'));
   }
 
   private tickTimer(ms: number) {
@@ -317,11 +319,13 @@ export class GameController extends Component {
     }, WIN_POPUP_DELAY);
   }
 
-  private nextLevel() {
+  /** web level.js nextLevel: the following level of the chapter, wrapping after the last one; behind the veil */
+  private async nextLevel() {
     Analytics.setReason('next');
-    const spot = Progress.getSpot(ContentLoader.chapters());
-    if (spot && spot.chapter !== GameState.chapter) { GameState.chapter = spot.chapter; GameState.chapterId = spot.chapter.id; }
-    return this.openLevel(spot ? spot.index : GameState.levelIndex + 1);
+    const S = GameState;
+    await Overlays.cover();
+    await this.openLevel((S.levelIndex + 1) % S.chapter.levels.length);
+    await Overlays.uncover();
   }
 
   /** Time is up (no reason) or an item broke (reason, no extra time) */

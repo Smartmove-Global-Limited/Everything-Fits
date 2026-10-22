@@ -19,7 +19,6 @@ const GREY = new Color(0xD7, 0xD5, 0xD1, 255), GREY_RING = new Color(0x8C, 0x91,
 const ON_RING = new Color(0x7F, 0xC8, 0xF0, 255);
 const BADGE = new Color(0xBD, 0x6D, 0x69, 255), BADGE_EMPTY = new Color(0x9A, 0x96, 0x8E, 255), BADGE_ON = new Color(0x4A, 0x9B, 0xD1, 255);
 const SHAKE_FILL = new Color(0x8C, 0x7A, 0xD0, 255), SHAKE_LOW = new Color(0xC9, 0x65, 0x4F, 255);
-const WHITE = new Color(255, 255, 255, 255), DIM = new Color(150, 150, 150, 128);
 const PRESS_DROP = 3;
 
 @ccclass('BoosterButton')
@@ -61,12 +60,20 @@ export class GameHud extends Component {
   private toastBg: RoundRect = null!;
   private boosterState: BoosterState[] = [];
   private shakeEmpty = false;
+  private shakeIconOpacity: UIOpacity = null!;
 
   onLoad() {
     this.shakeBarWidth = this.shakeFill.getComponent(UITransform)!.width;
     this.toastOpacity = this.toast.getComponent(UIOpacity) || this.toast.addComponent(UIOpacity);
     this.toastBg = this.toast.getComponent(RoundRect)!;
     this.toastOpacity.opacity = 0;
+    // measured from the web while hidden (translateY(6px)): the visible pill sits 6 units higher
+    this.toast.setPosition(this.toast.position.x, this.toast.position.y + 6.4, 0);
+    // the lock must not inherit the greyed-out icon: put it next to the icon, drawn above it
+    const lockWorld = this.shakeLock.worldPosition.clone();
+    this.shakeLock.setParent(this.shakePill);
+    this.shakeLock.setWorldPosition(lockWorld);
+    this.shakeIconOpacity = this.shakeIcon.getComponent(UIOpacity) || this.shakeIcon.addComponent(UIOpacity);
     this.pressable(this.gear, null, () => this.onPause?.());
     this.pressable(this.shakePill, null, () => { if (this.shakeEmpty) this.onShakeEmpty?.(); }, () => this.shakeEmpty);
     this.boosters.forEach((b, i) => {
@@ -134,7 +141,9 @@ export class GameHud extends Component {
     this.shakeEmpty = empty;
     this.shakeFace.borderWidth = empty ? 1.3 : 0;
     this.shakeFace.setColors(empty ? GREY : CREAM, GREY_RING);
-    this.shakeIcon.color = empty ? DIM : WHITE;
+    // web .efh-shake.empty img{filter:grayscale(1);opacity:.7}
+    this.shakeIcon.grayscale = empty;
+    this.shakeIconOpacity.opacity = empty ? 178 : 255;
     this.shakeLock.active = empty;
     Tween.stopAllByTarget(this.shakePill);
     this.shakePill.setScale(1, 1, 1);
@@ -156,14 +165,31 @@ export class GameHud extends Component {
     b.title.fontSize = locked ? 10 : 11.7;
     b.title.node.setPosition(0, locked ? -27.5 : -23, 0);
     b.badgeText.string = String(count);
+    this.fitBadge(b);
     b.badge.getComponent(RoundRect)!.fill = state === BoosterState.EMPTY ? BADGE_EMPTY : state === BoosterState.ON ? BADGE_ON : BADGE;
-    b.icon.color = state === BoosterState.EMPTY ? DIM : WHITE;
+    // web .efb.empty .efb-ic{filter:grayscale(.7);opacity:.5}
+    b.icon.grayscale = state === BoosterState.EMPTY;
+    (b.icon.getComponent(UIOpacity) || b.icon.addComponent(UIOpacity)).opacity = state === BoosterState.EMPTY ? 128 : 255;
     b.face.borderWidth = 1.3;
+    b.face.glow = state === BoosterState.ON ? 3 : 0;   // web .efb.on: 3px ring rgba(127,200,240,.45)
     b.face.setColors(locked ? GREY : CREAM, locked ? GREY_RING : state === BoosterState.ON ? ON_RING : CREAM);
   }
 
   /** Badge text override (Freeze shows the seconds left, "12s") */
-  setBoosterBadge(id: BoosterId, text: string) { const b = this.boosters[id]; if (b) b.badgeText.string = text; }
+  setBoosterBadge(id: BoosterId, text: string) { const b = this.boosters[id]; if (b) { b.badgeText.string = text; this.fitBadge(b); } }
+
+  /** web .badge: min-width 22, padding 0 4 → widens with its text, right edge fixed */
+  private badgeRight = new Map<Node, number>();
+  private fitBadge(b: BoosterButton) {
+    const ui = b.badge.getComponent(UITransform)!;
+    if (!this.badgeRight.has(b.badge)) this.badgeRight.set(b.badge, b.badge.position.x + ui.width / 2);
+    b.badgeText.updateRenderData(true);
+    const w = Math.max(21, b.badgeText.node.getComponent(UITransform)!.width + 9);
+    if (Math.abs(w - ui.width) < .5) return;
+    ui.width = w;
+    b.badge.setPosition(this.badgeRight.get(b.badge)! - w / 2, b.badge.position.y, 0);
+    b.badgeText.node.setPosition(0, b.badgeText.node.position.y, 0);
+  }
 
   // ---------- toast ----------
   toastMessage(text: string, seconds = 1.4) {

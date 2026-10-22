@@ -25,7 +25,7 @@ const HOLD_AFTER_SPIN = 1000;               // ms an item keeps its new angle in
  * quaternion and node.angle keeps returning the old euler value; eulerAngles recomputes it.
  */
 const angleOf = (n: Node) => n.eulerAngles.z;
-const HANDLE_INK = new Color(59, 42, 74, 255);
+const SELECT_INK = new Color(0xE2, 0x63, 0x7F, 255), BUTTON_SHADOW = new Color(59, 42, 74, 56);   // web #E2637F, rgba(59,42,74,.22)
 const FIT_INK = new Color(0x3D, 0xBE, 0x78, 255), GHOST_INK = new Color(0xE5, 0x48, 0x4D, 255);
 const OPAQUE = new Color(255, 255, 255, 255), GHOST_ALPHA = new Color(255, 255, 255, 153);   // web: globalAlpha .6
 const POP_MS = 220, POP_GAIN = .09;                                                            // item swells once when picked up
@@ -82,17 +82,17 @@ export class DragController extends Component {
     return best;
   }
 
-  // ---------- rotate handle ----------
+  // ---------- rotate handle (web input.js rotateButtonPos / rotButtonR) ----------
+  /** Top-right corner of the item's shape box, following the item's rotation */
   private handlePos(item: ItemView, out: Vec3): Vec3 {
-    const ui = item.transform2d, k = item.levelScale;
-    const hx = ui.width * (1 - ui.anchorX) * k, hy = ui.height * (1 - ui.anchorY) * k;
-    const a = angleOf(item.node) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
-    const p = item.node.position;
-    return out.set(p.x + hx * c - hy * s, p.y + hx * s + hy * c, 0);
+    const box = item.localBox;
+    this.tmpV2.set(box.xMax, box.yMax);
+    Vec2.transformMat4(this.tmpV2, this.tmpV2, item.node.worldMatrix);
+    return out.set(this.tmpV2.x, this.tmpV2.y, 0);
   }
   private handleRadius(item: ItemView) {
-    const ui = item.transform2d;
-    return Math.max(9, Math.min(14, Math.min(ui.width, ui.height) * item.levelScale * .3));
+    const box = item.localBox;
+    return Math.max(9, Math.min(14, Math.min(box.width, box.height) * item.levelScale * .3));
   }
   private hitHandle(x: number, y: number): boolean {
     const sel = GameState.selected; if (!sel) return false;
@@ -287,14 +287,68 @@ export class DragController extends Component {
     if (GameState.drag) for (const it of GameState.items) if (it.holdUntil === Infinity && !isHeld(it)) { it.holdUntil = 0; it.body.type = ERigidBody2DType.Dynamic; it.body.wakeUp(); }
   }
 
+  /**
+   * Selected item (web render.js drawSelection): dashed pink outline 3 units out, and the round pink
+   * rotate button with a white ring, a soft shadow and two curved arrows. Redrawn only when the
+   * selection or its transform changes.
+   */
+  private drawnKey = '';
   private drawHandle() {
     const g = this.handle; if (!g) return;
-    g.clear();
     const sel = GameState.selected;
-    if (!sel || GameState.drag) return;
-    const p = this.handlePos(sel, this.tmpWorld), r = this.handleRadius(sel);
-    g.fillColor = Color.WHITE; g.strokeColor = HANDLE_INK; g.lineWidth = 2;
-    g.circle(p.x, p.y, r); g.fill(); g.stroke();
-    g.arc(p.x, p.y, r * .55, .4, Math.PI * 1.6, true); g.stroke();
+    const show = !!sel && !GameState.drag && sel.node.activeInHierarchy;
+    const key = show ? `${sel!.levelIndex}|${sel!.node.position.x.toFixed(1)}|${sel!.node.position.y.toFixed(1)}|${sel!.node.rotation.z.toFixed(4)}|${sel!.levelScale}` : '';
+    if (key === this.drawnKey) return;
+    this.drawnKey = key;
+    g.clear();
+    if (!show) return;
+    const it = sel!;
+    // dashed outline, pushed 3 units out from the centre of the shape
+    g.strokeColor = SELECT_INK; g.lineWidth = 2;
+    const m = it.node.worldMatrix;
+    const src = it.outline.length >= 3 ? [it.outline] : null;
+    const polys: Vec2[][] = src ? src.map(pts => pts.map(p => Vec2.transformMat4(new Vec2(), p, m))) : it.shapes;
+    for (const poly of polys) dashedOutline(g, poly, 3, 5, 4);
+    // button
+    const c = this.handlePos(it, this.tmpWorld), R = this.handleRadius(it);
+    g.fillColor = BUTTON_SHADOW; g.circle(c.x, c.y - R * .18, R); g.fill();
+    g.fillColor = SELECT_INK; g.circle(c.x, c.y, R); g.fill();
+    g.strokeColor = Color.WHITE; g.lineWidth = Math.max(1.6, R * .18); g.circle(c.x, c.y, R); g.stroke();
+    const rr = R * .46, t = R * .34;
+    g.lineWidth = Math.max(1.7, R * .22); g.fillColor = Color.WHITE;
+    for (const s0 of [0, Math.PI]) {
+      // web angles are clockwise with y down: mirror y
+      const a0 = s0 + .55, a1 = s0 + Math.PI - .18;
+      for (let i = 0; i <= 12; i++) {
+        const a = a0 + (a1 - a0) * i / 12, px = c.x + Math.cos(a) * rr, py = c.y - Math.sin(a) * rr;
+        if (i) g.lineTo(px, py); else g.moveTo(px, py);
+      }
+      g.stroke();
+      const ex = Math.cos(a1) * rr, ey = Math.sin(a1) * rr, tx = -Math.sin(a1), ty = Math.cos(a1), nx = Math.cos(a1), ny = Math.sin(a1);
+      g.moveTo(c.x + ex + tx * t, c.y - (ey + ty * t));
+      g.lineTo(c.x + ex + nx * t * .62, c.y - (ey + ny * t * .62));
+      g.lineTo(c.x + ex - nx * t * .62, c.y - (ey - ny * t * .62));
+      g.close(); g.fill();
+    }
+  }
+}
+
+/** Dashed closed outline (Graphics has no line dash), pushed `grow` units away from the centre */
+function dashedOutline(g: Graphics, pts: readonly Vec2[], grow: number, on: number, off: number) {
+  let cx = 0, cy = 0;
+  for (const p of pts) { cx += p.x; cy += p.y; }
+  cx /= pts.length; cy /= pts.length;
+  const at = (i: number, out: Vec2) => { const p = pts[i % pts.length], dx = p.x - cx, dy = p.y - cy, l = Math.hypot(dx, dy) || 1; return out.set(p.x + dx / l * grow, p.y + dy / l * grow); };
+  const a = new Vec2(), b = new Vec2();
+  let drawing = true, left = on;
+  for (let i = 0; i < pts.length; i++) {
+    at(i, a); at(i + 1, b);
+    let len = Vec2.distance(a, b), ux = (b.x - a.x) / (len || 1), uy = (b.y - a.y) / (len || 1), x = a.x, y = a.y;
+    while (len > 0) {
+      const step = Math.min(left, len);
+      if (drawing) { g.moveTo(x, y); g.lineTo(x + ux * step, y + uy * step); g.stroke(); }
+      x += ux * step; y += uy * step; len -= step; left -= step;
+      if (left <= 0) { drawing = !drawing; left = drawing ? on : off; }
+    }
   }
 }

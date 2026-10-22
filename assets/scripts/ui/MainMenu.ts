@@ -11,6 +11,7 @@ import { GameState } from '../core/GameState';
 import { Sound } from '../audio/Sound';
 import { SplashView } from './SplashView';
 import { Analytics } from '../services/Analytics';
+import { Overlays } from './Overlays';
 
 /** The splash plays once per app launch, not when coming back from a level */
 let splashPlayed = false;
@@ -37,12 +38,14 @@ export class MainMenu extends Component {
   }
 
   async start() {
+    const covered = Overlays.startCoveredIfPending();
     const splash = splashPlayed ? null : SplashView.play(this.node.parent!);
     splashPlayed = true;
     this.book = await ContentLoader.loadBook();
     Sound.preload();
     Sound.startMusic();
     this.openHome();
+    if (covered) Overlays.uncover();
     await splash;
   }
 
@@ -66,6 +69,6 @@ export class MainMenu extends Component {
     GameState.chapter = s.chapter; GameState.chapterId = s.chapter.id; GameState.levelIndex = s.index;
     GameState.fromMenu = true;
     Analytics.setReason('home');
-    director.loadScene('Game');
+    Overlays.cover(true).then(() => director.loadScene('Game'));
   }
 }

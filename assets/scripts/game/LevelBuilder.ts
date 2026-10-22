@@ -3,7 +3,7 @@
 //   - the items, taken from a pool (no instantiate on restart), dropped in from above the screen
 //     one after another (FALLING group passes the ceiling), then the bag appears once they settle
 // Level coordinates (y down) are converted to Field coordinates (y up) here, and only here.
-import { Node, instantiate, tween, Vec3, UIOpacity, Prefab, UITransform, ERigidBody2DType } from 'cc';
+import { Node, instantiate, tween, Vec3, UIOpacity, Prefab, UITransform, ERigidBody2DType, Graphics, Color } from 'cc';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { DESIGN_H, BAG_FLOOR, BAG_CEIL, PhysicsGroup, PTM, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
@@ -26,12 +26,38 @@ export class LevelBuilder {
   private lastDropAt = 0;
   /** Node in the front layer that mirrors the bag transform; the bag's front image lives under it */
   private frontHolder: Node;
+  /** soft shadow under the bag (web bags.js drawBagShadow), drawn once per level */
+  private shadow: Graphics;
 
   constructor(private bagLayer: Node, private itemLayer: Node, private frontLayer: Node) {
     this.frontHolder = new Node('BagFront');
     this.frontHolder.layer = frontLayer.layer;
     this.frontHolder.addComponent(UITransform);
     frontLayer.addChild(this.frontHolder);
+    const sh = new Node('BagShadow');
+    sh.layer = bagLayer.layer;
+    sh.addComponent(UITransform);
+    bagLayer.insertChild(sh, 0);
+    this.shadow = sh.addComponent(Graphics);
+    sh.addComponent(UIOpacity);
+  }
+
+  /**
+   * Web: radial gradient rgba(60,45,35,.30) → transparent from 45% to 100% of rx = 42% of the image
+   * width, squashed to 19 units high, centred 3 units right and 6 units above the image bottom.
+   * Graphics has no gradient fill: stacked ellipses fading outwards give the same smudge.
+   */
+  private drawShadow(cx: number, imageBottomY: number, imageW: number) {
+    const g = this.shadow, rx = imageW * .42, ry = 19, steps = 10, c = new Color(60, 45, 35, 0);
+    this.shadow.node.setPosition(cx + 3, imageBottomY + 6, 0);
+    g.clear();
+    for (let i = 0; i < steps; i++) {
+      const f = 1 - i / steps * .55;                    // 1 → .45 of the radius
+      c.a = Math.round(255 * .30 / steps * 1.2);        // each ring adds a little: centre ≈ .30
+      g.fillColor = c;
+      g.ellipse(0, 0, rx * f, ry * f);
+      g.fill();
+    }
   }
 
   /** Build `level` (a level object from levels.json). Resolves once every prefab is placed. */
@@ -63,6 +89,8 @@ export class LevelBuilder {
     this.setBagVisible(bag, false);
     bag.refreshWorldShape();
     S.bag = bag; S.bagReady = false;
+    this.drawShadow(c.cx ?? 210, levelToFieldY(BAG_FLOOR - S.bagLift), (bag.body?.getComponent(UITransform)?.width ?? 0) * s);
+    this.shadow.getComponent(UIOpacity)!.opacity = 0;
 
     // ---- items ----
     const items: ItemView[] = [];
@@ -167,6 +195,8 @@ export class LevelBuilder {
     if (fx) { const cx = (bag.minX + bag.maxX) / 2, y = bag.minY - 8; fx.dust(cx - 40, y, { n: 6, strength: .8 }); fx.dust(cx + 40, y, { n: 6, strength: .8 }); }
     // small pop when the bag lands on the table
     const s = bag.node.scale.x;
+    const so = this.shadow.getComponent(UIOpacity)!;
+    tween(so).to(.18, { opacity: 255 }).start();
     for (const n of [bag.node, this.frontHolder]) {
       n.setScale(s * .55, s * .55, 1);
       tween(n).to(.32, { scale: new Vec3(s * 1.06, s * 1.06, 1) }, { easing: 'backOut' }).to(.12, { scale: new Vec3(s, s, 1) }).start();

@@ -8,6 +8,7 @@ const { ccclass, property } = _decorator;
 
 type Particle = { x: number; y: number; vx: number; vy: number; g: number; t: number; life: number; size: number; color: Color; flake: boolean; rot: number; vr: number; wob: number; phase: number };
 type Ring = { x: number; y: number; r0: number; r1: number; t: number; life: number; color: Color; width: number; flat: boolean };
+type Puff = { x: number; y: number; t: number };
 type Floater = { node: Node; label: Label; op: UIOpacity; x: number; y: number; t: number; life: number };
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -15,7 +16,7 @@ const hex = (h: string, a = 255) => new Color(parseInt(h.slice(1, 3), 16), parse
 const CONFETTI = ['#E2637F', '#E2B04A', '#5FBF9B', '#7B4FD8', '#3D8BFF', '#FFFFFF'].map(c => hex(c));
 const DUST_DARK = new Color(120, 86, 56, 128), DUST_LIGHT = new Color(255, 248, 236, 235), DUST_RING = new Color(255, 250, 240, 191);
 const WHITE = new Color(255, 255, 255, 230);
-const WAVE = hex('#4A90D9');
+const WAVE = hex('#4A90D9'), PUFF = hex('#E2637F'), PUFF_DOT = new Color(255, 255, 255, 255);
 
 @ccclass('Fx')
 export class Fx extends Component {
@@ -26,6 +27,7 @@ export class Fx extends Component {
   private g: Graphics = null!;
   private parts: Particle[] = [];
   private rings: Ring[] = [];
+  private puffs: Puff[] = [];
   private floats: Floater[] = [];
   private freeParts: Particle[] = [];
   private freeFloats: Floater[] = [];
@@ -107,6 +109,9 @@ export class Fx extends Component {
     this.floats.push(f);
   }
 
+  /** Pink ring with white dots where an item vanished / reappeared (web render.js drawPuffs, 380 ms) */
+  puff(x: number, y: number) { this.puffs.push({ x, y, t: 0 }); }
+
   /** Vibration waves around a buzzing phone, for this frame only */
   phoneWaves(x: number, y: number) { this.wave.x = x; this.wave.y = y; this.wave.on = true; }
 
@@ -119,7 +124,7 @@ export class Fx extends Component {
 
   clear() {
     for (const p of this.parts) this.freeParts.push(p);
-    this.parts.length = 0; this.rings.length = 0;
+    this.parts.length = 0; this.rings.length = 0; this.puffs.length = 0;
     for (const f of this.floats) { f.node.active = false; this.freeFloats.push(f); }
     this.floats.length = 0;
     this.g.clear();
@@ -144,7 +149,7 @@ export class Fx extends Component {
       f.op.opacity = Math.round(255 * (1 - k * k));
     }
     const w = this.wave;
-    if (!this.parts.length && !this.rings.length && !w.on && !w.drawn) return;
+    if (!this.parts.length && !this.rings.length && !this.puffs.length && !w.on && !w.drawn) return;
     const g = this.g, c = this.tmp;
     g.clear();
     if (w.on) {
@@ -176,6 +181,19 @@ export class Fx extends Component {
         g.lineTo(p.x + (-hw * cs - hh * sn), p.y + (-hw * sn + hh * cs));
         g.close(); g.fill();
       } else { g.circle(p.x, p.y, p.size * k); g.fill(); }
+    }
+    for (let i = this.puffs.length - 1; i >= 0; i--) {
+      const p = this.puffs[i];
+      p.t += ms / 380;
+      if (p.t >= 1) { this.puffs.splice(i, 1); continue; }
+      const fade = Math.round(255 * (1 - p.t));
+      c.set(PUFF.r, PUFF.g, PUFF.b, fade); g.strokeColor = c; g.lineWidth = 4 * (1 - p.t) + 1;
+      g.circle(p.x, p.y, 10 + p.t * 46); g.stroke();
+      c.set(PUFF_DOT.r, PUFF_DOT.g, PUFF_DOT.b, fade); g.fillColor = c;
+      for (let k = 0; k < 6; k++) {
+        const a = -(k * Math.PI / 3 + .4), r = 14 + p.t * 40;   // web angles are clockwise (y down)
+        g.circle(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 3.5 * (1 - p.t)); g.fill();
+      }
     }
     for (let i = this.rings.length - 1; i >= 0; i--) {
       const r = this.rings[i];

@@ -67,6 +67,8 @@ export class ItemView extends Component {
   // Box2D world data (worldPoints, worldAABB) is only refreshed by a physics step, so it lags one
   // frame behind a node moved by hand (the held item). The bag rules read this instead.
   private localPolys: Vec2[][] = [];
+  /** shape bounding box in node space at scale 1 (web def.box), for the rotate button */
+  readonly localBox = new Rect();
   /** shape area at scale 1 (units²) */
   private baseArea = 0;
   private worldPolys: Vec2[][] = [];
@@ -92,12 +94,20 @@ export class ItemView extends Component {
       this.baseArea += Math.abs(a) / 2;
       this.worldPolys.push(pts.map(() => new Vec2()));
     }
+    this.computeLocalBox();
   }
 
   onDestroy() { for (const c of this.colliders) if (c.isValid) c.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this); }
 
   private onBeginContact(self: Collider2D, other: Collider2D, contact: IPhysics2DContact | null) {
     ItemView.contactHandler?.(this, self, other, contact);
+  }
+
+  private computeLocalBox() {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const poly of this.localPolys) for (const p of poly) { if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; }
+    if (x0 === Infinity) { const ui = this.transform2d; x0 = -ui.width / 2; x1 = ui.width / 2; y0 = -ui.height / 2; y1 = ui.height / 2; }
+    this.localBox.set(x0, y0, x1 - x0, y1 - y0);
   }
 
   /** Polygons of the item in world (= Field) space at the current node transform */
