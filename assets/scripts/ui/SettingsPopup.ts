@@ -11,6 +11,7 @@ const { ccclass } = _decorator;
 const ON_BG = new Color(0x34, 0x74, 0x50, 255), OFF_BG = new Color(0xB9, 0xB4, 0xA8, 255);
 const KNOB_TRAVEL = 23.4;   // web: knob right 4 → right 52 (×0.972)
 const MENU_CARD_HEIGHT = 345.6; // web card height when Home / Restart are hidden
+const SIDE_BY_SIDE = 56;        // in game: Home left, Restart right of the centre
 
 type Toggle = { node: Node; bg: RoundRect; knob: Node; label: Label };
 
@@ -71,16 +72,23 @@ export class SettingsPopup extends Component {
   }
 
   /**
-   * The prefab is the in-game layout (Home + Restart shown). Opened from the menu the web card
-   * collapses around the rows: 176 units shorter, still centred, the version line right under them.
+   * The prefab is the web in-game layout: Home and Restart stacked, a long card. In game they now
+   * sit side by side on one row (shorter card, still centred); from the menu they are hidden and
+   * the card collapses around the switches like the web.
    */
   private layout(inGame: boolean) {
-    const shrink = inGame ? 0 : this.cardHeight - MENU_CARD_HEIGHT;
+    const homeY = this.baseY.get(this.home)!, restartY = this.baseY.get(this.restart)!;
+    const rowGap = homeY - restartY;                          // the stacked Restart row
+    const shrink = inGame ? rowGap : this.cardHeight - MENU_CARD_HEIGHT;
     this.card.getComponent(UITransform)!.height = this.cardHeight - shrink;
     for (const [c, y] of this.baseY) {
       if (c === this.home || c === this.restart) continue;
       const isVersion = c.name === 'setVer';
       c.setPosition(c.position.x, y + (isVersion ? shrink / 2 : -shrink / 2), 0);
+    }
+    if (inGame) {
+      this.home.setPosition(-SIDE_BY_SIDE, homeY - shrink / 2, 0);
+      this.restart.setPosition(SIDE_BY_SIDE, homeY - shrink / 2, 0);
     }
   }
 
