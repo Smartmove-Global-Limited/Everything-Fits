@@ -11,6 +11,7 @@ import { GameState } from '../core/GameState';
 import { Sound } from '../audio/Sound';
 import { SplashView } from './SplashView';
 import { Analytics } from '../services/Analytics';
+import { NativeBridge } from '../services/NativeBridge';
 import { Overlays } from './Overlays';
 
 /** The splash plays once per app launch, not when coming back from a level */
@@ -50,6 +51,8 @@ export class MainMenu extends Component {
     const covered = Overlays.startCoveredIfPending();
     const splash = splashPlayed ? null : SplashView.play(this.node.parent!);
     splashPlayed = true;
+    // the splash colour is on screen from the next frame: the native cover can go
+    this.scheduleOnce(() => NativeBridge.hideLaunchCover(), 0.05);
     await this.buildScreens();
     this.book = await ContentLoader.loadBook();
     Sound.preload();

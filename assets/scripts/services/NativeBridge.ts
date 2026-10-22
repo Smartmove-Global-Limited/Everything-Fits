@@ -20,6 +20,8 @@ function call(method: string, ...args: string[]) {
 
 export const NativeBridge = {
   get enabled() { return NATIVE && (sys.os === sys.OS.ANDROID || sys.os === sys.OS.IOS); },
+  /** Remove the native launch cover once the game has drawn its first frame (Android) */
+  hideLaunchCover() { if (sys.os === sys.OS.ANDROID) call('hideLaunchCover'); },
   /** Same event to Firebase Analytics and AppsFlyer (params as JSON: numbers stay numbers) */
   logEvent(name: string, params: Record<string, string | number>) { call('logEvent', name, JSON.stringify(params)); },
 };

@@ -12,6 +12,8 @@ for (const n of hud.children) if (n.name.startsWith('Booster')) pin(n, 1);
 // shows the whole screen around it; touches are converted through the camera.
 const cv = canvas.getComponent(cc.Canvas);
 cv.alignCanvasWithScreen = false;
+// its full-stretch Widget would move it back to the visible-area centre at runtime
+canvas.getComponent(cc.Widget)?.destroy();
 canvas.setPosition(210, 380, 0);
 const bg = canvas.getChildByName('Background');
 if (!bg.getComponent(Bleed)) bg.addComponent(Bleed);

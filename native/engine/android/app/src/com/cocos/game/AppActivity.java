@@ -39,6 +39,7 @@ public class AppActivity extends CocosActivity {
         // DO OTHER INITIALIZATION BELOW
         SDKWrapper.shared().init(this);
         SdkBridge.init(this);   // Firebase Analytics + AppsFlyer (assets/scripts/services/NativeBridge.ts)
+        SdkBridge.showLaunchCover(this);
 
     }
 

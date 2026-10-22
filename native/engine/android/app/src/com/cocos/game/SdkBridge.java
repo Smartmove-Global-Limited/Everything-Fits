@@ -1,6 +1,9 @@
 package com.cocos.game;
 
 import android.app.Activity;
+import android.graphics.Color;
+import android.view.View;
+import android.view.ViewGroup;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -25,8 +28,32 @@ public final class SdkBridge {
     private static final String TAG = "SdkBridge";
     private static FirebaseAnalytics firebase;
     private static boolean appsFlyerOn;
+    /** paper-coloured cover over the GL surface until the game has drawn its first frame */
+    private static View launchCover;
 
     private SdkBridge() {}
+
+    /**
+     * The GL surface is black until the engine draws its first frame: cover it with the game's paper
+     * colour (same as the window background) so the launch goes cream → splash, no black flash.
+     */
+    public static void showLaunchCover(Activity activity) {
+        launchCover = new View(activity);
+        launchCover.setBackgroundColor(Color.parseColor("#D9CFBE"));
+        activity.addContentView(launchCover, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+
+    /** From TypeScript once the splash is on screen */
+    public static void hideLaunchCover() {
+        final Activity a = com.cocos.lib.GlobalObject.getActivity();
+        if (a == null || launchCover == null) return;
+        a.runOnUiThread(() -> {
+            if (launchCover == null) return;
+            ViewGroup parent = (ViewGroup) launchCover.getParent();
+            if (parent != null) parent.removeView(launchCover);
+            launchCover = null;
+        });
+    }
 
     /** Called once from AppActivity.onCreate */
     public static void init(Activity activity) {

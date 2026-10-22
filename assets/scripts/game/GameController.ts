@@ -3,7 +3,7 @@
 // update(). Bag rules run right after the physics step (Director.EVENT_AFTER_PHYSICS).
 // Round flow like the web game (src/main.js, rules.js, hud.js): settings pause the round, a win
 // saves progress + gold and shows the reward popup, running out of time shows the lose popup.
-import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys } from 'cc';
+import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera } from 'cc';
 import { levelToFieldY } from '../core/GameConstants';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
@@ -51,8 +51,12 @@ export class GameController extends Component {
   private offBoosters: (() => void) | null = null;
   private shakePopupShown = false;
 
+  private offCamera: (() => void) | null = null;
+
   onLoad() {
     ScreenFit.apply();
+    // Game.scene keeps its Canvas at the design centre (Field space == physics world space)
+    this.offCamera = ScreenFit.fitCamera(this.node.parent!.getComponentInChildren(Camera)!);
     // dev builds only: hooks for automated play-testing from the browser console
     if (DEV) (globalThis as any).__ef = { GameState, BagRules, Sound, Analytics, physics: PhysicsSystem2D.instance, game: this };
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
@@ -83,6 +87,7 @@ export class GameController extends Component {
   onDestroy() {
     director.off(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     this.offBoosters?.();
+    this.offCamera?.();
     Shake.unbind(); Shake.reset();
     this.builder.dispose();
     const S = GameState;

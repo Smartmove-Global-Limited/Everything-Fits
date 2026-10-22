@@ -23,7 +23,7 @@
     "_active": true,
     "_components": [],
     "_prefab": {
-      "__id__": 189
+      "__id__": 188
     },
     "_lpos": {
       "__type__": "cc.Vec3",
@@ -54,7 +54,7 @@
     },
     "autoReleaseAssets": false,
     "_globals": {
-      "__id__": 190
+      "__id__": 189
     },
     "_id": "d618e01c-5a5b-43e7-9ed8-e9fced695254"
   },
@@ -90,16 +90,13 @@
       },
       {
         "__id__": 187
-      },
-      {
-        "__id__": 188
       }
     ],
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 210,
-      "y": 379.99999999999994,
+      "y": 380,
       "z": 0
     },
     "_lrot": {
@@ -7290,36 +7287,6 @@
     "_id": "12O/ljcVlEqLmVm3U2gEOQ"
   },
   {
-    "__type__": "cc.Widget",
-    "_name": "",
-    "_objFlags": 0,
-    "__editorExtras__": {},
-    "node": {
-      "__id__": 2
-    },
-    "_enabled": true,
-    "__prefab": null,
-    "_alignFlags": 45,
-    "_target": null,
-    "_left": 0,
-    "_right": 0,
-    "_top": 1.1368683772161603e-13,
-    "_bottom": 0,
-    "_horizontalCenter": 0,
-    "_verticalCenter": 0,
-    "_isAbsLeft": true,
-    "_isAbsRight": true,
-    "_isAbsTop": true,
-    "_isAbsBottom": true,
-    "_isAbsHorizontalCenter": true,
-    "_isAbsVerticalCenter": true,
-    "_originalWidth": 0,
-    "_originalHeight": 0,
-    "_alignMode": 2,
-    "_lockFlags": 0,
-    "_id": "c5V1EV8IpMtrIvY1OE9t2u"
-  },
-  {
     "__type__": "cc.PrefabInfo",
     "root": null,
     "asset": null,
@@ -7330,28 +7297,28 @@
   {
     "__type__": "cc.SceneGlobals",
     "ambient": {
-      "__id__": 191
+      "__id__": 190
     },
     "shadows": {
-      "__id__": 192
+      "__id__": 191
     },
     "_skybox": {
-      "__id__": 193
+      "__id__": 192
     },
     "fog": {
-      "__id__": 194
+      "__id__": 193
     },
     "octree": {
-      "__id__": 195
+      "__id__": 194
     },
     "skin": {
-      "__id__": 196
+      "__id__": 195
     },
     "lightProbeInfo": {
-      "__id__": 197
+      "__id__": 196
     },
     "postSettings": {
-      "__id__": 198
+      "__id__": 197
     },
     "bakedWithStationaryMainLight": false,
     "bakedWithHighpLightmap": false

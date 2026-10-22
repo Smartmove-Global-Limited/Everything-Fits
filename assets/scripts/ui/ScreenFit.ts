@@ -1,7 +1,7 @@
 // Multi-resolution: the game is designed on 420×760. Taller screens (phones 19.5–21:9) keep the
 // width and get extra height; wider screens (tablets) keep the height and get extra width. The
 // 420×760 design box is always fully visible; EdgePin moves bars to the real screen edges.
-import { view, ResolutionPolicy, sys, Rect, profiler } from 'cc';
+import { view, ResolutionPolicy, sys, Rect, profiler, Camera } from 'cc';
 
 export const DESIGN_W = 420, DESIGN_H = 760;
 let applied = false;
@@ -19,6 +19,18 @@ export const ScreenFit = {
     };
     fit();
     view.on('canvas-resize', fit);
+  },
+  /**
+   * For a Canvas that does not follow the screen (alignCanvasWithScreen off, Game.scene): Cocos no
+   * longer sizes the camera then, so its view height is set here to the visible height, now and
+   * on every resize. Returns an unsubscribe function for onDestroy.
+   */
+  fitCamera(camera: Camera) {
+    const fit = () => { camera.orthoHeight = view.getVisibleSize().height / 2; };
+    fit();
+    view.on('canvas-resize', fit);
+    view.on('design-resolution-changed', fit);
+    return () => { view.off('canvas-resize', fit); view.off('design-resolution-changed', fit); };
   },
   /** Visible area in design units */
   visible() { return view.getVisibleSize(); },
