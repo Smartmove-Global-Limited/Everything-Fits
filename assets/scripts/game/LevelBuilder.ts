@@ -8,6 +8,7 @@ import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { DESIGN_H, BAG_FLOOR, PhysicsGroup, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
 import { ItemView } from './ItemView';
+import { overlapsBagArea, findFreeSpot, clearEjects, beginSpotBatch } from './BagRules';
 import { BagView } from './BagView';
 
 const DROP_INTERVAL = 110;     // ms between two items dropping in
@@ -135,6 +136,16 @@ export class LevelBuilder {
     }
     if (busy && S.clock < this.lastDropAt + BAG_MAX_WAIT) return;
     const bag = S.bag!;
+    bag.refreshWorldShape();
+    // the walls appear around items already lying there: move those to the tray first,
+    // otherwise they end up inside a wall (stuck and pushed every step)
+    beginSpotBatch();
+    for (const it of S.items) {
+      if (it.waiting || it.presetInBag || !overlapsBagArea(it)) continue;
+      const spot = findFreeSpot(it, it.node.position.x);
+      it.node.setPosition(spot.x, spot.y, 0);
+      it.stop(); it.body.wakeUp();
+    }
     if (bag.walls) bag.walls.active = true;
     bag.refreshWorldShape();
     S.bagReady = true; S.bagShownAt = S.clock;
@@ -188,7 +199,7 @@ export class LevelBuilder {
       bag.node.active = false;
       S.bag = null;
     }
-    S.packed.clear(); S.removed.clear();
+    S.packed.clear(); S.removed.clear(); clearEjects();
     S.drag = null; S.selected = null; S.bagSnapshot = null;
     S.winFrames = 0; S.won = false; S.lost = false; S.paused = false; S.bagReady = false;
   }

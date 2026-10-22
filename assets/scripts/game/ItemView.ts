@@ -1,4 +1,4 @@
-import { _decorator, Component, Enum, RigidBody2D, Collider2D, UITransform, Sprite, ERigidBody2DType, Contact2DType, IPhysics2DContact } from 'cc';
+import { _decorator, Component, Enum, RigidBody2D, Collider2D, PolygonCollider2D, CircleCollider2D, UITransform, Sprite, ERigidBody2DType, Vec2, Rect, Mat4 } from 'cc';
 import { PhysicsGroup } from '../core/GameConstants';
 const { ccclass, property, requireComponent, disallowMultiple } = _decorator;
 
@@ -32,6 +32,7 @@ export class ItemView extends Component {
   @property({ tooltip: 'Shape tag: Rectangle, Oval, Long, Irregular…' }) shapeTag = '';
   @property canLink = true;
   @property canLock = true;
+  @property({ type: [Vec2], tooltip: 'Outer outline in node space (drawn while the item is held: green fits, red does not)' }) outline: Vec2[] = [];
 
   // ---- cached references, resolved once ----
   body: RigidBody2D = null!;
@@ -52,9 +53,17 @@ export class ItemView extends Component {
   releasedAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0;
   frozen = false; holdUntil = 0;
   cracks = 0; crackedAt = 0; broken = false;
-  // while held (sensor, group HELD): number of overlapping colliders, by what they belong to
-  heldItemContacts = 0; heldWallContacts = 0; heldBagContacts = 0;
   held = false;
+
+  // ---- shape at the CURRENT node transform ----
+  // Box2D world data (worldPoints, worldAABB) is only refreshed by a physics step, so it lags one
+  // frame behind a node moved by hand (the held item). The bag rules read this instead.
+  private localPolys: Vec2[][] = [];
+  private worldPolys: Vec2[][] = [];
+  /** world bounds of the shape, valid after updateShape() */
+  readonly bounds = new Rect();
+  private shapeKey = new Float64Array(5).fill(NaN);
+  private static readonly mat = new Mat4();
 
   onLoad() {
     this.body = this.getComponent(RigidBody2D)!;
@@ -63,60 +72,55 @@ export class ItemView extends Component {
     this.transform2d = this.getComponent(UITransform)!;
     this.sprite = this.getComponent(Sprite);
     for (const c of this.colliders) {
-      c.on(Contact2DType.BEGIN_CONTACT, this.onBegin, this);
-      c.on(Contact2DType.END_CONTACT, this.onEnd, this);
+      const pts: Vec2[] = [];
+      if (c instanceof PolygonCollider2D) for (const p of c.points) pts.push(new Vec2(p.x + c.offset.x, p.y + c.offset.y));
+      else if (c instanceof CircleCollider2D) for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; pts.push(new Vec2(c.offset.x + Math.cos(a) * c.radius, c.offset.y + Math.sin(a) * c.radius)); }
+      if (pts.length < 3) continue;
+      this.localPolys.push(pts);
+      this.worldPolys.push(pts.map(() => new Vec2()));
     }
   }
 
-  onDestroy() {
-    for (const c of this.colliders) { c.off(Contact2DType.BEGIN_CONTACT, this.onBegin, this); c.off(Contact2DType.END_CONTACT, this.onEnd, this); }
+  /** Polygons of the item in world (= Field) space at the current node transform */
+  get shapes(): Vec2[][] { this.updateShape(); return this.worldPolys; }
+
+  /** Recompute the world polygons if the node moved, rotated or scaled since the last call */
+  updateShape() {
+    const n = this.node, p = n.position, r = n.rotation, k = this.shapeKey;
+    if (k[0] === p.x && k[1] === p.y && k[2] === r.z && k[3] === r.w && k[4] === n.scale.x) return;
+    k[0] = p.x; k[1] = p.y; k[2] = r.z; k[3] = r.w; k[4] = n.scale.x;
+    const m = n.getWorldMatrix(ItemView.mat);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (let i = 0; i < this.localPolys.length; i++) {
+      const src = this.localPolys[i], dst = this.worldPolys[i];
+      for (let j = 0; j < src.length; j++) {
+        const v = Vec2.transformMat4(dst[j], src[j], m);
+        if (v.x < x0) x0 = v.x; if (v.x > x1) x1 = v.x; if (v.y < y0) y0 = v.y; if (v.y > y1) y1 = v.y;
+      }
+    }
+    this.bounds.set(x0, y0, x1 - x0, y1 - y0);
   }
 
-  /** Overlap counting while held. Other contacts (impacts) are handled by the game loop listeners. */
-  private onBegin(self: Collider2D, other: Collider2D, _c: IPhysics2DContact | null) { if (this.held) this.countContact(other, 1); }
-  private onEnd(self: Collider2D, other: Collider2D, _c: IPhysics2DContact | null) { if (this.held) this.countContact(other, -1); }
-  private countContact(other: Collider2D, d: number) {
-    const g = other.group;
-    if (g === PhysicsGroup.ITEM) this.heldItemContacts = Math.max(0, this.heldItemContacts + d);
-    else if (g === PhysicsGroup.WALL) this.heldWallContacts = Math.max(0, this.heldWallContacts + d);
-    else if (g === PhysicsGroup.BAG) this.heldBagContacts = Math.max(0, this.heldBagContacts + d);
-  }
-
-  /** Pick up: the body stays in the world as a weightless sensor so overlaps are still reported */
+  /** Pick up: the body leaves the physics world while the finger moves the node */
   beginHold() {
-    this.held = true; this.heldItemContacts = this.heldWallContacts = this.heldBagContacts = 0;
-    this.body.type = ERigidBody2DType.Dynamic;
-    this.body.gravityScale = 0;
-    // a still body in the hand would fall asleep, and sleeping bodies report no new contacts
-    this.body.allowSleep = false;
-    this.configure(PhysicsGroup.HELD, true);
-    this.stop();
-    this.body.wakeUp();
+    this.held = true;
+    this.body.enabled = false;
   }
 
-  /** Drop: a solid item again */
+  /** Drop: back in the world, at rest, at the node position */
   endHold() {
     this.held = false;
-    this.configure(PhysicsGroup.ITEM, false);
+    this.body.type = ERigidBody2DType.Dynamic;
+    this.body.enabled = true;
     this.body.gravityScale = 1;
-    this.body.allowSleep = true;
     this.stop();
     this.body.wakeUp();
   }
 
-  /** Enable / disable the physics body: picked up = removed from the world, dropped = back in */
-  setPhysicsEnabled(on: boolean) { this.body.enabled = on; }
-
   /** Change the collision group of the body and all colliders */
-  setGroup(group: number) { this.configure(group, this.colliders.length ? this.colliders[0].sensor : false); }
-
-  /**
-   * Group + sensor flag in one pass: each collider rebuilds its fixtures once (apply() is not free).
-   * Sensors pass through everything and only report overlaps (used while held).
-   */
-  configure(group: number, sensor: boolean) {
+  setGroup(group: number) {
     this.body.group = group;
-    for (const c of this.colliders) { c.group = group; c.sensor = sensor; c.apply(); }
+    for (const c of this.colliders) { c.group = group; c.apply(); }
   }
 
   /**

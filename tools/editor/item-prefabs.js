@@ -98,12 +98,18 @@ for (const id of ids) {
   view.material = meta.material || ''; view.fragile = !!meta.fragile; view.grams = grams;
   view.sizeClass = meta.size || 'Medium'; view.shapeTag = meta.shape || '';
   view.canLink = meta.canLink !== false; view.canLock = meta.canLock !== false;
+  // outer outline drawn while held (web: def.outline, else the collider outline)
+  const outline = m.outline || (c.kind === 'poly' || c.kind === 'compound' ? c.pts : null);
+  view.outline = outline && outline.length >= 3 ? outline.map(([x, y]) => new Vec2(x, -y)) : [];
 
   const url = `db://assets/resources/items/${id}.prefab`;
   const existing = await Editor.Message.request('asset-db', 'query-asset-info', url);
   if (existing) await Editor.Message.request('asset-db', 'delete-asset', url);
   await Editor.Message.request('scene', 'create-prefab', node.uuid, url);
+  // create-prefab swaps the scene node for a prefab instance (renamed after the file): remove
+  // whatever sits at the scene root now, not only the old reference
   node.removeFromParent(); node.destroy();
+  for (const n of scene.children.slice()) if (n.name !== 'Canvas' && !n.name.startsWith('Editor Scene')) n.destroy();
   report.push(`${id}: ${m.name} · ${polys.length} poly (${vertices} pts) ${circles.length} circle · class ${massClass}`);
 }
 return report;

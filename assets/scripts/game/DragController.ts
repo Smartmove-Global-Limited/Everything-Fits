@@ -1,30 +1,44 @@
 // Touch control (ported from the web game, src/game/input.js):
 //   - tap an item (no drag)    = select it; a rotate handle appears at its top-right corner
 //   - drag the handle          = rotate the item around itself; it holds its angle for a moment
-//   - touch-and-drag an item   = pick it up: it becomes a weightless sensor (group HELD) that follows
-//                                the finger, lifted above it so the player sees the whole item; it
-//                                turns red ("ghost") when it overlaps something or pokes into the bag
-//                                without fitting; released as a ghost it goes back to the tray
-// Lives on the Field node (full design area). Per-frame work is done by update(), called from the
-// GameController loop (tick), Cocos never calls an update() here.
-import { _decorator, Component, Node, EventTouch, Vec2, Vec3, Color, PhysicsSystem2D, UITransform, Graphics, ERigidBody2DType, sys } from 'cc';
+//   - touch-and-drag an item   = pick it up: it leaves the physics world and follows
+//                                the finger, lifted above it so the player sees the whole item, drawn
+//                                above the bag rim; a thin outline shows green (fits) or red ("ghost":
+//                                overlaps something or pokes into the bag without fitting, item at 60%);
+//                                released as a ghost it goes back to the tray
+// Lives on the Field node (full design area). Per-frame work is done by tick(), called from the
+// GameController loop, Cocos never calls an update() here.
+import { _decorator, Component, Node, EventTouch, Vec2, Vec3, Color, PhysicsSystem2D, UITransform, Graphics, Sprite, ERigidBody2DType, sys } from 'cc';
 import { GameState, isHeld } from '../core/GameState';
 import { DESIGN_W, levelToFieldY, FLOOR_Y } from '../core/GameConstants';
 import { ItemView } from './ItemView';
-import { computeGhost, overlapsInterior, bagZone, findFreeSpot, itemAABB } from './BagRules';
+import { computeGhost, overlapsInterior, bagZone, findFreeSpot, itemAABB, beginSpotBatch } from './BagRules';
 const { ccclass, property } = _decorator;
 
 const DRAG_START = 7;                       // pointer travel that turns a touch into a drag
 const LIFT_MAX = 70, FINGER_CLEARANCE = 26; // item is lifted above the finger by up to this much
 const LIFT_MOUSE = 8;                       // with a mouse only a small lift
 const HOLD_AFTER_SPIN = 1000;               // ms an item keeps its new angle inside the bag after rotating
-const GHOST_TINT = new Color(255, 140, 140, 255), NORMAL_TINT = Color.WHITE.clone(), HANDLE_INK = new Color(59, 42, 74, 255);
+/**
+ * Node angle in degrees. Do not read node.angle on physics bodies: Box2D writes the rotation as a
+ * quaternion and node.angle keeps returning the old euler value; eulerAngles recomputes it.
+ */
+const angleOf = (n: Node) => n.eulerAngles.z;
+const HANDLE_INK = new Color(59, 42, 74, 255);
+const FIT_INK = new Color(0x3D, 0xBE, 0x78, 255), GHOST_INK = new Color(0xE5, 0x48, 0x4D, 255);
+const OPAQUE = new Color(255, 255, 255, 255), GHOST_ALPHA = new Color(255, 255, 255, 153);   // web: globalAlpha .6
+const SHADOW_INK = new Color(59, 42, 74, 90), SHADOW_DROP = 8;                                // web: rgba(59,42,74,.4), offset 8
+const POP_MS = 220, POP_GAIN = .09;                                                            // item swells once when picked up
 
 export type DragEvents = { onPick?(item: ItemView): void; onDrop?(item: ItemView, bounced: boolean): void; onSelect?(item: ItemView | null): void };
 
 @ccclass('DragController')
 export class DragController extends Component {
   @property({ type: Graphics, tooltip: 'Draws the rotate handle of the selected item' }) handle: Graphics | null = null;
+  @property({ type: Node, tooltip: 'Layer above the bag rim: the held item is moved here while dragged' }) heldLayer: Node = null!;
+  @property({ type: Graphics, tooltip: 'Outline of the held item (green fits / red does not), child of heldLayer' }) outline: Graphics = null!;
+  @property({ type: Sprite, tooltip: 'Soft shadow under the held item, child of heldLayer' }) shadow: Sprite = null!;
+  @property({ type: Node, tooltip: 'Layer the items live in when not held' }) itemLayer: Node = null!;
 
   events: DragEvents = {};
   private transform: UITransform = null!;
@@ -33,9 +47,16 @@ export class DragController extends Component {
   private readonly tmpWorld = new Vec3();
   private readonly tmpLocal = new Vec3();
   private readonly tmpV2 = new Vec2();
+  private readonly tmpOut = new Vec2();
+  private popAt = 0;
+  private shadowTransform: UITransform = null!;
 
   onLoad() {
     this.transform = this.getComponent(UITransform)!;
+    this.shadowTransform = this.shadow.getComponent(UITransform)!;
+    this.shadow.sizeMode = Sprite.SizeMode.CUSTOM;
+    this.shadow.color = SHADOW_INK;
+    this.shadow.node.active = false;
     this.node.on(Node.EventType.TOUCH_START, this.onStart, this);
     this.node.on(Node.EventType.TOUCH_MOVE, this.onMove, this);
     this.node.on(Node.EventType.TOUCH_END, this.onEnd, this);
@@ -58,18 +79,20 @@ export class DragController extends Component {
     this.transform.convertToWorldSpaceAR(this.tmpWorld, this.tmpLocal);
     this.tmpV2.set(this.tmpLocal.x, this.tmpLocal.y);
     const hits = PhysicsSystem2D.instance.testPoint(this.tmpV2);
+    // several items can overlap the finger: take the one drawn on top (highest sibling index)
+    let best: ItemView | null = null;
     for (const c of hits) {
       const v = c.node.getComponent(ItemView);   // only on touch, not per frame
-      if (v && !v.waiting) return v;
+      if (v && !v.waiting && (!best || v.node.getSiblingIndex() > best.node.getSiblingIndex())) best = v;
     }
-    return null;
+    return best;
   }
 
   // ---------- rotate handle ----------
   private handlePos(item: ItemView, out: Vec3): Vec3 {
     const ui = item.transform2d, k = item.levelScale;
     const hx = ui.width * (1 - ui.anchorX) * k, hy = ui.height * (1 - ui.anchorY) * k;
-    const a = item.node.angle * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    const a = angleOf(item.node) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
     const p = item.node.position;
     return out.set(p.x + hx * c - hy * s, p.y + hx * s + hy * c, 0);
   }
@@ -139,13 +162,19 @@ export class DragController extends Component {
     S.bagSnapshot = null;
     item.holdUntil = 0; item.frozen = false;
     item.beginHold();
+    // above the bag rim while held (else dragging it out of the bag looks like it slides under it)
+    this.shadow.node.setSiblingIndex(0);
+    item.node.setParent(this.heldLayer, true);
+    this.outline.node.setSiblingIndex(this.heldLayer.children.length - 1);
+    this.shadow.spriteFrame = item.sprite ? item.sprite.spriteFrame : null;
+    this.shadow.node.active = true;
+    this.popAt = S.clock;
     const p = item.node.position;
-    const a = -item.node.angle * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    const a = -angleOf(item.node) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
     const dx = x - p.x, dy = y - p.y;
     const ui = item.transform2d;
     const lift = mouse ? LIFT_MOUSE : Math.min(LIFT_MAX, Math.max(ui.width, ui.height) * item.levelScale / 2 + FINGER_CLEARANCE);
     S.drag = { item, offsetX: dx * c - dy * s, offsetY: dx * s + dy * c, targetX: x, targetY: y, lift: 0, liftTo: lift, ghost: true, lastValid: null, touchId };
-    item.node.setSiblingIndex(item.node.parent!.children.length - 1);   // draw above the others
     this.events.onPick?.(item);
   }
 
@@ -158,31 +187,76 @@ export class DragController extends Component {
     if (!d) return;
     const it = d.item;
     d.lift += (d.liftTo - d.lift) * .25;
-    const a = it.node.angle * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    // pop: swell once and back (the body is out of the world, scaling the node is free)
+    const t = (S.clock - this.popAt) / POP_MS;
+    const k = it.levelScale * (t < 1 ? 1 + Math.sin(t * Math.PI) * POP_GAIN : 1);
+    if (it.node.scale.x !== k) it.node.setScale(k, k, 1);
+    const a = angleOf(it.node) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
     let x = d.targetX - (d.offsetX * c - d.offsetY * s);
     let y = d.targetY - (d.offsetX * s + d.offsetY * c) + d.lift;
     it.node.setPosition(x, y, 0);
-    // keep the item above the tray floor and inside the screen sides
+    // keep the item above the tray floor and inside the screen sides (exact shape, this frame)
     const r = itemAABB(it), floor = levelToFieldY(FLOOR_Y);
     let fx = 0, fy = 0;
     if (r.yMin < floor + 1) fy = floor + 1 - r.yMin;
     if (r.xMin < 0) fx = -r.xMin; else if (r.xMax > DESIGN_W) fx = DESIGN_W - r.xMax;
     if (fx || fy) { x += fx; y += fy; it.node.setPosition(x, y, 0); }
     d.ghost = computeGhost(it);
-    if (it.sprite) it.sprite.color = d.ghost ? GHOST_TINT : NORMAL_TINT;
-    if (!d.ghost) d.lastValid = { x, y, angle: it.node.angle };
+    if (!d.ghost) { const lv = d.lastValid || (d.lastValid = { x: 0, y: 0, angle: 0 }); lv.x = x; lv.y = y; lv.angle = angleOf(it.node); }
+    this.drawHeld(it, d.ghost);
+  }
+
+  /** Web look: 60% item + red outline when it does not fit; shadow + green outline when it does */
+  private drawHeld(it: ItemView, ghost: boolean) {
+    if (it.sprite) it.sprite.color = ghost ? GHOST_ALPHA : OPAQUE;
+    const sh = this.shadow.node;
+    sh.active = !ghost;
+    if (!ghost) {
+      const p = it.node.position;
+      sh.setPosition(p.x, p.y - SHADOW_DROP, 0);
+      sh.setRotation(it.node.rotation); sh.setScale(it.node.scale);
+      const ui = it.transform2d, sui = this.shadowTransform;
+      if (sui.width !== ui.width || sui.height !== ui.height) sui.setContentSize(ui.width, ui.height);
+    }
+    const g = this.outline;
+    g.clear();
+    g.strokeColor = ghost ? GHOST_INK : FIT_INK;
+    g.lineWidth = 2;
+    const m = it.node.worldMatrix, pts = it.outline;
+    if (pts.length >= 3) {
+      for (let i = 0; i < pts.length; i++) {
+        const v = Vec2.transformMat4(this.tmpOut, pts[i], m);
+        if (i) g.lineTo(v.x, v.y); else g.moveTo(v.x, v.y);
+      }
+      g.close(); g.stroke();
+    } else {
+      for (const poly of it.shapes) {
+        for (let i = 0; i < poly.length; i++) if (i) g.lineTo(poly[i].x, poly[i].y); else g.moveTo(poly[i].x, poly[i].y);
+        g.close(); g.stroke();
+      }
+    }
+  }
+
+  private clearHeld(it: ItemView) {
+    this.outline.clear();
+    this.shadow.node.active = false;
+    this.shadow.spriteFrame = null;
+    if (it.sprite) it.sprite.color = OPAQUE;
+    it.node.setScale(it.levelScale, it.levelScale, 1);
+    it.node.setParent(this.itemLayer, true);           // on top of the other items
   }
 
   drop() {
     const S = GameState, d = S.drag; if (!d) return;
     const it = d.item;
     S.drag = null;
-    if (it.sprite) it.sprite.color = NORMAL_TINT;
+    this.clearHeld(it);
     // snapshot the packed items, to undo pushes if this drop turns out not to fit
-    S.bagSnapshot = { dropped: it, list: S.items.filter(o => o !== it && !o.waiting && bagZone(o).fullyInside).map(o => ({ item: o, x: o.node.position.x, y: o.node.position.y, angle: o.node.angle })) };
+    S.bagSnapshot = { dropped: it, list: S.items.filter(o => o !== it && !o.waiting && bagZone(o).fullyInside).map(o => ({ item: o, x: o.node.position.x, y: o.node.position.y, angle: angleOf(o.node) })) };
     let bounced = false;
     if (d.ghost) {
-      if (overlapsInterior(it)) {                    // does not fit in the bag → back to the tray
+      beginSpotBatch();
+      if (bagZone(it).inZone && overlapsInterior(it)) {   // does not fit in the bag → back to the tray
         const spot = findFreeSpot(it, it.node.position.x);
         it.node.setPosition(spot.x, spot.y, 0); bounced = true;
       } else if (d.lastValid) { it.node.setPosition(d.lastValid.x, d.lastValid.y, 0); it.node.angle = d.lastValid.angle; }
@@ -197,7 +271,7 @@ export class DragController extends Component {
   // ---------- rotation ----------
   private beginSpin(item: ItemView, x: number, y: number, id: number) {
     const p = item.node.position;
-    this.spin = { item, id, moved: false, startAngle: item.node.angle, startPointer: Math.atan2(y - p.y, x - p.x), x0: p.x };
+    this.spin = { item, id, moved: false, startAngle: angleOf(item.node), startPointer: Math.atan2(y - p.y, x - p.x), x0: p.x };
     item.holdUntil = 0;
     item.body.type = ERigidBody2DType.Kinematic;          // held still while the finger turns it
     item.stop();

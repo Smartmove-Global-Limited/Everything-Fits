@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "2f7w7kTltOUYL19dIb7Wj+"
+    "fileId": "24b3tNujZNsr2uih6KDLFb"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "2e8b0ES1hND6CJ5AcmL4QP"
+    "fileId": "6aJIenjGdDSKGlgUse/CNS"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "99kgqeP8VPpYy/Fm2qAfI5"
+    "fileId": "86fguPCutN4LvFNRjLjKQ/"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e0/J+q7CZHoqpKdZ/igxns"
+    "fileId": "d1M8xP/o1AMol0FTKTOzK7"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -310,11 +310,168 @@
     "shapeTag": "Rectangle",
     "canLink": true,
     "canLock": true,
+    "outline": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -12.5,
+        "y": 32.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -10,
+        "y": 32.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 13.5,
+        "y": 28.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 14.5,
+        "y": 27.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 15.25,
+        "y": 26.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 16,
+        "y": 22.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 19.25,
+        "y": 19.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 20.75,
+        "y": 16.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 20.75,
+        "y": 11.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 22,
+        "y": 10.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 22.25,
+        "y": 8.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 20.75,
+        "y": 7.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 20.75,
+        "y": -20.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 20.5,
+        "y": -21.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 18.75,
+        "y": -23.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 8.25,
+        "y": -32.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 6.5,
+        "y": -32.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -14.75,
+        "y": -26.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -19.75,
+        "y": -25.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -21,
+        "y": -25.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -22,
+        "y": -24.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -22,
+        "y": -6.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -22.25,
+        "y": -6.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -22,
+        "y": -5.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -22,
+        "y": -0.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -22.25,
+        "y": -0.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -22,
+        "y": 13.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -15.5,
+        "y": 24.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -14.75,
+        "y": 26.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -14.25,
+        "y": 30.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -13.5,
+        "y": 31.63
+      }
+    ],
     "_id": ""
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "766cyTAzxErJTcMRn+CHga"
+    "fileId": "60YGReaJhKvYCo/51uqgDf"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -324,7 +481,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "0dyqZjRphALbtMBX5FxLNX",
+    "fileId": "ecnk1qaVhJWIo4fbIX2nJL",
     "targetOverrides": null
   }
 ]

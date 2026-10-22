@@ -9,6 +9,7 @@
 //       BagLayer        bag body images
 //       ItemLayer       item nodes
 //       FrontLayer      bag rim / opening drawn over the items
+//       HeldLayer       the item being dragged (above the rim): Shadow sprite, the item, Outline
 //       FxLayer         effects
 //       Handle          Graphics for the rotate handle
 //       Environment     static RigidBody2D: tray floor, screen sides (WALL), ceiling (CEILING)
@@ -49,10 +50,13 @@ field.setPosition(-W / 2, -H / 2, 0);
 const bagLayer = make('BagLayer', field);
 const itemLayer = make('ItemLayer', field);
 const frontLayer = make('FrontLayer', field);
+const heldLayer = make('HeldLayer', field);
+const shadow = make('Shadow', heldLayer).addComponent(cc.Sprite);
+const outline = make('Outline', heldLayer).addComponent(cc.Graphics);
 make('FxLayer', field);
 const handle = make('Handle', field).addComponent(cc.Graphics);
 const drag = field.addComponent(cls('DragController'));
-drag.handle = handle;
+drag.handle = handle; drag.heldLayer = heldLayer; drag.outline = outline; drag.shadow = shadow; drag.itemLayer = itemLayer;
 
 // ---- environment colliders (Field space) ----
 const env = make('Environment', field);

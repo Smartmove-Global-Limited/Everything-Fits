@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5f2vO5iHtEMaMNQbZboAcL"
+    "fileId": "85ifJ0z3RH74eDyadc0WMl"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "54TL02cM5KTbiDeKKYYJkH"
+    "fileId": "0aSyQIs0dP5bm1Ibea1CB2"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "74d0PGsuZCRoT5nLZbWI29"
+    "fileId": "ac6xhs5GpLjZs9nyzLCbBM"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -344,7 +344,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e5jYO8nIJFu7OBTBxAe3R3"
+    "fileId": "aadAqTTaxBya+Wo0INpgXC"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -370,11 +370,218 @@
     "shapeTag": "Rectangle",
     "canLink": true,
     "canLock": true,
+    "outline": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -41.5,
+        "y": 39.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -39.75,
+        "y": 39.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -38,
+        "y": 37.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -29.25,
+        "y": 2.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -27.5,
+        "y": -1.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.25,
+        "y": -1.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 30,
+        "y": 2.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 38,
+        "y": 37.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 38.5,
+        "y": 38.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 40,
+        "y": 39.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 41.75,
+        "y": 39.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 43.25,
+        "y": 38.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 43.75,
+        "y": 35.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 37.75,
+        "y": 3.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 37.25,
+        "y": -0.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 37.5,
+        "y": -1.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 36.75,
+        "y": -5.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 41.5,
+        "y": -17.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 42.75,
+        "y": -22.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 42.75,
+        "y": -27.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 42,
+        "y": -30.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 39,
+        "y": -36.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 36.25,
+        "y": -37.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 35.25,
+        "y": -37.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 34.5,
+        "y": -38.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 32.75,
+        "y": -39.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 29.25,
+        "y": -39.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 27.5,
+        "y": -38.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -26.75,
+        "y": -38.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -28.25,
+        "y": -39.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -32.25,
+        "y": -39.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -38.5,
+        "y": -36.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -41.5,
+        "y": -31.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -42.5,
+        "y": -27.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -42.75,
+        "y": -23.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -41,
+        "y": -17.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -37.25,
+        "y": -8.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -35.5,
+        "y": -5.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -41,
+        "y": 24.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -43.75,
+        "y": 36.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -43.25,
+        "y": 38.38
+      }
+    ],
     "_id": ""
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "2fsxzj3WdCO5dUewrPp0b1"
+    "fileId": "b0BlAsa+RF9Zlt8hVIQpih"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -384,7 +591,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "c5yhWZ8UhObZE2xiF9TbS9",
+    "fileId": "74rzGLk0NJaoRaz1nTO9op",
     "targetOverrides": null
   }
 ]

@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b6GwODlWFGgq4WXw8zKQqF"
+    "fileId": "a7YX2iWTlHgq7Ksuzdsj5E"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "57SrXOZ1RJmpMTcQlVaKRQ"
+    "fileId": "0c9sR/JNxOP4xieq7w57Gw"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3bhCGAZFtE7IJBnK7ptDWB"
+    "fileId": "f2duJzh2VAwZxNMYbaKnge"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -249,7 +249,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "d0+A12ofRGFpg5rdlMvUZo"
+    "fileId": "9ezkyRNVNDuJnesyYB3K8w"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -275,11 +275,78 @@
     "shapeTag": "Long",
     "canLink": true,
     "canLock": true,
+    "outline": [
+      {
+        "__type__": "cc.Vec2",
+        "x": 33.88,
+        "y": 44.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 36.88,
+        "y": 44
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 44.38,
+        "y": 36.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 45.13,
+        "y": 35
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 44.63,
+        "y": 32
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -29.88,
+        "y": -42.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -33.38,
+        "y": -44.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -36.13,
+        "y": -44.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -44.63,
+        "y": -35.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -45.13,
+        "y": -33
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -44.38,
+        "y": -31.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 22.38,
+        "y": 34.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 30.38,
+        "y": 42.5
+      }
+    ],
     "_id": ""
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e6KuyYFrdHB6QaECwpJrtq"
+    "fileId": "ceGz1Z3sRGs4t/EU9POddn"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -289,7 +356,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "25RItC2zxJ+K2NeVimbLOp",
+    "fileId": "95bKNnsKVJe5Y/XRfCIS3O",
     "targetOverrides": null
   }
 ]

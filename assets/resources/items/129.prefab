@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e7nGBJBLFMAJnpRBuEfEsJ"
+    "fileId": "54j647969CBKgGeiMb0m2b"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "498B7qOGBGpJbwZGgsEe+U"
+    "fileId": "28Rz0Y6NNAtp8/tDHs/kmz"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c5Nwx0qJ1HT5z/rKPqlqbq"
+    "fileId": "d0YkD5kcxG36bNrzfviICN"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -299,7 +299,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5f7HgrgA9OAoGxFJoHn/iF"
+    "fileId": "f5PrSJa25OwYOWUWBfVAZK"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -325,11 +325,173 @@
     "shapeTag": "Rectangle",
     "canLink": true,
     "canLock": true,
+    "outline": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -3.38,
+        "y": 34.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 3.63,
+        "y": 34.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 9.63,
+        "y": 33.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 16.38,
+        "y": 31.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 19.88,
+        "y": 30.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 25.38,
+        "y": 26.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 27.13,
+        "y": 24.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.88,
+        "y": 19.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.88,
+        "y": 16.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.38,
+        "y": 15.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.63,
+        "y": -22.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 26.38,
+        "y": -25.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 21.63,
+        "y": -29.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 17.38,
+        "y": -31.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 10.13,
+        "y": -33.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 4.13,
+        "y": -34.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -4.13,
+        "y": -34.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -13.88,
+        "y": -32.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -18.63,
+        "y": -30.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -24.13,
+        "y": -27.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -27.88,
+        "y": -23.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -28.88,
+        "y": -20.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -28.88,
+        "y": -18.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -28.38,
+        "y": -16.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -28.38,
+        "y": 15.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -28.88,
+        "y": 16.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -28.88,
+        "y": 19.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -27.88,
+        "y": 22.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -26.13,
+        "y": 25.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -24.38,
+        "y": 27.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -17.88,
+        "y": 31.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -10.63,
+        "y": 33.38
+      }
+    ],
     "_id": ""
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3eqFXVc4VKqr2pfaF4fwTI"
+    "fileId": "c2+XRhrVpA86VjpGuHSjQb"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -339,7 +501,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "91v4hNERVLaaCginHuo+qG",
+    "fileId": "bfEdvktURJrJSknaC9bRvn",
     "targetOverrides": null
   }
 ]

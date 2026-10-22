@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "7cau72isBJ/6xaDZ92MtYk"
+    "fileId": "8dhW1j/axAi7FR3rlHqi3f"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "64hXvvWBJB95KIvQem+ort"
+    "fileId": "9914IDQENCiJx4i+pRnS0w"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "26uCeKB7pJwJ94bgR7Apm8"
+    "fileId": "81EzBs44FHybiPH7/rJ42x"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -364,7 +364,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5dEWUYRllK+aHQZN4D1VRv"
+    "fileId": "edaGqlSOhPtIkXib0F8MyS"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -390,11 +390,283 @@
     "shapeTag": "Rectangle",
     "canLink": true,
     "canLock": true,
+    "outline": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -3.25,
+        "y": 54.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 2.75,
+        "y": 54.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 4.25,
+        "y": 49.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 4.5,
+        "y": 45.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 2.5,
+        "y": 40.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 2.75,
+        "y": 2.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 3,
+        "y": 0.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 4.75,
+        "y": -0.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 8,
+        "y": -2.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 9,
+        "y": -4.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 8.75,
+        "y": -6.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 8.25,
+        "y": -7.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 6.75,
+        "y": -9.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 6.75,
+        "y": -12.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 9.5,
+        "y": -16.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 10.25,
+        "y": -18.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 11.5,
+        "y": -24.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 12,
+        "y": -29.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 11.75,
+        "y": -29.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 12,
+        "y": -30.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 12,
+        "y": -36.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 10.5,
+        "y": -48.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 7.5,
+        "y": -53.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 5.5,
+        "y": -54.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 2.5,
+        "y": -54.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 2.25,
+        "y": -54.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 2,
+        "y": -54.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -3.75,
+        "y": -54.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -5.5,
+        "y": -54.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -8,
+        "y": -52.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -10.5,
+        "y": -48.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -12,
+        "y": -36.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -12,
+        "y": -29.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -11.5,
+        "y": -26.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -11.75,
+        "y": -26.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -10.75,
+        "y": -20.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -9.25,
+        "y": -16.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -6.5,
+        "y": -12.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -6.25,
+        "y": -11.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -6.75,
+        "y": -8.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -8.5,
+        "y": -6.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -8.75,
+        "y": -3.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -7.5,
+        "y": -2.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -4.5,
+        "y": -0.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -3.75,
+        "y": -0.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -3,
+        "y": -0.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -2.5,
+        "y": 1.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -2.75,
+        "y": 1.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -2.5,
+        "y": 2.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -2.75,
+        "y": 4.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -2.75,
+        "y": 40.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -5,
+        "y": 45.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -4.75,
+        "y": 50.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -3.75,
+        "y": 54.63
+      }
+    ],
     "_id": ""
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c2KE7gB3JDypXukbbMdUPD"
+    "fileId": "73sgjU7tRNI6w6BQ3ZeBoi"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -404,7 +676,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "59Y9sLb5lPRJUy7kDjJVdp",
+    "fileId": "71YMpR5mZHRKP7FCINMTBL",
     "targetOverrides": null
   }
 ]

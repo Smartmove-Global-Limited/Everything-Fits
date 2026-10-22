@@ -97,7 +97,10 @@ for (const id of ids) {
   const existing = await Editor.Message.request('asset-db', 'query-asset-info', url);
   if (existing) await Editor.Message.request('asset-db', 'delete-asset', url);
   await Editor.Message.request('scene', 'create-prefab', root.uuid, url);
+  // create-prefab swaps the scene node for a prefab instance (renamed after the file): remove
+  // whatever sits at the scene root now, not only the old reference
   root.removeFromParent(); root.destroy();
+  for (const n of scene.children.slice()) if (n.name !== 'Canvas' && !n.name.startsWith('Editor Scene')) n.destroy();
   report.push(`${id}: ${poly.length} edges, ${caps} caps, ${(skin.walls || []).length} dividers`);
 }
 return report;

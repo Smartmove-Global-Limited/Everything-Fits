@@ -2,11 +2,12 @@
 // poke into the bag interior, push items that stay stuck in the opening back to the tray, track
 // which items are packed, and detect the win.
 //
-// Geometry comes straight from Cocos: Collider2D.worldAABB, PolygonCollider2D.worldPoints and
-// Intersection2D. Nothing here allocates per call (shared scratch objects only).
-import { Vec2, Rect, PolygonCollider2D, CircleCollider2D, Intersection2D, PhysicsSystem2D, Collider2D } from 'cc';
+// Item geometry is ItemView.shapes (polygons at the CURRENT node transform, so the held item is
+// judged where it is drawn, not where Box2D last saw it); other bodies come from Box2D
+// (PolygonCollider2D.worldPoints, testAABB). Nothing here allocates per call.
+import { Vec2, Rect, PolygonCollider2D, CircleCollider2D, Intersection2D, PhysicsSystem2D } from 'cc';
 import { GameState, isHeld, isOnField } from '../core/GameState';
-import { DESIGN_W, TABLE_Y, FLOOR_Y, BAG_WALL, levelToFieldY } from '../core/GameConstants';
+import { DESIGN_W, TABLE_Y, FLOOR_Y, BAG_WALL, PhysicsGroup, levelToFieldY } from '../core/GameConstants';
 import type { ItemView } from './ItemView';
 
 /** Tolerance when testing "inside the bag": physics lets bodies sink slightly into walls */
@@ -23,7 +24,6 @@ const IN_FRAMES = 4, OUT_FRAMES = 18;
 const WIN_FRAMES = 45;
 
 const tmp = new Vec2();
-const aabb = new Rect();
 
 export type BagEvents = {
   onPacked?(item: ItemView, count: number): void;
@@ -34,15 +34,8 @@ export type BagEvents = {
 let events: BagEvents = {};
 export function setBagEvents(e: BagEvents) { events = e; }
 
-/** World AABB of all the item colliders (shared rect, valid until the next call) */
-export function itemAABB(item: ItemView): Rect {
-  let first = true;
-  for (const c of item.colliders) {
-    const r = c.worldAABB;
-    if (first) { aabb.set(r); first = false; } else Rect.union(aabb, aabb, r);
-  }
-  return aabb;
-}
+/** World bounds of the item at its current transform (the item's own rect, do not keep) */
+export function itemAABB(item: ItemView): Rect { item.updateShape(); return item.bounds; }
 
 function pointInsideBag(x: number, y: number): boolean {
   const bag = GameState.bag!;
@@ -61,16 +54,10 @@ function pointInsideBag(x: number, y: number): boolean {
   return false;
 }
 
-/** Every vertex of every collider lies inside the bag interior (with tolerance) */
+/** Every vertex of the item lies inside the bag interior (with tolerance) */
 function allVerticesInside(item: ItemView): boolean {
-  for (const c of item.colliders) {
-    if (c instanceof PolygonCollider2D) {
-      for (const p of c.worldPoints) if (!pointInsideBag(p.x, p.y)) return false;
-    } else if (c instanceof CircleCollider2D) {
-      const p = c.worldPosition, r = c.worldRadius;
-      for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; if (!pointInsideBag(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r)) return false; }
-    }
-  }
+  const polys = item.shapes;
+  for (let i = 0; i < polys.length; i++) for (const p of polys[i]) if (!pointInsideBag(p.x, p.y)) return false;
   return true;
 }
 
@@ -91,35 +78,99 @@ const ZONE_OUT = { inZone: false, fullyInside: false };
 export function overlapsInterior(item: ItemView): boolean {
   const bag = GameState.bag;
   if (!bag || !GameState.bagReady) return false;
-  for (const c of item.colliders) {
-    if (c instanceof PolygonCollider2D) {
-      const pts = c.worldPoints as Vec2[];
-      for (const p of pts) if (Intersection2D.pointInPolygon(p, bag.interiorWorld)) return true;
-      for (const v of bag.interiorWorld) if (Intersection2D.pointInPolygon(v, pts)) return true;
-    } else if (c instanceof CircleCollider2D) {
-      if (Intersection2D.pointInPolygon(c.worldPosition as unknown as Vec2, bag.interiorWorld)) return true;
+  const polys = item.shapes;
+  for (let i = 0; i < polys.length; i++) {
+    const pts = polys[i];
+    for (const p of pts) if (Intersection2D.pointInPolygon(p, bag.interiorWorld)) return true;
+    for (const v of bag.interiorWorld) if (Intersection2D.pointInPolygon(v, pts)) return true;
+  }
+  return false;
+}
+
+// ---- overlap with a tolerance (web: depth > 0.5 against items, > 2.5 against walls) ----
+// The held polygons are shrunk toward their centre by the tolerance, then tested for any
+// intersection: a touch or a sliver of overlap is allowed, a real overlap is not.
+const ITEM_TOL = .5, WALL_TOL = 2.5;
+const shrunk: Vec2[][] = [];
+const centre = new Vec2();
+function shrinkInto(src: Vec2[], dst: Vec2[], d: number) {
+  centre.set(0, 0);
+  for (const p of src) { centre.x += p.x; centre.y += p.y; }
+  centre.x /= src.length; centre.y /= src.length;
+  while (dst.length < src.length) dst.push(new Vec2());
+  dst.length = src.length;
+  for (let i = 0; i < src.length; i++) {
+    const p = src[i], dx = centre.x - p.x, dy = centre.y - p.y, l = Math.sqrt(dx * dx + dy * dy);
+    const k = l > d ? d / l : 0;
+    dst[i].set(p.x + dx * k, p.y + dy * k);
+  }
+}
+const circleCentre = new Vec2();
+
+function overlapsCollider(polys: Vec2[][], other: PolygonCollider2D | CircleCollider2D, tol: number): boolean {
+  for (let i = 0; i < polys.length; i++) {
+    if (!shrunk[i]) shrunk[i] = [];
+    shrinkInto(polys[i], shrunk[i], tol);
+    if (other instanceof PolygonCollider2D) {
+      if (Intersection2D.polygonPolygon(shrunk[i], other.worldPoints as Vec2[])) return true;
+    } else {
+      circleCentre.set(other.worldPosition.x, other.worldPosition.y);
+      if (Intersection2D.polygonCircle(shrunk[i], circleCentre, other.worldRadius)) return true;
     }
   }
   return false;
 }
 
 /**
- * Held item shows as a "ghost" (red, will bounce back) when it pokes into the bag without fitting,
- * or overlaps another item / wall. Touching the bag walls from OUTSIDE is fine (resting next to the
- * bag, on the rim, in its shadow).
+ * Held item shows as a "ghost" (red outline, will bounce back) when it pokes into the bag without
+ * fitting, or overlaps another item / an obstacle. Touching the bag walls from OUTSIDE is fine
+ * (resting next to the bag, on the rim, in its shadow). Tray floor and screen sides are not tested:
+ * the drag keeps the item inside them.
  */
 export function computeGhost(item: ItemView): boolean {
   const z = bagZone(item);
   const poke = z.inZone && overlapsInterior(item);
   if (poke && !z.fullyInside) return true;
-  if (item.heldItemContacts > 0 || item.heldWallContacts > 0) return true;
-  if (poke && item.heldBagContacts > 0) return true;
+  const polys = item.shapes;
+  const hits = PhysicsSystem2D.instance.testAABB(item.bounds);
+  for (let i = 0; i < hits.length; i++) {
+    const c = hits[i];
+    if (c.node === item.node || c.sensor) continue;
+    const g = c.group;
+    if (g === PhysicsGroup.WALL || g === PhysicsGroup.CEILING) continue;
+    if (g === PhysicsGroup.BAG && !poke) continue;
+    if (!(c instanceof PolygonCollider2D) && !(c instanceof CircleCollider2D)) continue;
+    if (overlapsCollider(polys, c, g === PhysicsGroup.BAG ? WALL_TOL : ITEM_TOL)) return true;
+  }
   return false;
 }
 
 /**
+ * Spots handed out during the current batch of teleports. A moved body only follows its node at
+ * the next physics step, so testAABB cannot see it yet: without this list two items moved in the
+ * same frame can land on the same spot, deeply overlapped (Box2D then pushes them back and forth).
+ */
+const claimed: Rect[] = [];
+let claimedCount = 0;
+const probe = new Rect();
+const spot = { x: 0, y: 0 };
+
+/** Start a batch of findFreeSpot calls whose results must not overlap each other */
+export function beginSpotBatch() { claimedCount = 0; }
+
+function isClaimed(r: Rect) {
+  for (let i = 0; i < claimedCount; i++) if (claimed[i].intersects(r)) return true;
+  return false;
+}
+function claim(r: Rect) {
+  if (claimedCount === claimed.length) claimed.push(new Rect());
+  claimed[claimedCount++].set(r);
+}
+
+/**
  * A free spot on the tray close to x (Field space). Tries near the old position first, then widens,
- * so the player's eye can follow the item. Uses PhysicsSystem2D.testAABB against the item box.
+ * so the player's eye can follow the item. Uses PhysicsSystem2D.testAABB against the item box, plus
+ * the spots already handed out in this batch. Returns a shared object (copy it if kept).
  */
 export function findFreeSpot(item: ItemView, nearX: number): { x: number; y: number } {
   const r = itemAABB(item);
@@ -127,26 +178,71 @@ export function findFreeSpot(item: ItemView, nearX: number): { x: number; y: num
   const ox = item.node.position.x - r.center.x, oy = item.node.position.y - r.center.y;   // origin offset from box center
   const minX = 20 + hw, maxX = Math.max(minX, DESIGN_W - 20 - hw);
   const topY = levelToFieldY(TABLE_Y + 10), bottomY = levelToFieldY(FLOOR_Y);
-  const probe = new Rect();
-  for (let t = 0; t < 40; t++) {
-    const spread = 46 + (t / 40) * DESIGN_W;
+  for (let t = 0; t < 60; t++) {
+    const spread = 46 + (t / 60) * DESIGN_W;
     const cx = Math.max(minX, Math.min(maxX, nearX + (Math.random() - .5) * 2 * spread));
     const cy = bottomY + hh + 2 + Math.random() * Math.max(4, topY - bottomY - hh * 2);
     probe.set(cx - hw, cy - hh, hw * 2, hh * 2);
+    if (isClaimed(probe)) continue;
     const hits = PhysicsSystem2D.instance.testAABB(probe);
-    if (!hits.some((c: Collider2D) => c.node !== item.node)) return { x: cx + ox, y: cy + oy };
+    let free = true;
+    for (let i = 0; i < hits.length; i++) if (hits[i].node !== item.node) { free = false; break; }
+    if (free) { claim(probe); spot.x = cx + ox; spot.y = cy + oy; return spot; }
   }
-  return { x: DESIGN_W / 2 + ox, y: bottomY + hh + 10 + oy };
+  // tray is full: drop it onto the pile, from the lowest height where nothing is in the way
+  const cx = Math.max(minX, Math.min(maxX, nearX));
+  let cy = topY + hh + 4;
+  for (let t = 0; t < 30; t++, cy += 8) {
+    probe.set(cx - hw, cy - hh, hw * 2, hh * 2);
+    if (isClaimed(probe)) continue;
+    const hits = PhysicsSystem2D.instance.testAABB(probe);
+    let free = true;
+    for (let i = 0; i < hits.length; i++) if (hits[i].node !== item.node) { free = false; break; }
+    if (free) break;
+  }
+  claim(probe);
+  spot.x = cx + ox; spot.y = cy + oy;
+  return spot;
 }
 
-/** Move an item that does not fit back onto the tray */
+/**
+ * Items to move back onto the tray. Teleports are queued and applied by applyEjects() from the game
+ * loop's update(), i.e. BEFORE the next physics step: Cocos pushes node transforms into Box2D only
+ * then, a node moved after the step (EVENT_AFTER_PHYSICS) is snapped back to its body next frame.
+ */
+const pendingEjects: { item: ItemView; reason: 'noFit' | 'stuck' }[] = [];
+
+/** Queue an item that does not fit to go back onto the tray */
 export function eject(item: ItemView, reason: 'noFit' | 'stuck') {
   if (isHeld(item)) return;
-  const spot = findFreeSpot(item, item.node.position.x);
-  item.node.setPosition(spot.x, spot.y, 0);
-  item.stop(); item.body.wakeUp();
   item.stuckFrames = 0;
-  events.onEjected?.(item, reason);
+  for (const e of pendingEjects) if (e.item === item) return;
+  pendingEjects.push({ item, reason });
+}
+
+/** Called from update(), before the physics step */
+export function applyEjects() {
+  if (!pendingEjects.length) return;
+  beginSpotBatch();
+  for (let i = 0; i < pendingEjects.length; i++) {
+    const { item, reason } = pendingEjects[i];
+    if (isHeld(item) || !item.node.active) continue;
+    const spot = findFreeSpot(item, item.node.position.x);
+    item.node.setPosition(spot.x, spot.y, 0);
+    item.stop(); item.body.wakeUp();
+    events.onEjected?.(item, reason);
+  }
+  pendingEjects.length = 0;
+}
+
+export function clearEjects() { pendingEjects.length = 0; }
+
+/** Does the item touch the bag area (interior plus walls)? Used when the bag appears. */
+export function overlapsBagArea(item: ItemView): boolean {
+  const bag = GameState.bag;
+  if (!bag) return false;
+  const r = itemAABB(item), m = BAG_WALL + 2;
+  return r.xMax > bag.minX - m && r.xMin < bag.maxX + m && r.yMax > bag.minY - m && r.yMin < bag.maxY + m;
 }
 
 /** After each physics step: push out items stuck half-in the opening */

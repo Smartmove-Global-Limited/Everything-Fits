@@ -6,7 +6,9 @@ import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { LevelBuilder } from './LevelBuilder';
 import { DragController } from './DragController';
-import { checkEject, updatePacked, setBagEvents } from './BagRules';
+import * as BagRules from './BagRules';
+import { checkEject, updatePacked, setBagEvents, applyEjects } from './BagRules';
+import { DEV } from 'cc/env';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameController')
@@ -24,6 +26,8 @@ export class GameController extends Component {
   private shownSecond = -1;
 
   onLoad() {
+    // dev builds only: hooks for automated play-testing from the browser console
+    if (DEV) (globalThis as any).__ef = { GameState, BagRules, physics: PhysicsSystem2D.instance, game: this };
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
     director.on(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     setBagEvents({
@@ -70,6 +74,7 @@ export class GameController extends Component {
     if (!running) return;
     const ms = dt * 1000 * S.timeScale;
     S.clock += ms;
+    applyEjects();
     this.drag.tick(dt);
     this.builder.tick();
     this.tickTimer(ms);
