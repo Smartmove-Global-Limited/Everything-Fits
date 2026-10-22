@@ -895,8 +895,10 @@ html[data-art="cozy"] .win-stats .chip b{color:var(--wood)}
 #phone .efset-home{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u) * 4);margin:calc(var(--u) * 22) auto 0;
   padding:calc(var(--u) * 4) calc(var(--u) * 20);font-weight:800;font-size:calc(var(--u) * 14);color:#35413F}
 #phone .efset-home[hidden]{display:none}
-.efset-home img{width:calc(var(--u) * 40);height:calc(var(--u) * 40);object-fit:contain}
-#phone .efset-home:active img{transform:scale(.92)}
+.efset-home img,.efset-home svg{width:calc(var(--u) * 40);height:calc(var(--u) * 40);object-fit:contain}
+#phone .efset-home:active img,#phone .efset-home:active svg{transform:scale(.92)}
+#phone #setRestart{margin-top:calc(var(--u) * 10)}
+#phone .efset-ver{margin:calc(var(--u) * 14) 0 0;text-align:center;font-weight:700;font-size:calc(var(--u) * 11);color:rgba(53,65,63,.55)}
 
 /* ---------- Shop ---------- */
 .efs-scroll{position:relative;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;

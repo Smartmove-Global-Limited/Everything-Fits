@@ -76,7 +76,7 @@ async function boot() {
     onExtraTime: extraTime,
     onHome: goHome,
   });
-  initSettings({ onHome: goHome });
+  initSettings({ onHome: goHome, onRestart: () => { lyDoVao('restart'); restart(); } });
   bindInput();
   bindBoosters();
   bindShake();
