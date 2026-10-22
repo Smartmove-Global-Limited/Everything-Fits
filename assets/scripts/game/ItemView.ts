@@ -52,6 +52,8 @@ export class ItemView extends Component {
   locked = false;         // hidden in a mystery box
   releasedAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0;
   frozen = false; holdUntil = 0;
+  /** angle (degrees) kept while it is turned with the rotate handle and a moment after (DragController) */
+  holdAngle = 0;
   cracks = 0; crackedAt = 0; broken = false;
   held = false;
   lastImpactAt = 0;       // impact sound throttle (game clock)

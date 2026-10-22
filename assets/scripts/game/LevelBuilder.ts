@@ -69,7 +69,12 @@ export class LevelBuilder {
 
     // ---- bag ----
     const c = level.container || {};
-    const bagPrefab = await ContentLoader.bagPrefab(c.skin).catch(() => ContentLoader.bagPrefab('backpack'));
+    // bag and items load together, before anything is placed: an empty item list while the bag is
+    // already there would let tick() reveal the bag (and its walls) before the items fall in
+    const [bagPrefab, prefabs] = await Promise.all([
+      ContentLoader.bagPrefab(c.skin).catch(() => ContentLoader.bagPrefab('backpack')),
+      Promise.all(level.items.map((it: any) => ContentLoader.itemPrefab(it.id).catch(() => null))),
+    ]);
     if (round !== S.round) return;
     const bag = this.takeBag(c.skin, bagPrefab);
     const s = c.scale || 1;
@@ -94,8 +99,6 @@ export class LevelBuilder {
 
     // ---- items ----
     const items: ItemView[] = [];
-    const prefabs = await Promise.all(level.items.map((it: any) => ContentLoader.itemPrefab(it.id).catch(() => null)));
-    if (round !== S.round) return;
     level.items.forEach((it: any, i: number) => {
       const prefab = prefabs[i] as Prefab | null;
       if (!prefab) return;

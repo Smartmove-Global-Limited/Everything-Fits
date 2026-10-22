@@ -255,40 +255,51 @@ export class DragController extends Component {
   }
 
   // ---------- rotation ----------
+  // The item stays a normal dynamic body while it is turned and while its new angle is held
+  // (web input.js tickRotation / giuGocSauXoay): only its angle is locked and its sliding damped.
+  // Turned into a neighbour, both push each other apart; a kinematic body would shove the
+  // neighbour forever, and one squeezed against a wall shakes non-stop.
   private beginSpin(item: ItemView, x: number, y: number, id: number) {
     const p = item.node.position;
     this.spin = { item, id, moved: false, startAngle: angleOf(item.node), startPointer: Math.atan2(y - p.y, x - p.x), x0: p.x };
     item.holdUntil = 0;
-    item.body.type = ERigidBody2DType.Kinematic;          // held still while the finger turns it
+    item.holdAngle = angleOf(item.node);
+    item.body.type = ERigidBody2DType.Dynamic;
     item.stop();
   }
   private moveSpin(x: number, y: number) {
     const sp = this.spin!, it = sp.item, p = it.node.position;
     sp.moved = true;
-    it.node.angle = sp.startAngle + (Math.atan2(y - p.y, x - p.x) - sp.startPointer) * 180 / Math.PI;
+    it.holdAngle = sp.startAngle + (Math.atan2(y - p.y, x - p.x) - sp.startPointer) * 180 / Math.PI;
+    it.node.angle = it.holdAngle;
+  }
+  /** Angle locked, no sliding sideways (contacts may still nudge it), falling stays natural */
+  private holdAngle(it: ItemView, still: boolean) {
+    if (Math.abs(angleOf(it.node) - it.holdAngle) > .01) it.node.angle = it.holdAngle;
+    const v = it.body.linearVelocity;
+    it.body.linearVelocity = v.set(0, still ? 0 : Math.min(0, v.y));
+    it.body.angularVelocity = 0;
   }
   private holdSpinPosition() {
-    const it = this.spin!.item;
-    it.stop();
+    this.holdAngle(this.spin!.item, false);
   }
   /** After rotating: inside the bag keep the angle a moment, on the tray keep it until touched again */
   private holdAfterSpin(item: ItemView) {
     item.stop();
-    if (!bagZone(item).inZone) { item.holdUntil = Infinity; return; }
-    item.holdUntil = GameState.clock + HOLD_AFTER_SPIN;
+    item.holdAngle = angleOf(item.node);
+    item.holdUntil = bagZone(item).inZone ? GameState.clock + HOLD_AFTER_SPIN : Infinity;
   }
   private releaseSpinHolds() {
     const now = GameState.clock;
     for (const it of GameState.items) {
       if (!it.holdUntil || (this.spin && this.spin.item === it)) continue;
       it.stuckFrames = 0;
-      if (it.holdUntil !== Infinity && now >= it.holdUntil) {
-        it.holdUntil = 0;
-        it.body.type = ERigidBody2DType.Dynamic; it.stop(); it.body.wakeUp();
-      }
+      if (it.holdUntil !== Infinity && now >= it.holdUntil) { it.holdUntil = 0; it.stop(); it.body.wakeUp(); continue; }
+      // in the bag: still a moment; on the tray: the angle stays, it may still fall
+      this.holdAngle(it, it.holdUntil !== Infinity);
     }
     // a tray item kept still after rotating is released when anything else is picked up
-    if (GameState.drag) for (const it of GameState.items) if (it.holdUntil === Infinity && !isHeld(it)) { it.holdUntil = 0; it.body.type = ERigidBody2DType.Dynamic; it.body.wakeUp(); }
+    if (GameState.drag) for (const it of GameState.items) if (it.holdUntil === Infinity && !isHeld(it)) { it.holdUntil = 0; it.body.wakeUp(); }
   }
 
   /**
