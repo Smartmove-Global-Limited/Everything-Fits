@@ -56,5 +56,11 @@ export const ContentLoader = {
     await Promise.all([...[...new Set(ids)].map(id => this.itemPrefab(id).catch(() => null)), skin ? this.bagPrefab(skin).catch(() => null) : null]);
   },
 
+  /** Ids of every item shipped (content index), for dev checks */
+  async itemIds(): Promise<number[]> {
+    const index = await load<JsonAsset>('content/cozy/assets/index', JsonAsset);
+    return Object.keys((index.json as any).items || {}).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  },
+
   spriteFrame(path: string) { return load<SpriteFrame>(`${path}/spriteFrame`, SpriteFrame); },
 };

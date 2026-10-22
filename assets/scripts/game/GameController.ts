@@ -17,6 +17,7 @@ import { Fx } from './Fx';
 import { tickPhone, tickBalloons, setMechanicsEvents } from './Mechanics';
 import { Shake } from './Shake';
 import { tickSettle, wakeAll } from './Settle';
+import { checkLevels, checkItems } from './LevelCheck';
 import { LocalStore } from '../services/LocalStore';
 import { Analytics } from '../services/Analytics';
 import { DEV } from 'cc/env';
@@ -80,7 +81,12 @@ export class GameController extends Component {
     this.fitToScreen();
     view.on('canvas-resize', this.fitToScreen, this);   // the bag follows at the next level build
     // dev builds only: hooks for automated play-testing from the browser console
-    if (DEV) (globalThis as any).__ef = { GameState, BagRules, Sound, Analytics, physics: PhysicsSystem2D.instance, game: this };
+    if (DEV) (globalThis as any).__ef = {
+      GameState, BagRules, Sound, Analytics, physics: PhysicsSystem2D.instance, game: this,
+      // dev checks: do packed items come to rest? (LevelCheck.ts) Run after adding levels / items
+      checkLevels: (only?: number[]) => checkLevels(this, only),
+      checkItems: (opts?: any) => checkItems(this, opts),
+    };
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
     director.on(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     setBagEvents({
