@@ -22,10 +22,11 @@ android {
         applicationId APPLICATION_ID
         minSdkVersion 24   // like the web app; Firebase BoM 34 needs 23+
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        // Store version: replaces the web (Capacitor) app on Google Play, same package id, so the
-        // version code must stay above the web app's (5). Raise both for every upload.
-        versionCode 6
-        versionName "0.0.2"
+        // Store version: native/engine/android/version.properties (raise it for every upload)
+        def ver = new Properties()
+        file('../version.properties').withInputStream { ver.load(it) }
+        versionCode ver['versionCode'].toInteger()
+        versionName ver['versionName']
         // AppsFlyer Dev Key from appsflyer.properties next to this folder (NOT in git, like the
         // web app's android/appsflyer.properties). Missing file = the app sends nothing to AppsFlyer.
         def afProps = new Properties()

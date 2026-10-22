@@ -1,0 +1,13 @@
+{
+  "package_version": 2,
+  "version": "1.0.0",
+  "name": "ef-android",
+  "title": "EF Android",
+  "description": "Android build in one click: cleans old data, fixes the generated project, then packs the signed AAB / APK right after Build.",
+  "author": "Everything Fits",
+  "editor": ">=3.8.0",
+  "main": "./main.js",
+  "contributions": {
+    "builder": "./builder.js"
+  }
+}
