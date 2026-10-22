@@ -9,6 +9,11 @@ import { ContentLoader } from '../content/ContentLoader';
 import { Progress } from '../services/Progress';
 import { GameState } from '../core/GameState';
 import { Sound } from '../audio/Sound';
+import { SplashView } from './SplashView';
+import { Analytics } from '../services/Analytics';
+
+/** The splash plays once per app launch, not when coming back from a level */
+let splashPlayed = false;
 const { ccclass, property } = _decorator;
 
 @ccclass('MainMenu')
@@ -32,10 +37,13 @@ export class MainMenu extends Component {
   }
 
   async start() {
+    const splash = splashPlayed ? null : SplashView.play(this.node.parent!);
+    splashPlayed = true;
     this.book = await ContentLoader.loadBook();
     Sound.preload();
     Sound.startMusic();
     this.openHome();
+    await splash;
   }
 
   private spot() { return Progress.getSpot(ContentLoader.chapters()); }
@@ -57,6 +65,7 @@ export class MainMenu extends Component {
     const s = this.spot(); if (!s) return;
     GameState.chapter = s.chapter; GameState.chapterId = s.chapter.id; GameState.levelIndex = s.index;
     GameState.fromMenu = true;
+    Analytics.setReason('home');
     director.loadScene('Game');
   }
 }

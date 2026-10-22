@@ -17,6 +17,7 @@ import { Fx } from './Fx';
 import { tickPhone, tickBalloons, setMechanicsEvents } from './Mechanics';
 import { Shake } from './Shake';
 import { LocalStore } from '../services/LocalStore';
+import { Analytics } from '../services/Analytics';
 import { DEV } from 'cc/env';
 import { GameHud, BoosterId, BoosterState } from '../ui/GameHud';
 import { showPopup } from '../ui/PopupHost';
@@ -51,7 +52,7 @@ export class GameController extends Component {
 
   onLoad() {
     // dev builds only: hooks for automated play-testing from the browser console
-    if (DEV) (globalThis as any).__ef = { GameState, BagRules, Sound, physics: PhysicsSystem2D.instance, game: this };
+    if (DEV) (globalThis as any).__ef = { GameState, BagRules, Sound, Analytics, physics: PhysicsSystem2D.instance, game: this };
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
     director.on(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     setBagEvents({
@@ -121,11 +122,12 @@ export class GameController extends Component {
     this.hud.showBagHint(false);
     this.freezeShown = -1;
     this.shakeHintOnce();
+    Analytics.levelStart(this.levelNumber, S.level.id || String(S.levelIndex), S.level.difficulty?.tier);
     this.renderBoosters();
     Sound.duckMusic(false);
   }
 
-  restart() { return this.openLevel(GameState.levelIndex); }
+  restart() { Analytics.setReason('restart'); return this.openLevel(GameState.levelIndex); }
 
   get running() { const S = GameState; return !!S.level && !S.won && !S.lost && !S.paused; }
 
@@ -246,6 +248,7 @@ export class GameController extends Component {
       this.puff(it); this.fx?.sparkle(p.x, p.y, { n: 16, color: '#E8434F', speed: 1.3 }); this.fx?.floatText(p.x, p.y + 16, 'Bye!', { color: '#E8434F' });
       this.hud.toastMessage(`Threw out ${it.nameEn || it.nameVi}`);
     }
+    Analytics.boosterUsed(key);
     this.renderBoosters();
   }
 
@@ -291,6 +294,7 @@ export class GameController extends Component {
 
   private onWin() {
     const S = GameState;
+    Analytics.levelEnd('win');
     const first = Progress.markDone(S.chapterId, S.levelIndex);
     Progress.setSpot(S.chapterId, Math.min(S.levelIndex + 1, S.chapter.levels.length - 1));
     if (first && S.levelIndex + 1 < S.chapter.levels.length) Sound.play('unlockLv', { delay: 1.15, gain: .9 });
@@ -314,6 +318,7 @@ export class GameController extends Component {
   }
 
   private nextLevel() {
+    Analytics.setReason('next');
     const spot = Progress.getSpot(ContentLoader.chapters());
     if (spot && spot.chapter !== GameState.chapter) { GameState.chapter = spot.chapter; GameState.chapterId = spot.chapter.id; }
     return this.openLevel(spot ? spot.index : GameState.levelIndex + 1);
@@ -324,6 +329,7 @@ export class GameController extends Component {
     const S = GameState;
     if (S.lost || S.won) return;
     S.lost = true;
+    Analytics.levelEnd('lose');
     Sound.play('lose'); Sound.duckMusic(true);
     this.fx?.shake(420);
     const p = await showPopup('LosePopup', LosePopup);
@@ -332,6 +338,7 @@ export class GameController extends Component {
       onRetry: () => this.restart(),
       onExtraTime: () => {
         S.timeLeft = 60000; S.lost = false;
+        Analytics.extraTime();
         this.hud.resetClock(); this.hud.setClock(60);
         Sound.duckMusic(false);
         this.hud.toastMessage('+60 sec!');
