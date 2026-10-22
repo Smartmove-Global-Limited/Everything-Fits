@@ -11,11 +11,12 @@ import { LevelBuilder } from './LevelBuilder';
 import { DragController } from './DragController';
 import * as BagRules from './BagRules';
 import { checkEject, updatePacked, setBagEvents, applyEjects } from './BagRules';
-import { startFreeze, tickFreeze, freezeLeft, shrinkBiggestOutside, throwOne, FREEZE_MS } from './BoosterEffects';
+import { startFreeze, tickFreeze, freezeLeft, isFreezing, shrinkBiggestOutside, throwOne, FREEZE_MS } from './BoosterEffects';
 import { scoreRound } from './Score';
 import { Fx } from './Fx';
 import { tickPhone, tickBalloons, setMechanicsEvents } from './Mechanics';
 import { Shake } from './Shake';
+import { tickSettle, wakeAll } from './Settle';
 import { LocalStore } from '../services/LocalStore';
 import { Analytics } from '../services/Analytics';
 import { DEV } from 'cc/env';
@@ -85,7 +86,7 @@ export class GameController extends Component {
     setBagEvents({
       onPacked: (it, count) => this.onFitted(it, count),
       onWin: () => this.onWin(),
-      onEjected: it => { Sound.play('eject'); this.puff(it); this.hud.toastMessage("Doesn't fit! Pushed back out"); },
+      onEjected: it => { wakeAll(); Sound.play('eject'); this.puff(it); this.hud.toastMessage("Doesn't fit! Pushed back out"); },
     });
     setMechanicsEvents({ onBroken: it => this.onLose(`${it.nameEn || it.nameVi} broke!`) });
     this.drag.events = {
@@ -214,26 +215,7 @@ export class GameController extends Component {
     if (!this.running) return;
     checkEject(GameState.clock);
     updatePacked(GameState.clock);
-    this.updateBagHint();
-  }
-
-  // ---------- bag hint: shown while nothing lies inside the bag (web bags.js drawEmptyLabel) ----------
-  private hintPlacedFor: object | null = null;
-  private updateBagHint() {
-    const S = GameState, bag = S.bag;
-    if (!bag || !S.bagReady) { this.hud.showBagHint(false); return; }
-    if (this.hintPlacedFor !== bag) {
-      this.hintPlacedFor = bag;
-      this.hud.placeBagHint(S.level?.emptyTextEn || 'Pack your things here!', (bag.minX + bag.maxX) / 2, (bag.minY + bag.maxY) / 2);
-    }
-    let any = S.packed.size > 0;
-    for (let i = 0; !any && i < S.items.length; i++) {
-      const it = S.items[i];
-      if (it.waiting || it.held || it.itemId === 0) continue;
-      const r = BagRules.itemAABB(it);
-      any = r.yMin > bag.minY && r.yMax < bag.maxY + 4 && r.xMin > bag.minX - 4 && r.xMax < bag.maxX + 4;
-    }
-    this.hud.showBagHint(!any);
+    tickSettle(director.getDeltaTime());   // packed clusters that only twitch go to sleep
   }
 
   // ---------- boosters (web boosters.js) ----------
@@ -249,7 +231,9 @@ export class GameController extends Component {
     });
   }
   private tickFreezeBadge() {
+    const wasFreezing = !!GameState.freezeUntil;
     const freezing = tickFreeze();
+    if (wasFreezing && !freezing) wakeAll();   // thawed: items settle again
     const sec = freezing ? Math.ceil(freezeLeft() / 1000) : 0;
     if (sec !== this.freezeShown) { this.freezeShown = sec; this.renderBoosters(); }
   }
@@ -264,11 +248,12 @@ export class GameController extends Component {
       Sound.play('shrink');
       const b = S.bag;
       if (b && this.fx) { const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2; this.fx.ring(cx, cy, { color: '#7FC8F0', r1: 150, life: 600 }); this.fx.sparkle(cx, cy, { n: 26, color: '#BFE6FA', speed: 1.6 }); }
-      this.hud.toastMessage(`Frozen for ${FREEZE_MS / 1000}s: items stay where you drop them`);
+      this.hud.toastMessage(`Frozen for ${FREEZE_MS / 1000}s: the clock stops, items stay where you drop them`);
     } else if (key === 'resize') {
       const it = shrinkBiggestOutside();
       if (!it) { Sound.play('nope'); this.hud.toastMessage('Nothing left outside the bag'); return; }
       Boosters.use('resize');
+      wakeAll();
       Sound.play('shrink');
       const p = it.node.position;
       this.puff(it); this.fx?.ring(p.x, p.y, { color: '#3D8BFF', r1: 40, life: 420 }); this.fx?.floatText(p.x, p.y + 18, '−20%', { color: '#2A66C8' });
@@ -277,6 +262,7 @@ export class GameController extends Component {
       const it = throwOne();
       if (!it) { Sound.play('nope'); this.hud.toastMessage('Nothing can be thrown out'); return; }
       Boosters.use('throw');
+      wakeAll();
       Sound.play('trash');
       const p = it.node.position;
       this.puff(it); this.fx?.sparkle(p.x, p.y, { n: 16, color: '#E8434F', speed: 1.3 }); this.fx?.floatText(p.x, p.y + 16, 'Bye!', { color: '#E8434F' });
@@ -318,6 +304,7 @@ export class GameController extends Component {
   private tickTimer(ms: number) {
     const S = GameState;
     if (!S.timerOn || !S.bagReady) return;
+    if (isFreezing()) return;   // Freeze booster: the clock stops too
     const before = Math.ceil(S.timeLeft / 1000);
     S.timeLeft = Math.max(0, S.timeLeft - ms);
     const sec = Math.ceil(S.timeLeft / 1000);

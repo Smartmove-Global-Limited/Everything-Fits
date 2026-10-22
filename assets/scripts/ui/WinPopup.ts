@@ -1,14 +1,13 @@
 // Level complete popup (web hud.js showWin, Figma "EF · Reward"):
 //   LEVEL N COMPLETE! · Packed! · three stars popping in · time used and gold reward ·
-//   "Packed the right way" or the first packing mistake · Continue / Collect ×2 (rewarded ad).
-import { _decorator, Component, Node, Sprite, SpriteFrame, resources, Color, Vec3, tween, Tween, UIOpacity } from 'cc';
-import { findNode, findAll, labelIn, setText, tap, openPopup, closePopup } from './UiKit';
+//   Continue / Collect ×2 (rewarded ad).
+import { _decorator, Component, Node, Sprite, SpriteFrame, resources, Color, Vec3, tween, Tween, UIOpacity, UITransform } from 'cc';
+import { findNode, findAll, setText, tap, openPopup, closePopup } from './UiKit';
 import { RoundRect } from './RoundRect';
 import { Overlays } from './Overlays';
 import { Sound } from '../audio/Sound';
 const { ccclass } = _decorator;
 
-const BAD = new Color(0xB5, 0x52, 0x4F, 255), INK = new Color(0x35, 0x41, 0x3F, 255);
 const DONE_BG = new Color(0xDC, 0xE4, 0xD2, 255), DONE_BORDER = new Color(0x9D, 0xB8, 0x9A, 255);
 
 export type WinOptions = {
@@ -41,6 +40,26 @@ export class WinPopup extends Component {
     tap(findNode(n, 'winHome'), () => { closePopup(n); this.opts.onHome(); }, 'tap', this);
     this.x2Enable = tap(this.x2, () => this.collectX2(), 'tapBig', this);
     starFrames ||= Promise.all([frame('uiart/icons/star/spriteFrame'), frame('uiart/icons/star-off/spriteFrame')]);
+    this.dropMistakeLine();
+  }
+
+  /**
+   * No packing-mistake line (it showed in red, with item names in two languages): hide it and close
+   * the gap. The buttons move up into its place and the card gets shorter by as much, the top
+   * part keeps its distances.
+   */
+  private dropMistakeLine() {
+    const kieu = findNode(this.card, 'winKieu'), score = findNode(this.card, 'winScore');
+    const cardUi = this.card.getComponent(UITransform);
+    if (!kieu || !score || !cardUi) return;
+    const h = (x: Node) => x.getComponent(UITransform)?.height ?? 0;
+    const d = (score.position.y - h(score) / 2) - (kieu.position.y - h(kieu) / 2);   // gap above + line
+    kieu.active = false;
+    for (const c of this.card.children) {
+      if (c === kieu) continue;
+      c.setPosition(c.position.x, c.position.y + (c.position.y < kieu.position.y ? d / 2 : -d / 2), 0);
+    }
+    cardUi.height -= d;
   }
 
   async open(o: WinOptions) {
@@ -54,9 +73,6 @@ export class WinPopup extends Component {
     const m = Math.floor(o.seconds / 60), s = Math.max(0, o.seconds) % 60;
     setText(findNode(stats, 'b'), `${m}:${s < 10 ? '0' : ''}${s}`);
     setText(findNode(n, 'winCoin'), `+${o.reward}`);
-    const kieu = labelIn(findNode(n, 'winKieu'))!;
-    kieu.string = o.mistake || 'Packed the right way';
-    kieu.color = o.mistake ? BAD : INK;
     this.setX2Done(false);
     openPopup(n, this.card);
     Sound.play('star', { delay: .1 });

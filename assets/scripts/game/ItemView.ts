@@ -51,6 +51,8 @@ export class ItemView extends Component {
   presetInBag = false;    // placed inside the bag from the start
   locked = false;         // hidden in a mystery box
   releasedAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0;
+  /** Settle: where the item has been staying lately and for how long (seconds) */
+  restX = NaN; restY = 0; restAngle = 0; restTime = 0;
   frozen = false; holdUntil = 0;
   /** angle (degrees) kept while it is turned with the rotate handle and a moment after (DragController) */
   holdAngle = 0;
@@ -170,6 +172,8 @@ export class ItemView extends Component {
       const density = (this.grams || 150) / Math.max(1, this.baseArea * k * k);
       const f = Math.max(.003, Math.min(.07, .012 * Math.pow(.04 / density, .9)));
       this.body.linearDamping = -Math.log(1 - f) * 60;
+      // Matter's frictionAir slows the spin too: without it a spin kick (phone buzz) adds up
+      this.body.angularDamping = this.body.linearDamping;
     }
   }
 

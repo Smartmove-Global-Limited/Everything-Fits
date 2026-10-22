@@ -13,6 +13,7 @@
 // If the editor is open with EF Bridge enabled, it is told to refresh the asset database.
 import { readdirSync, statSync, mkdirSync, copyFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -50,6 +51,8 @@ for (const [a, b] of PAIRS) {
   copyDir(a, b);
 }
 console.log(`sync done: ${added} added, ${changed} changed, ${removed} removed`);
+// bag frames are drawn over the items: drop the print grain inside the bags (tools/clean-bag-frames.py)
+if (added || changed) execFileSync('python3', [join(ROOT, 'tools/clean-bag-frames.py')], { stdio: 'inherit' });
 
 try {
   const r = await fetch('http://127.0.0.1:7461/msg', { method: 'POST', body: JSON.stringify({ module: 'asset-db', message: 'refresh-asset', args: ['db://assets'] }) });

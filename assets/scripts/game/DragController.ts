@@ -14,6 +14,7 @@ import { DESIGN_W, levelToFieldY, FLOOR_Y, PTM } from '../core/GameConstants';
 import { ItemView } from './ItemView';
 import { computeGhost, overlapsInterior, bagZone, findFreeSpot, itemAABB, beginSpotBatch } from './BagRules';
 import { isFreezing, freezeItem } from './BoosterEffects';
+import { wakeAll } from './Settle';
 const { ccclass, property } = _decorator;
 
 const DRAG_START = 7;                       // pointer travel that turns a touch into a drag
@@ -160,6 +161,7 @@ export class DragController extends Component {
     S.bagSnapshot = null;
     item.holdUntil = 0; item.frozen = false;
     item.beginHold();
+    wakeAll();   // what it was holding up falls (sleeping clusters, see Settle)
     // above the bag rim while held (else dragging it out of the bag looks like it slides under it)
     item.node.setParent(this.heldLayer, true);
     this.outline.node.setSiblingIndex(this.heldLayer.children.length - 1);

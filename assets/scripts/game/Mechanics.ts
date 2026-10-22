@@ -97,6 +97,7 @@ function crack(b: ItemView, at: Vec2) {
 
 // ---------- phone: buzzes inside the bag ----------
 const BUZZ_CYCLE = 5200, BUZZ_ON = 900;
+const PHONE_SPIN_MAX = 2;   // rad/s
 const tmpForce = new Vec2();
 /** Called every frame before the physics step. Returns the buzzing phone (for the waves) or null. */
 export function tickPhone(dtMs: number): ItemView | null {
@@ -111,7 +112,10 @@ export function tickPhone(dtMs: number): ItemView | null {
       const m = it.body.getMass();
       tmpForce.set((Math.random() - .5) * 190 * m, (Math.random() - .4) * 190 * m);
       it.body.applyForceToCenter(tmpForce, true);
-      it.body.angularVelocity += (Math.random() - .5) * .12 * STEP;
+      // web ±.06 rad per step; capped: Box2D keeps spin longer than Matter, kicks added up into a
+      // phone spinning round and knocking the whole bag about
+      const w = it.body.angularVelocity + (Math.random() - .5) * .12 * STEP;
+      it.body.angularVelocity = Math.max(-PHONE_SPIN_MAX, Math.min(PHONE_SPIN_MAX, w));
     }
   }
   return buzzing;
