@@ -24,3 +24,6 @@ node_modules/
 # WebStorm
 #//////////////////////////
 .idea/
+
+# AppsFlyer Dev Key: kept outside git (copy from snug/android/appsflyer.properties)
+/native/engine/android/appsflyer.properties

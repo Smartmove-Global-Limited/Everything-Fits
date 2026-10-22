@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Firebase configuration, the values the google-services Gradle plugin generates from
+     google-services.json (project everything-fits-android). Firebase starts from these strings
+     by itself, so the Cocos-generated top-level Gradle files need no plugin. -->
+<resources>
+    <string name="google_app_id" translatable="false">1:646632942652:android:6e18a5d5d2358b5761a739</string>
+    <string name="google_api_key" translatable="false">AIzaSyAddNwRjzWYRCM7UyUpqt64Zbk_jmnYicE</string>
+    <string name="gcm_defaultSenderId" translatable="false">646632942652</string>
+    <string name="project_id" translatable="false">everything-fits-android</string>
+    <string name="google_storage_bucket" translatable="false">everything-fits-android.firebasestorage.app</string>
+</resources>

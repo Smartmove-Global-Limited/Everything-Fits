@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Facebook SDK (core: App Events, installs), same app as the web / Capacitor build -->
+<resources>
+    <string name="facebook_app_id" translatable="false">1431838732378090</string>
+    <string name="facebook_client_token" translatable="false">c723ffc9542ed0789724b873afca69b2</string>
+</resources>
