@@ -1,0 +1,54 @@
+// Shared state of the current round. Plain data, no per-frame logic.
+import type { ItemView } from '../game/ItemView';
+import type { BagView } from '../game/BagView';
+
+export interface DragState {
+  item: ItemView;
+  /** pointer → item origin offset, in item local axes (so it follows rotation) */
+  offsetX: number; offsetY: number;
+  /** target pointer position (Field space) */
+  targetX: number; targetY: number;
+  lift: number; liftTo: number;
+  ghost: boolean;
+  lastValid: { x: number; y: number; angle: number } | null;
+  touchId: number;
+}
+
+export const GameState = {
+  chapterId: 'school-day',
+  chapter: null as any,
+  levelIndex: 0,
+  level: null as any,
+  preview: false,
+
+  bag: null as BagView | null,
+  items: [] as ItemView[],
+  /** number of items that must end up in the bag (everything but the key), set when a level is built */
+  itemsToPack: 0,
+
+  drag: null as DragState | null,
+  selected: null as ItemView | null,
+
+  /** item level indices counted as packed */
+  packed: new Set<number>(),
+  /** item level indices removed by the throw-away booster */
+  removed: new Set<number>(),
+  winFrames: 0, won: false, lost: false, paused: false,
+
+  timeLeft: 0, timerOn: true,
+  /** game clock in ms, only advances while the round is running */
+  clock: 0, timeScale: 1,
+  startTime: 0,
+  /** increases every time a round is (re)built, so stale async work can bail out */
+  round: 0,
+
+  bagReady: false, bagShownAt: 0,
+  freezeUntil: 0,
+  boosts: { freeze: 1, resize: 1, throw: 1 } as Record<string, number>,
+
+  /** snapshot of the bag right before the last drop, to undo if that drop failed */
+  bagSnapshot: null as null | { dropped: ItemView; list: { item: ItemView; x: number; y: number; angle: number }[] },
+};
+
+export const isHeld = (it: ItemView) => !!GameState.drag && GameState.drag.item === it;
+export const isOnField = (it: ItemView) => !it.waiting;
