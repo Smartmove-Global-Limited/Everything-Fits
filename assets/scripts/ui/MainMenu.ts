@@ -15,49 +15,65 @@ import { Overlays } from './Overlays';
 
 /** The splash plays once per app launch, not when coming back from a level */
 let splashPlayed = false;
+import { ScreenFit } from './ScreenFit';
 const { ccclass, property } = _decorator;
 
 @ccclass('MainMenu')
 export class MainMenu extends Component {
-  @property({ type: Prefab, tooltip: 'resources/ui/HomeScreen (built from the web UI)' }) homePrefab: Prefab = null!;
-  @property({ type: Prefab, tooltip: 'resources/ui/ShopScreen (built from the web UI)' }) shopPrefab: Prefab = null!;
-
   private home: HomeScreen = null!;
-  private shop: ShopScreen = null!;
+  private shop: ShopScreen | null = null;
   private book: any = null;
 
   onLoad() {
-    const canvas = this.node.parent!;
-    const add = (p: Prefab) => { const n = instantiate(p); canvas.insertChild(n, this.node.getSiblingIndex()); return n; };
-    this.home = add(this.homePrefab).getComponent(HomeScreen)!;
-    this.shop = add(this.shopPrefab).getComponent(ShopScreen)!;
+    ScreenFit.apply();
+    director.preloadScene('Game');
+  }
+
+  /** Home and Shop come from resources/ui (regenerated from the web UI, so loaded by path, not uuid) */
+  private async buildScreens() {
+    const home = await Overlays.loadPrefab('ui/HomeScreen');
+    this.home = this.add(home).getComponent(HomeScreen)!;
     this.home.actions = { onPlay: () => this.play(), onShop: toGold => this.openShop(toGold), onSettings: () => this.openSettings() };
+  }
+  private add(p: Prefab) { const n = instantiate(p); this.node.parent!.insertChild(n, this.node.getSiblingIndex()); return n; }
+
+  /** The Shop (215 nodes) is built the first time it is opened, then kept */
+  private async ensureShop() {
+    if (this.shop) return this.shop;
+    this.shop = this.add(await Overlays.loadPrefab('ui/ShopScreen')).getComponent(ShopScreen)!;
     this.shop.actions = { onHome: () => this.openHome(), onSettings: () => this.openSettings() };
     this.shop.node.active = false;
-    director.preloadScene('Game');
+    return this.shop;
   }
 
   async start() {
     const covered = Overlays.startCoveredIfPending();
     const splash = splashPlayed ? null : SplashView.play(this.node.parent!);
     splashPlayed = true;
+    await this.buildScreens();
     this.book = await ContentLoader.loadBook();
     Sound.preload();
     Sound.startMusic();
     this.openHome();
     if (covered) Overlays.uncover();
+    // while the player looks at Home: everything the level needs, so Play opens it at once
+    const s = this.spot();
+    if (s) ContentLoader.preloadChapter(s.chapter);
+    Overlays.loadPrefab('ui/SettingsPopup');
     await splash;
+    this.ensureShop();   // after the splash: ready before the first tap on Shop
   }
 
   private spot() { return Progress.getSpot(ContentLoader.chapters()); }
 
   private openHome() {
-    this.shop.node.active = false;
+    if (this.shop) this.shop.node.active = false;
+    this.home.node.active = true;
     const s = this.spot();
     if (s) this.home.show(ContentLoader.levelNumber(s.chapter.id, s.index), s.chapter.levels[s.index]);
   }
 
-  private openShop(toGold: boolean) { this.home.node.active = false; this.shop.show(toGold); }
+  private async openShop(toGold: boolean) { const shop = await this.ensureShop(); this.home.node.active = false; shop.show(toGold); }
 
   private async openSettings() {
     const p = await showPopup('SettingsPopup', SettingsPopup);

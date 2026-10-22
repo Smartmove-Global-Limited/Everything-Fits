@@ -48,10 +48,12 @@ export class RoundRect extends Component {
   private static readonly tmp = new Color();
 
   onLoad() { this.g = this.getComponent(Graphics); }
+  private drawn = false;
   onEnable() {
     this.node.on(Node.EventType.SIZE_CHANGED, this.redraw, this);
     this.node.on(Node.EventType.ANCHOR_CHANGED, this.redraw, this);
-    this.redraw();
+    // Graphics keeps its shape while the node is inactive: re-showing a screen redraws nothing
+    if (!this.drawn) this.redraw();
   }
   onDisable() { this.node.off(Node.EventType.SIZE_CHANGED, this.redraw, this); this.node.off(Node.EventType.ANCHOR_CHANGED, this.redraw, this); }
 
@@ -62,6 +64,7 @@ export class RoundRect extends Component {
     const g = this.g || (this.g = this.getComponent(Graphics));
     const ui = this.getComponent(UITransform);
     if (!g || !ui) return;
+    this.drawn = true;
     const w = ui.width, h = ui.height, x = -w * ui.anchorX, y = -h * ui.anchorY;
     const r = Math.max(0, Math.min(this._radius, w / 2, h / 2));
     const c = RoundRect.tmp;

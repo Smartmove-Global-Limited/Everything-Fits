@@ -12,4 +12,12 @@ sed -i '' 's#gradle-8\.0\.2-bin\.zip#gradle-8.7-bin.zip#' "$PROJ/gradle/wrapper/
 sed -i '' 's#com\.android\.tools\.build:gradle:8\.0\.2#com.android.tools.build:gradle:8.5.2#' "$PROJ/build.gradle"
 KEY="$P/native/engine/android/appsflyer.properties"
 [ -f "$KEY" ] || cp "$P/../snug/android/appsflyer.properties" "$KEY" 2>/dev/null || echo "!! no appsflyer.properties: AppsFlyer will send nothing"
+# No Cocos logo at launch: the game opens on its own splash (engine skips it when totalTime <= 0)
+SETTINGS="$P/build/android/data/src/settings.json"
+[ -f "$SETTINGS" ] && python3 - "$SETTINGS" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+d.setdefault('splashScreen', {})['totalTime'] = 0
+json.dump(d, open(p, 'w'), separators=(',', ':'))
+PY
 echo "Android project ready: open $PROJ in Android Studio (Gradle JDK: Embedded JDK 21)"

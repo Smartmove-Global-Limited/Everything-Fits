@@ -30,6 +30,13 @@ const layer = cc.Layers.Enum.UI_2D;
 const nameOf = d => d.id || (d.cls || '').split(/\s+/).filter(Boolean)[0] || d.tag;
 const centre = d => [d.x + d.w / 2, d.y + d.h / 2];
 const report = [];
+// where each part sits on screens taller / wider than 420×760 (EdgePin modes)
+const PINS = {
+  HomeScreen: { '': 'STRETCH', 'efm-bg': 'COVER', 'efm-top': 'TOP', 'efm-nav': 'BOTTOM' },
+  ShopScreen: { '': 'STRETCH', 'efm-bg': 'COVER', 'efm-top': 'TOP', 'efs-head': 'TOP', 'shopScroll': 'GROW', 'efm-nav': 'BOTTOM' },
+  SettingsPopup: { '': 'STRETCH' }, WinPopup: { '': 'STRETCH' }, LosePopup: { '': 'STRETCH' }, ShakePopup: { '': 'STRETCH' },
+  AdOverlay: { '': 'STRETCH' },
+};
 
 async function build(d, parent, parentCentre) {
   const node = new cc.Node(d.tag === '#text' ? 'Text' : nameOf(d));
@@ -105,6 +112,18 @@ const canvas = scene.getChildByName('Canvas');
 const holder = new cc.Node('__ui_build'); holder.layer = layer; canvas.addChild(holder);
 const root = await build(dump.tree, holder, [210, 380]);
 root.name = args.prefab;
+// screen-edge pins (bars on the real screen edges, overlays covering everything)
+{
+  const map = PINS[args.prefab] || {}, EdgePin = cls('EdgePin');
+  for (const [name, mode] of Object.entries(map)) {
+    const n = name === '' ? root : (function find(x) { if (x.name === name) return x; for (const c of x.children) { const r = find(c); if (r) return r; } return null; })(root);
+    if (!n) { report.push('pin target missing ' + name); continue; }
+    const pin = n.addComponent(EdgePin);
+    pin.mode = cc.Enum ? ({ TOP: 0, BOTTOM: 1, STRETCH: 2, COVER: 3, GROW: 4 })[mode] : 0;
+    pin.safeArea = mode === 'TOP' || mode === 'BOTTOM' || mode === 'GROW';
+    if (name === 'efm-nav') pin.extendToEdge = true;   // tab bar background behind the Android navigation bar
+  }
+}
 // controller component of the screen / popup (finds its nodes by name in onLoad)
 if (args.component) { const C = cls(args.component); if (!C) throw new Error('component not compiled: ' + args.component); root.addComponent(C); }
 // full-screen overlays and screens swallow touches: nothing under a popup reacts

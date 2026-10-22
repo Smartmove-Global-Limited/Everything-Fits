@@ -8,7 +8,7 @@
 //                                released as a ghost it goes back to the tray
 // Lives on the Field node (full design area). Per-frame work is done by tick(), called from the
 // GameController loop, Cocos never calls an update() here.
-import { _decorator, Component, Node, EventTouch, Vec2, Vec3, Color, PhysicsSystem2D, UITransform, Graphics, Sprite, ERigidBody2DType, sys } from 'cc';
+import { _decorator, Component, Node, EventTouch, Vec2, Vec3, Color, PhysicsSystem2D, UITransform, Graphics, ERigidBody2DType, sys, Camera, director } from 'cc';
 import { GameState, isHeld } from '../core/GameState';
 import { DESIGN_W, levelToFieldY, FLOOR_Y, PTM } from '../core/GameConstants';
 import { ItemView } from './ItemView';
@@ -41,6 +41,7 @@ export class DragController extends Component {
 
   events: DragEvents = {};
   private transform: UITransform = null!;
+  private camera: Camera = null!;
   private pending: { item: ItemView; x: number; y: number; id: number } | null = null;
   private spin: { item: ItemView; id: number; startAngle: number; startPointer: number; x0: number; moved: boolean } | null = null;
   private readonly tmpWorld = new Vec3();
@@ -51,6 +52,7 @@ export class DragController extends Component {
 
   onLoad() {
     this.transform = this.getComponent(UITransform)!;
+    this.camera = director.getScene()!.getComponentInChildren(Camera)!;
     this.node.on(Node.EventType.TOUCH_START, this.onStart, this);
     this.node.on(Node.EventType.TOUCH_MOVE, this.onMove, this);
     this.node.on(Node.EventType.TOUCH_END, this.onEnd, this);
@@ -61,10 +63,12 @@ export class DragController extends Component {
 
   /** Pointer position in Field space (origin bottom-left of the design area) */
   private local(e: EventTouch) {
-    const ui = e.getUILocation(this.tmpV2);
-    this.tmpWorld.set(ui.x, ui.y, 0);
+    // screen pixels → world through the UI camera (the Canvas does not follow the screen size,
+    // see ScreenFit), → Field space. Field anchor is bottom-left (0, 0): node space == Field space
+    const p = e.getLocation(this.tmpV2);
+    this.tmpWorld.set(p.x, p.y, 0);
+    this.camera.screenToWorld(this.tmpWorld, this.tmpWorld);
     this.transform.convertToNodeSpaceAR(this.tmpWorld, this.tmpLocal);
-    // Field anchor is bottom-left (0, 0): node space == Field space
     return this.tmpLocal;
   }
 

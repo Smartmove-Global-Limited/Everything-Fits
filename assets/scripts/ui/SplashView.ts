@@ -4,11 +4,12 @@
 //   3. FALL  items drop one after another through the bottom edge; then the splash fades out
 // A touch skips ahead (falls at once, or closes while falling). No physics: hand-made falling.
 // Lives only while it plays, then destroys its node.
-import { _decorator, Component, Node, Sprite, SpriteFrame, UITransform, UIOpacity, Graphics, Color, resources, JsonAsset, tween, Layers } from 'cc';
+import { _decorator, Component, Node, Sprite, SpriteFrame, UITransform, UIOpacity, Graphics, Color, resources, JsonAsset, tween, Layers, view } from 'cc';
 import { Sound } from '../audio/Sound';
 const { ccclass } = _decorator;
 
-const W = 420, H = 760;
+const W = 420;
+let H = 760;   // the visible height (tall phones show more than the 760 design)
 const CELL = 82;                 // grid cell: the biggest item side
 const SHOW = 700, POP = 260, SWAY = 1250, SPREAD = 650;
 const G = .0024;                 // fall acceleration, units / ms²
@@ -31,14 +32,21 @@ export class SplashView extends Component {
   private done: () => void = () => {};
 
   /** Load some item images and play. Resolves when the splash has faded out. */
-  static async play(parent: Node): Promise<void> {
-    const frames = await SplashView.loadFrames(40);
-    if (!frames.length) return;
+  static play(parent: Node): Promise<void> {
+    H = Math.max(760, view.getVisibleSize().height);
+    // cover the screen in this very frame: nothing behind it (Home) may show before the splash
     const node = new Node('Splash'); node.layer = Layers.Enum.UI_2D; parent.addChild(node);
     node.addComponent(UITransform).setContentSize(W, H);
     const bg = node.addComponent(Graphics); bg.fillColor = BG; bg.rect(-W, -H, W * 2, H * 2); bg.fill();   // covers letterbox bands too
-    const view = node.addComponent(SplashView);
-    return new Promise(res => { view.done = res; view.build(frames); });
+    const splash = node.addComponent(SplashView);
+    splash.enabled = false;                       // no update() until the items are there
+    return new Promise(res => {
+      splash.done = res;
+      SplashView.loadFrames(40).then(frames => {
+        if (!frames.length) { splash.close(); return; }
+        splash.build(frames); splash.enabled = true;
+      });
+    });
   }
 
   private static async loadFrames(n: number): Promise<SpriteFrame[]> {
@@ -85,7 +93,7 @@ export class SplashView extends Component {
     Sound.play('whoosh', { gain: .5 });
   }
 
-  private close() {
+  close() {
     if (this.closing) return;
     this.closing = true;
     const op = this.node.addComponent(UIOpacity);

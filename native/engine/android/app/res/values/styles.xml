@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- While the engine starts, the window shows the game's paper colour (web: backgroundColor
+         #D9CFBE in capacitor.config.json) instead of a black screen -->
+    <style name="GameTheme" parent="@android:style/Theme.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">@color/game_background</item>
+        <item name="android:windowDisablePreview">false</item>
+    </style>
+    <color name="game_background">#D9CFBE</color>
+</resources>

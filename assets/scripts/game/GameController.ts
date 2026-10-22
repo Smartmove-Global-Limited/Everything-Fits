@@ -30,6 +30,7 @@ import { Sound } from '../audio/Sound';
 import { Progress } from '../services/Progress';
 import { Wallet } from '../services/Wallet';
 import { Boosters, BOOSTER_KEYS } from '../services/Boosters';
+import { ScreenFit } from '../ui/ScreenFit';
 const { ccclass, property } = _decorator;
 
 const WIN_POPUP_DELAY = .7;   // let the player see the celebration before the popup covers it
@@ -51,6 +52,7 @@ export class GameController extends Component {
   private shakePopupShown = false;
 
   onLoad() {
+    ScreenFit.apply();
     // dev builds only: hooks for automated play-testing from the browser console
     if (DEV) (globalThis as any).__ef = { GameState, BagRules, Sound, Analytics, physics: PhysicsSystem2D.instance, game: this };
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
@@ -103,6 +105,9 @@ export class GameController extends Component {
     Sound.startMusic();
     await this.openLevel(idx);
     if (covered) Overlays.uncover();
+    // ready before they are needed: Home, and the popups of a round
+    director.preloadScene('Main');
+    for (const p of ['ui/SettingsPopup', 'ui/WinPopup', 'ui/LosePopup', 'ui/ShakePopup']) Overlays.loadPrefab(p);
   }
 
   async openLevel(index: number) {

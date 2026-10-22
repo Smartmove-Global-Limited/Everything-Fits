@@ -98,6 +98,8 @@ android {
         }
 
         debug {
+            // test builds install next to the store / web app instead of replacing it
+            applicationIdSuffix ".cocos"
             debuggable true
             jniDebuggable true
             renderscriptDebuggable true
