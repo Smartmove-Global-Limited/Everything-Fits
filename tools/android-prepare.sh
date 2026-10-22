@@ -20,4 +20,7 @@ p = sys.argv[1]; d = json.load(open(p))
 d.setdefault('splashScreen', {})['totalTime'] = 0
 json.dump(d, open(p, 'w'), separators=(',', ':'))
 PY
+# App name on the launcher: the same as the web app (Cocos would use the project folder name)
+STR="$PROJ/res/values/strings.xml"
+[ -f "$STR" ] && sed -i '' 's#<string name="app_name"\([^>]*\)>[^<]*</string>#<string name="app_name"\1>Everything Fits</string>#' "$STR"
 echo "Android project ready: open $PROJ in Android Studio (Gradle JDK: Embedded JDK 21)"

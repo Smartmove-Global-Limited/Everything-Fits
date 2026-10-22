@@ -1,0 +1,45 @@
+{
+  "platform": "android",
+  "name": "Everything Fits",
+  "outputName": "android",
+  "debug": false,
+  "md5Cache": false,
+  "sourceMaps": false,
+  "startScene": "6c3a23ff-6621-4741-811a-212f13d0c56f",
+  "scenes": [
+    {
+      "url": "db://assets/scenes/Main.scene",
+      "uuid": "6c3a23ff-6621-4741-811a-212f13d0c56f"
+    },
+    {
+      "url": "db://assets/scenes/Game.scene",
+      "uuid": "d618e01c-5a5b-43e7-9ed8-e9fced695254"
+    }
+  ],
+  "packages": {
+    "android": {
+      "packageName": "everything.fits.packing.puzzle.organize",
+      "apiLevel": 36,
+      "appABIs": [
+        "armeabi-v7a",
+        "arm64-v8a"
+      ],
+      "useDebugKeystore": true,
+      "orientation": {
+        "portrait": true,
+        "upsideDown": false,
+        "landscapeLeft": false,
+        "landscapeRight": false
+      },
+      "resizeableActivity": true,
+      "maxAspectRatio": "2.4",
+      "renderBackEnd": {
+        "gles3": true,
+        "gles2": false,
+        "vulkan": false
+      }
+    }
+  },
+  "taskName": "android",
+  "buildPath": "project://build"
+}

@@ -27,3 +27,7 @@ node_modules/
 
 # AppsFlyer Dev Key: kept outside git (copy from snug/android/appsflyer.properties)
 /native/engine/android/appsflyer.properties
+
+# Release signing: keystore.properties and the .jks it names stay outside git (copy from snug/android)
+/native/engine/android/keystore.properties
+/native/engine/android/*.jks

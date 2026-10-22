@@ -22,8 +22,10 @@ android {
         applicationId APPLICATION_ID
         minSdkVersion 24   // like the web app; Firebase BoM 34 needs 23+
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 1
-        versionName "1.0"
+        // Store version: replaces the web (Capacitor) app on Google Play, same package id, so the
+        // version code must stay above the web app's (5). Raise both for every upload.
+        versionCode 6
+        versionName "0.0.2"
         // AppsFlyer Dev Key from appsflyer.properties next to this folder (NOT in git, like the
         // web app's android/appsflyer.properties). Missing file = the app sends nothing to AppsFlyer.
         def afProps = new Properties()
@@ -60,10 +62,19 @@ android {
         }
     }
 
+    // Release signing, like the web app: keystore.properties next to this folder (NOT in git, nor
+    // the .jks it names). Without it, the keystore set in the Cocos Build panel is used.
+    def ksFile = file('../keystore.properties')
+    def ks = new Properties()
+    if (ksFile.exists()) ksFile.withInputStream { ks.load(it) }
     signingConfigs {
-
        release {
-            if (project.hasProperty("RELEASE_STORE_FILE") && !RELEASE_STORE_FILE.isEmpty()) {
+            if (ksFile.exists()) {
+                storeFile new File(ksFile.parentFile, ks['storeFile'])
+                storePassword ks['storePassword']
+                keyAlias ks['keyAlias']
+                keyPassword ks['keyPassword']
+            } else if (project.hasProperty("RELEASE_STORE_FILE") && !RELEASE_STORE_FILE.isEmpty()) {
                 storeFile file(RELEASE_STORE_FILE)
                 storePassword RELEASE_STORE_PASSWORD
                 keyAlias RELEASE_KEY_ALIAS
@@ -80,7 +91,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            if (project.hasProperty("RELEASE_STORE_FILE")) {
+            if (ksFile.exists() || project.hasProperty("RELEASE_STORE_FILE")) {
                 signingConfig signingConfigs.release
             }
                         
