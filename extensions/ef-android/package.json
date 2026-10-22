@@ -1,13 +1,30 @@
 {
   "package_version": 2,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "ef-android",
   "title": "EF Android",
-  "description": "Android build in one click: cleans old data, fixes the generated project, then packs the signed AAB / APK right after Build.",
+  "description": "Android build in one click: a panel with Build debug to phone / Build release for Google Play; cleans old data, fixes the generated project, packs and signs right after the Cocos build.",
   "author": "Everything Fits",
   "editor": ">=3.8.0",
   "main": "./main.js",
+  "panels": {
+    "default": {
+      "title": "EF Android",
+      "type": "dockable",
+      "main": "./panel.js",
+      "size": { "min-width": 420, "min-height": 460, "width": 480, "height": 560 }
+    }
+  },
   "contributions": {
-    "builder": "./builder.js"
+    "builder": "./builder.js",
+    "menu": [
+      { "path": "i18n:menu.extension", "label": "EF Android (build Android)", "message": "open-panel" }
+    ],
+    "messages": {
+      "open-panel": { "methods": ["openPanel"] },
+      "load-settings": { "methods": ["loadSettings"] },
+      "start-build": { "methods": ["startBuild"] },
+      "build-status": { "methods": ["buildStatus"] }
+    }
   }
 }

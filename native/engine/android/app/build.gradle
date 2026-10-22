@@ -71,7 +71,9 @@ android {
     signingConfigs {
        release {
             if (ksFile.exists()) {
-                storeFile new File(ksFile.parentFile, ks['storeFile'])
+                // absolute path, or relative to this folder
+                def sf = new File(ks['storeFile'])
+                storeFile sf.isAbsolute() ? sf : new File(ksFile.parentFile, ks['storeFile'])
                 storePassword ks['storePassword']
                 keyAlias ks['keyAlias']
                 keyPassword ks['keyPassword']
@@ -114,6 +116,17 @@ android {
         preview {
             initWith release
             applicationIdSuffix ".cocos"
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            getIsDefault().set(false)
+        }
+
+        // optimised build that REPLACES the app installed on a phone from Android Studio (Run =
+        // debug key ~/.android/debug.keystore, same package): gradlew assembleDevice
+        device {
+            initWith release
             minifyEnabled false
             shrinkResources false
             signingConfig signingConfigs.debug
