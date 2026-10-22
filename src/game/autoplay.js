@@ -70,6 +70,23 @@ async function choLang(body) {
   }
 }
 
+/**
+ * Chờ CẢ ĐỐNG nằm yên (không chỉ món vừa thả): món vừa rơi xuống có thể xô món bên cạnh,
+ * nhấc món tiếp lúc món kia còn trượt là kế hoạch lệch dần. Yên = mọi món đứng im liên tục
+ * vài nhịp; quá lâu (vật lý cứ rung nhẹ) thì thôi, đi tiếp.
+ */
+async function choLangHet(toiDa = 3000) {
+  const t0 = performance.now();
+  let yen = 0;
+  await wait(NHIP.nghi);
+  while (song() && performance.now() - t0 < toiDa / heSo()) {
+    const dong = S.bodies.some(b => !b.isStatic && !b.chuaVao && !isHeld(b) && (b.speed > .12 || b.angularSpeed > .02));
+    yen = dong ? 0 : yen + 1;
+    if (yen >= 5) break;
+    await wait(32);
+  }
+}
+
 /** Nội suy ease in-out từ 0 tới 1 trong ms mili giây (đã chia tốc độ) */
 async function animate(ms, fn) {
   const t0 = performance.now(), dur = ms / heSo();
@@ -207,13 +224,16 @@ async function datMonTheoGiai(body, step) {
   World.remove(S.world, body);
   Body.setVelocity(body, { x: 0, y: 0 }); Body.setAngularVelocity(body, 0);
   const goc = step.angle || 0;
-  const dich = viTriThan(body, step.x, step.y - THA_CAO, goc);
+  // thả cao nhất có thể mà không chạm món nào: buông tay ngay trong lòng món khác là vật lý
+  // hất món kia văng ra. Chỗ (step) đã được kiểm tra trống trước khi gọi.
+  const cao = [THA_CAO, 8, 5, 2, 0].find(h => choHopLe(body, step.x, step.y - h, goc)) ?? 0;
+  const dich = viTriThan(body, step.x, step.y - cao, goc);
   await moveTo(body, dich.x, dich.y, goc, NHIP_GIAI.bay);
   if (!S.bodies.includes(body)) { if (S.finger) S.finger = { ...S.finger, down: false }; return; }
   World.add(S.world, body);                          // buông tay: món rơi xuống
   Body.setVelocity(body, { x: 0, y: 0 }); Body.setAngularVelocity(body, 0);
   if (S.showFinger && S.finger) S.finger = { ...S.finger, down: false, y: S.finger.y - 6 };
-  await choLang(body);
+  await choLangHet();
   nanLai(body, step, 9, 10 * Math.PI / 180);
   await wait(NHIP_GIAI.sau);
 }
@@ -466,6 +486,18 @@ function timChoGan(body, st) {
   return null;
 }
 
+/** Như timChoGan nhưng dò rộng hơn (lời giải khít: món trước lệch vài đơn vị là chỗ hẹp đi) */
+function timChoRong(body, st) {
+  let tot = null;
+  for (const da of [0, -.05, .05, -.1, .1]) for (let dy = -16; dy <= 6; dy += 2) for (let dx = -12; dx <= 12; dx += 3) {
+    const lech = Math.abs(dx) + Math.abs(dy) + Math.abs(da) * 40;
+    if (tot && lech >= tot.lech) continue;
+    const goc = (st.angle || 0) + da;
+    if (choHopLe(body, st.x + dx, st.y + dy, goc)) tot = { ...st, x: st.x + dx, y: st.y + dy, angle: goc, lech: Math.round(lech) };
+  }
+  return tot;
+}
+
 async function buocTiepTheo(ungVien) {
   if (!S.LEVEL?.container || !ungVien.length) return null;
   const conHopLe = () => { keHoach = keHoach.filter(st => ungVien.includes(st.ref)); return keHoach.length > 0; };
@@ -476,9 +508,14 @@ async function buocTiepTheo(ungVien) {
   const chinh = timChoGan(st.ref, st);
   if (chinh) { ghi(`đặt ${st.ref.label} theo kế hoạch, lệch ${chinh.lech}${chinh.xoay ? ', xoay nhẹ' : ''}`); keHoach.shift(); return { body: st.ref, step: chinh }; }
 
-  // Theo lời giải lưu sẵn: chỗ hơi chật vì đồ trước lún lệch vài px thì vẫn đặt đúng chỗ
-  // đã định cho vật lý tự nắn. Tính lại bằng máy xếp là mất cách xếp khít.
-  if (st.loiGiai) { ghi(`đặt ${st.ref.label} theo lời giải (chỗ hơi chật, để vật lý tự nắn)`); keHoach.shift(); return { body: st.ref, step: st }; }
+  // Theo lời giải lưu sẵn: chỗ đã định bị món trước lấn sang thì dò rộng hơn quanh đó. Không
+  // bao giờ ép vào chỗ đang vướng: vật lý sẽ hất món đang nằm đó văng ra ngoài.
+  if (st.loiGiai) {
+    const rong = timChoRong(st.ref, st);
+    if (rong) { ghi(`đặt ${st.ref.label} theo lời giải, dò rộng lệch ${rong.lech}`); keHoach.shift(); return { body: st.ref, step: rong }; }
+    ghi(`chỗ của ${st.ref.label} trong lời giải đã bị vướng → bỏ lời giải, máy xếp tính lại`);
+    lanLapGiai = LAP_GIAI_TOI_DA;
+  }
 
   // chỗ đã định không còn vừa → lập lại từ hiện trạng
   ghi(`chỗ của ${st.ref.label} không còn vừa → tính lại`);
