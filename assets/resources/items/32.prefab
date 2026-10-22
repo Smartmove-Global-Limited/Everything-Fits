@@ -1,0 +1,330 @@
+[
+  {
+    "__type__": "cc.Prefab",
+    "_name": "32",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_native": "",
+    "data": {
+      "__id__": 1
+    },
+    "optimizationPolicy": 0,
+    "persistent": false
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "32",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": null,
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 2
+      },
+      {
+        "__id__": 4
+      },
+      {
+        "__id__": 6
+      },
+      {
+        "__id__": 8
+      },
+      {
+        "__id__": 10
+      }
+    ],
+    "_prefab": {
+      "__id__": 12
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 33554432,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.UITransform",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 3
+    },
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 71.5,
+      "height": 82
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "96BesFxpFN84l94eP69v50"
+  },
+  {
+    "__type__": "cc.Sprite",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 5
+    },
+    "_customMaterial": null,
+    "_srcBlendFactor": 2,
+    "_dstBlendFactor": 4,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_spriteFrame": {
+      "__uuid__": "32b5a2b3-24db-4fc5-bc4b-b71638ee2219@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "_type": 0,
+    "_fillType": 0,
+    "_sizeMode": 0,
+    "_fillCenter": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_fillStart": 0,
+    "_fillRange": 0,
+    "_isTrimmedMode": false,
+    "_useGrayscale": false,
+    "_atlas": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "b1S4wqeypCkqhICN9WrU4x"
+  },
+  {
+    "__type__": "cc.RigidBody2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 7
+    },
+    "enabledContactListener": true,
+    "bullet": false,
+    "awakeOnLoad": true,
+    "_group": 2,
+    "_type": 2,
+    "_allowSleep": true,
+    "_gravityScale": 1,
+    "_linearDamping": 0.05,
+    "_angularDamping": 0.1,
+    "_linearVelocity": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_angularVelocity": 0,
+    "_fixedRotation": false,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "bbr5CE5jdFNYBYta+Bb5K4"
+  },
+  {
+    "__type__": "cc.PolygonCollider2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 9
+    },
+    "tag": 0,
+    "_group": 2,
+    "_density": 0.9522033515186765,
+    "_sensor": false,
+    "_friction": 0.6,
+    "_restitution": 0.05,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_points": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -12.88,
+        "y": 40.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 13.13,
+        "y": 40.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 21.63,
+        "y": 32.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.88,
+        "y": 32.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 32.13,
+        "y": 29.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 35.13,
+        "y": -8.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 34.88,
+        "y": -27.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 31.63,
+        "y": -37.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 27.13,
+        "y": -40.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -25.63,
+        "y": -40.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -30.88,
+        "y": -35.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -31.13,
+        "y": -31.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -35.13,
+        "y": -26.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -33.38,
+        "y": 28.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -31.13,
+        "y": 31.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -22.13,
+        "y": 33.13
+      }
+    ],
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "c2WJv4sCBBO5jUCInEgTbL"
+  },
+  {
+    "__type__": "6e069fkdCtADrTibl91gsqW",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 11
+    },
+    "itemId": 32,
+    "nameVi": "Bộ ngủ gấp",
+    "nameEn": "",
+    "physicsType": 0,
+    "massClass": 1,
+    "material": "fabric",
+    "fragile": false,
+    "grams": 350,
+    "sizeClass": "Medium",
+    "shapeTag": "Rectangle",
+    "canLink": true,
+    "canLock": true,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "4aENvt8wdOAqilJ7jmEg2x"
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "root": {
+      "__id__": 1
+    },
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "9117ojnNNAFbCYN4iICUGO",
+    "targetOverrides": null
+  }
+]

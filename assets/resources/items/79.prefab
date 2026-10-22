@@ -1,0 +1,464 @@
+[
+  {
+    "__type__": "cc.Prefab",
+    "_name": "79",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_native": "",
+    "data": {
+      "__id__": 1
+    },
+    "optimizationPolicy": 0,
+    "persistent": false
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "79",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": null,
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 2
+      },
+      {
+        "__id__": 4
+      },
+      {
+        "__id__": 6
+      },
+      {
+        "__id__": 8
+      },
+      {
+        "__id__": 10
+      },
+      {
+        "__id__": 12
+      }
+    ],
+    "_prefab": {
+      "__id__": 14
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 33554432,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.UITransform",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 3
+    },
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 70.5,
+      "height": 65
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "0dx6Bvz3dNi5eif4q5mIaC"
+  },
+  {
+    "__type__": "cc.Sprite",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 5
+    },
+    "_customMaterial": null,
+    "_srcBlendFactor": 2,
+    "_dstBlendFactor": 4,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_spriteFrame": {
+      "__uuid__": "7e257b99-250e-442d-a4e7-df9af53b9a30@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "_type": 0,
+    "_fillType": 0,
+    "_sizeMode": 0,
+    "_fillCenter": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_fillStart": 0,
+    "_fillRange": 0,
+    "_isTrimmedMode": false,
+    "_useGrayscale": false,
+    "_atlas": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "e3vPVqCcpEHILdqkSu0KPe"
+  },
+  {
+    "__type__": "cc.RigidBody2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 7
+    },
+    "enabledContactListener": true,
+    "bullet": false,
+    "awakeOnLoad": true,
+    "_group": 2,
+    "_type": 2,
+    "_allowSleep": true,
+    "_gravityScale": 1,
+    "_linearDamping": 0.05,
+    "_angularDamping": 0.1,
+    "_linearVelocity": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_angularVelocity": 0,
+    "_fixedRotation": false,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "b6Kqmlac5PCJrqN4lJC/h8"
+  },
+  {
+    "__type__": "cc.PolygonCollider2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 9
+    },
+    "tag": 0,
+    "_group": 2,
+    "_density": 1.3889331400020841,
+    "_sensor": false,
+    "_friction": 0.6,
+    "_restitution": 0.05,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_points": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -3.88,
+        "y": 31.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -0.38,
+        "y": 31.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -0.38,
+        "y": 7.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -8.63,
+        "y": 5.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -14.63,
+        "y": 1.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -8.13,
+        "y": -1.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -0.38,
+        "y": -2.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -0.38,
+        "y": -31.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -12.63,
+        "y": -30.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -23.13,
+        "y": -26.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -31.13,
+        "y": -19.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -34.38,
+        "y": -12.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -34.63,
+        "y": 11.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -31.88,
+        "y": 18.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -25.88,
+        "y": 24.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -18.38,
+        "y": 28.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -9.88,
+        "y": 31.13
+      }
+    ],
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "97VCLc4/hCtZMqPn34QUgs"
+  },
+  {
+    "__type__": "cc.PolygonCollider2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 11
+    },
+    "tag": 0,
+    "_group": 2,
+    "_density": 1.3889331400020841,
+    "_sensor": false,
+    "_friction": 0.6,
+    "_restitution": 0.05,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_points": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -0.13,
+        "y": 31.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 11.88,
+        "y": 30.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 18.38,
+        "y": 28.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.38,
+        "y": 22.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 33.63,
+        "y": 15.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 34.63,
+        "y": 11.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 34.38,
+        "y": -12.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 32.13,
+        "y": -18.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.13,
+        "y": -22.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 20.88,
+        "y": -27.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 15.13,
+        "y": -29.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 6.88,
+        "y": -31.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -0.13,
+        "y": -31.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -0.13,
+        "y": -2.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 7.38,
+        "y": -1.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 13.13,
+        "y": 0.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 14.38,
+        "y": 2.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 8.13,
+        "y": 6.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -0.13,
+        "y": 7.38
+      }
+    ],
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "8e9AcfXKlDjaWDCjesKr8v"
+  },
+  {
+    "__type__": "6e069fkdCtADrTibl91gsqW",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 13
+    },
+    "itemId": 79,
+    "nameVi": "Cuộn băng dính",
+    "nameEn": "Packing Tape Roll",
+    "physicsType": 0,
+    "massClass": 1,
+    "material": "plastic",
+    "fragile": false,
+    "grams": 150,
+    "sizeClass": "Medium",
+    "shapeTag": "Rectangle",
+    "canLink": true,
+    "canLock": true,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "96ICsbV0ZGbZlmkLYFtUPn"
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "root": {
+      "__id__": 1
+    },
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "f5B36V9hxEJLaM+Nn3PhKd",
+    "targetOverrides": null
+  }
+]

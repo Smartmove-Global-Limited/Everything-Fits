@@ -1,0 +1,385 @@
+[
+  {
+    "__type__": "cc.Prefab",
+    "_name": "113",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_native": "",
+    "data": {
+      "__id__": 1
+    },
+    "optimizationPolicy": 0,
+    "persistent": false
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "113",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": null,
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 2
+      },
+      {
+        "__id__": 4
+      },
+      {
+        "__id__": 6
+      },
+      {
+        "__id__": 8
+      },
+      {
+        "__id__": 10
+      }
+    ],
+    "_prefab": {
+      "__id__": 12
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 33554432,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.UITransform",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 3
+    },
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 80.5,
+      "height": 75.25
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "6foAeMzFlEEKA/voEVwLho"
+  },
+  {
+    "__type__": "cc.Sprite",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 5
+    },
+    "_customMaterial": null,
+    "_srcBlendFactor": 2,
+    "_dstBlendFactor": 4,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_spriteFrame": {
+      "__uuid__": "8b4a288b-b748-4804-9b93-58b64df3789a@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "_type": 0,
+    "_fillType": 0,
+    "_sizeMode": 0,
+    "_fillCenter": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_fillStart": 0,
+    "_fillRange": 0,
+    "_isTrimmedMode": false,
+    "_useGrayscale": false,
+    "_atlas": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "62Jltv6v1BuZ6gxVxEfsbW"
+  },
+  {
+    "__type__": "cc.RigidBody2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 7
+    },
+    "enabledContactListener": true,
+    "bullet": false,
+    "awakeOnLoad": true,
+    "_group": 2,
+    "_type": 2,
+    "_allowSleep": true,
+    "_gravityScale": 1,
+    "_linearDamping": 0.05,
+    "_angularDamping": 0.1,
+    "_linearVelocity": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_angularVelocity": 0,
+    "_fixedRotation": false,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "81GQCrVABGQ7aU4dDWQudx"
+  },
+  {
+    "__type__": "cc.PolygonCollider2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 9
+    },
+    "tag": 0,
+    "_group": 2,
+    "_density": 0.8647038892323327,
+    "_sensor": false,
+    "_friction": 0.6,
+    "_restitution": 0.05,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_points": [
+      {
+        "__type__": "cc.Vec2",
+        "x": 7.13,
+        "y": 37
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 11.38,
+        "y": 37
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 17.38,
+        "y": 35.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.88,
+        "y": 28.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 37.38,
+        "y": 18.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 39.63,
+        "y": 13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 39.38,
+        "y": 9.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 31.88,
+        "y": -2.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28.13,
+        "y": -5.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 27.88,
+        "y": -10.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 26.63,
+        "y": -14.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 20.38,
+        "y": -20.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 10.13,
+        "y": -27.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -7.63,
+        "y": -36.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -13.63,
+        "y": -37
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -20.13,
+        "y": -35.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -29.38,
+        "y": -30
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -36.63,
+        "y": -22.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -39.63,
+        "y": -14.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -38.63,
+        "y": -7.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -35.63,
+        "y": -2.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -29.13,
+        "y": 4
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -7.38,
+        "y": 17.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -6.38,
+        "y": 18.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -6.38,
+        "y": 21.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -5.13,
+        "y": 24
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 4.88,
+        "y": 36.25
+      }
+    ],
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "0eNxuM7KdBlKDLWtVXK6xn"
+  },
+  {
+    "__type__": "6e069fkdCtADrTibl91gsqW",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 11
+    },
+    "itemId": 113,
+    "nameVi": "Tất leo núi cuộn",
+    "nameEn": "Rolled Hiking Socks",
+    "physicsType": 0,
+    "massClass": 0,
+    "material": "fabric",
+    "fragile": false,
+    "grams": 80,
+    "sizeClass": "Medium",
+    "shapeTag": "Rectangle",
+    "canLink": true,
+    "canLock": true,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "2eONno1CxCTom7t2mZ9uQJ"
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "root": {
+      "__id__": 1
+    },
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "08iIR7aIVMGZoflSTHi47k",
+    "targetOverrides": null
+  }
+]

@@ -1,0 +1,355 @@
+[
+  {
+    "__type__": "cc.Prefab",
+    "_name": "87",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_native": "",
+    "data": {
+      "__id__": 1
+    },
+    "optimizationPolicy": 0,
+    "persistent": false
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "87",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": null,
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 2
+      },
+      {
+        "__id__": 4
+      },
+      {
+        "__id__": 6
+      },
+      {
+        "__id__": 8
+      },
+      {
+        "__id__": 10
+      }
+    ],
+    "_prefab": {
+      "__id__": 12
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 33554432,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.UITransform",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 3
+    },
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 74.25,
+      "height": 61
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "8dI4bRWzdGZJxnP3q5jO4g"
+  },
+  {
+    "__type__": "cc.Sprite",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 5
+    },
+    "_customMaterial": null,
+    "_srcBlendFactor": 2,
+    "_dstBlendFactor": 4,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_spriteFrame": {
+      "__uuid__": "c9632ec9-5c63-435c-8869-cf177f193fcc@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "_type": 0,
+    "_fillType": 0,
+    "_sizeMode": 0,
+    "_fillCenter": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_fillStart": 0,
+    "_fillRange": 0,
+    "_isTrimmedMode": false,
+    "_useGrayscale": false,
+    "_atlas": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "53wAu0pTNM/ZtZooW9q/SW"
+  },
+  {
+    "__type__": "cc.RigidBody2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 7
+    },
+    "enabledContactListener": true,
+    "bullet": false,
+    "awakeOnLoad": true,
+    "_group": 2,
+    "_type": 2,
+    "_allowSleep": true,
+    "_gravityScale": 1,
+    "_linearDamping": 0.05,
+    "_angularDamping": 0.1,
+    "_linearVelocity": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_angularVelocity": 0,
+    "_fixedRotation": false,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "d6Wrib5YpOBJ9WpWFk05qR"
+  },
+  {
+    "__type__": "cc.PolygonCollider2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 9
+    },
+    "tag": 0,
+    "_group": 2,
+    "_density": 0.8618594575714124,
+    "_sensor": false,
+    "_friction": 0.6,
+    "_restitution": 0.05,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_points": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -2.5,
+        "y": 29.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 8,
+        "y": 29.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 20,
+        "y": 26.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 29.5,
+        "y": 20.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 34.75,
+        "y": 12.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 36.5,
+        "y": -2.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 33.5,
+        "y": -14.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 28,
+        "y": -21.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 18.25,
+        "y": -27.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 4.75,
+        "y": -29.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -4,
+        "y": -29.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -14,
+        "y": -28.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -26.25,
+        "y": -22.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -30.5,
+        "y": -18.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -33.75,
+        "y": -13.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -36.5,
+        "y": 1.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -35.25,
+        "y": 10.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -32.75,
+        "y": 16.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -27.75,
+        "y": 21.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -21,
+        "y": 25.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -12,
+        "y": 28.63
+      }
+    ],
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "ecki8ipYxCi53z7eOnlq9M"
+  },
+  {
+    "__type__": "6e069fkdCtADrTibl91gsqW",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 11
+    },
+    "itemId": 87,
+    "nameVi": "Hộp dầu bôi côn trùng cắn",
+    "nameEn": "Insect Bite Balm Tin",
+    "physicsType": 0,
+    "massClass": 0,
+    "material": "metal",
+    "fragile": false,
+    "grams": 40,
+    "sizeClass": "Medium",
+    "shapeTag": "Rectangle",
+    "canLink": true,
+    "canLock": true,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "d2GJGaiyZD7o917Q5bcf6q"
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "root": {
+      "__id__": 1
+    },
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "62g/WJqXxKC7d7ouBZE2DN",
+    "targetOverrides": null
+  }
+]

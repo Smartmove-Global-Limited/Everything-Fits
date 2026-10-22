@@ -1,0 +1,410 @@
+[
+  {
+    "__type__": "cc.Prefab",
+    "_name": "145",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_native": "",
+    "data": {
+      "__id__": 1
+    },
+    "optimizationPolicy": 0,
+    "persistent": false
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "145",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": null,
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 2
+      },
+      {
+        "__id__": 4
+      },
+      {
+        "__id__": 6
+      },
+      {
+        "__id__": 8
+      },
+      {
+        "__id__": 10
+      }
+    ],
+    "_prefab": {
+      "__id__": 12
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 33554432,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.UITransform",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 3
+    },
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 63,
+      "height": 79.25
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "19S4uXHAxCGLImuI2srU9Y"
+  },
+  {
+    "__type__": "cc.Sprite",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 5
+    },
+    "_customMaterial": null,
+    "_srcBlendFactor": 2,
+    "_dstBlendFactor": 4,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_spriteFrame": {
+      "__uuid__": "f5f4b077-8e32-432d-9d27-ee105872be8c@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "_type": 0,
+    "_fillType": 0,
+    "_sizeMode": 0,
+    "_fillCenter": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_fillStart": 0,
+    "_fillRange": 0,
+    "_isTrimmedMode": false,
+    "_useGrayscale": false,
+    "_atlas": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "0dG+1TVJZJCL2QWiBzAjk+"
+  },
+  {
+    "__type__": "cc.RigidBody2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 7
+    },
+    "enabledContactListener": true,
+    "bullet": false,
+    "awakeOnLoad": true,
+    "_group": 2,
+    "_type": 2,
+    "_allowSleep": true,
+    "_gravityScale": 1,
+    "_linearDamping": 0.05,
+    "_angularDamping": 0.1,
+    "_linearVelocity": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_angularVelocity": 0,
+    "_fixedRotation": false,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "95UcFvZ4hLr4cLOMVJQqWW"
+  },
+  {
+    "__type__": "cc.PolygonCollider2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 9
+    },
+    "tag": 0,
+    "_group": 2,
+    "_density": 2.1680836490711015,
+    "_sensor": false,
+    "_friction": 0.6,
+    "_restitution": 0.05,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_points": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -5.63,
+        "y": 39
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 5.63,
+        "y": 38.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 16.13,
+        "y": 34
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 19.13,
+        "y": 31.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 22.38,
+        "y": 26
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 23.38,
+        "y": 21.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 22.88,
+        "y": 16
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 27.38,
+        "y": 15.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 29.63,
+        "y": 13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 30.88,
+        "y": 9.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 30.38,
+        "y": 2.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 26.88,
+        "y": -5.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 23.38,
+        "y": -9
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 14.88,
+        "y": -14
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 12.63,
+        "y": -16.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 13.63,
+        "y": -17.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 13.63,
+        "y": -26.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 12.13,
+        "y": -36.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 10.13,
+        "y": -37.75
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 5.63,
+        "y": -39
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -10.38,
+        "y": -37
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -19.38,
+        "y": -34.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -23.88,
+        "y": -32
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -24.88,
+        "y": -27.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -24.38,
+        "y": -13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -28.88,
+        "y": -4.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -30.88,
+        "y": 5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -30.13,
+        "y": 16.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -27.88,
+        "y": 23.5
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -24.88,
+        "y": 29
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -17.88,
+        "y": 35.25
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -10.63,
+        "y": 38.25
+      }
+    ],
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "4c5LVipghAGJnHwSFp+V28"
+  },
+  {
+    "__type__": "6e069fkdCtADrTibl91gsqW",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 11
+    },
+    "itemId": 145,
+    "nameVi": "Găng tay boxing",
+    "nameEn": "Boxing Glove",
+    "physicsType": 0,
+    "massClass": 2,
+    "material": "fabric",
+    "fragile": false,
+    "grams": 400,
+    "sizeClass": "Medium",
+    "shapeTag": "Rectangle",
+    "canLink": true,
+    "canLock": true,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "7aHn05GPBC6ow0UwMnALUt"
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "root": {
+      "__id__": 1
+    },
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "fdnEz3CRNG0bofaYzU+bfP",
+    "targetOverrides": null
+  }
+]

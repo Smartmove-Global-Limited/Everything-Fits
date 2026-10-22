@@ -14,6 +14,7 @@ import {
   view, ResolutionPolicy, PhysicsSystem2D, RigidBody2D, ERigidBody2DType, PolygonCollider2D, Vec2, Vec3,
   Color, Layers, input, Input, EventTouch, EventMouse, Label, Graphics, ERaycast2DType,
 } from 'cc';
+import { EDITOR } from 'cc/env';
 
 const W = 420, H = 760;
 const FLOOR_Y = H - 130;            // mặt sàn khay (như game web)
@@ -292,4 +293,4 @@ async function khoiDong() {
 }
 
 (globalThis as any).TH = { taiLevel, doRung, thaLen, MON, cho, sanSang: false, ps: () => PhysicsSystem2D.instance, tui: () => TUI, trongTui };
-director.once(Director.EVENT_AFTER_SCENE_LAUNCH, () => { khoiDong().catch(e => { console.error('[EF]', e); (globalThis as any).TH.loi = String(e?.stack || e); }); });
+if (!EDITOR) director.once(Director.EVENT_AFTER_SCENE_LAUNCH, () => { khoiDong().catch(e => { console.error('[EF]', e); (globalThis as any).TH.loi = String(e?.stack || e); }); });

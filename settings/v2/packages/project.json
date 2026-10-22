@@ -1,3 +1,56 @@
 {
-  "__version__": "1.0.6"
+  "__version__": "1.0.6",
+  "general": {
+    "designResolution": {
+      "width": 420,
+      "height": 760,
+      "fitWidth": true,
+      "fitHeight": true
+    }
+  },
+  "physics": {
+    "gravity": {
+      "x": 0,
+      "y": -34.375,
+      "z": 0
+    },
+    "fixedTimeStep": 0.016666666666666666,
+    "maxSubSteps": 3,
+    "allowSleep": true,
+    "collisionGroups": [
+      {
+        "name": "ITEM",
+        "index": 1
+      },
+      {
+        "name": "WALL",
+        "index": 2
+      },
+      {
+        "name": "BAG",
+        "index": 3
+      },
+      {
+        "name": "CEILING",
+        "index": 4
+      },
+      {
+        "name": "HELD",
+        "index": 5
+      },
+      {
+        "name": "FALLING",
+        "index": 6
+      }
+    ],
+    "collisionMatrix": {
+      "0": 1,
+      "1": 126,
+      "2": 98,
+      "3": 98,
+      "4": 2,
+      "5": 14,
+      "6": 14
+    }
+  }
 }

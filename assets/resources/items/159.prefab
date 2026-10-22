@@ -1,0 +1,360 @@
+[
+  {
+    "__type__": "cc.Prefab",
+    "_name": "159",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_native": "",
+    "data": {
+      "__id__": 1
+    },
+    "optimizationPolicy": 0,
+    "persistent": false
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "159",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "_parent": null,
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 2
+      },
+      {
+        "__id__": 4
+      },
+      {
+        "__id__": 6
+      },
+      {
+        "__id__": 8
+      },
+      {
+        "__id__": 10
+      }
+    ],
+    "_prefab": {
+      "__id__": 12
+    },
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 33554432,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.UITransform",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 3
+    },
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 108.5,
+      "height": 41
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "3fwWB+3KtF1ZwAgzqbXGoK"
+  },
+  {
+    "__type__": "cc.Sprite",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 5
+    },
+    "_customMaterial": null,
+    "_srcBlendFactor": 2,
+    "_dstBlendFactor": 4,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_spriteFrame": {
+      "__uuid__": "35083cda-04a5-451c-87b6-9138de6259f3@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "_type": 0,
+    "_fillType": 0,
+    "_sizeMode": 0,
+    "_fillCenter": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_fillStart": 0,
+    "_fillRange": 0,
+    "_isTrimmedMode": false,
+    "_useGrayscale": false,
+    "_atlas": null,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "1cHonV/C5IFpHcKIgH8Dc0"
+  },
+  {
+    "__type__": "cc.RigidBody2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 7
+    },
+    "enabledContactListener": true,
+    "bullet": false,
+    "awakeOnLoad": true,
+    "_group": 2,
+    "_type": 2,
+    "_allowSleep": true,
+    "_gravityScale": 1,
+    "_linearDamping": 0.05,
+    "_angularDamping": 0.1,
+    "_linearVelocity": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_angularVelocity": 0,
+    "_fixedRotation": false,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "33ESw+L8dFrIUE+OuXF8uU"
+  },
+  {
+    "__type__": "cc.PolygonCollider2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 9
+    },
+    "tag": 0,
+    "_group": 2,
+    "_density": 0.8704016436084371,
+    "_sensor": false,
+    "_friction": 0.6,
+    "_restitution": 0.05,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_points": [
+      {
+        "__type__": "cc.Vec2",
+        "x": -52.88,
+        "y": 19.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -45.63,
+        "y": 19.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -34.38,
+        "y": 15.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 9.88,
+        "y": 15.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 37.63,
+        "y": 15.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 45.38,
+        "y": 19.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 52.88,
+        "y": 19.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 51.88,
+        "y": 11.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 53.63,
+        "y": 8.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 51.88,
+        "y": 5.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 53.63,
+        "y": 3.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 51.88,
+        "y": 1.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 53.63,
+        "y": -1.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 51.63,
+        "y": -3.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 53.63,
+        "y": -6.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 51.63,
+        "y": -13.88
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 53.63,
+        "y": -16.38
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 53.13,
+        "y": -19.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 45.63,
+        "y": -19.63
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": 34.38,
+        "y": -16.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -34.63,
+        "y": -16.13
+      },
+      {
+        "__type__": "cc.Vec2",
+        "x": -52.63,
+        "y": -19.13
+      }
+    ],
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "1dgHlf3cRGyaP1ZOL1mzZn"
+  },
+  {
+    "__type__": "6e069fkdCtADrTibl91gsqW",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 11
+    },
+    "itemId": 159,
+    "nameVi": "Thanh protein",
+    "nameEn": "Protein Bar",
+    "physicsType": 0,
+    "massClass": 0,
+    "material": "paper",
+    "fragile": false,
+    "grams": 60,
+    "sizeClass": "Medium",
+    "shapeTag": "Rectangle",
+    "canLink": true,
+    "canLock": true,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "29j1w9/CVInqdgOafTf4q6"
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "root": {
+      "__id__": 1
+    },
+    "asset": {
+      "__id__": 0
+    },
+    "fileId": "00F4O8/chOzqHJX6/I18Vn",
+    "targetOverrides": null
+  }
+]
