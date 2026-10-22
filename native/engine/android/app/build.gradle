@@ -5,6 +5,12 @@ apply plugin: 'com.android.application'
 RES_PATH = RES_PATH.replace("\\", "/")
 COCOS_ENGINE_PATH = COCOS_ENGINE_PATH.replace("\\", "/")
 
+// Store version: native/engine/android/version.properties (EF Android panel)
+def ver = new Properties()
+file('../version.properties').withInputStream { ver.load(it) }
+// output files named after the version, like the web app: EverythingFits-v0.0.2-code6-release.aab
+base { archivesName = "EverythingFits-v${ver['versionName']}-code${ver['versionCode']}" }
+
 buildDir = "${RES_PATH}/proj/build/${project.name ==~ /^[_a-zA-Z0-9-]+$/ ? project.name : 'CocosGame'}"
 android {
     compileSdkVersion PROP_COMPILE_SDK_VERSION.toInteger()
@@ -23,8 +29,6 @@ android {
         minSdkVersion 24   // like the web app; Firebase BoM 34 needs 23+
         targetSdkVersion PROP_TARGET_SDK_VERSION
         // Store version: native/engine/android/version.properties (raise it for every upload)
-        def ver = new Properties()
-        file('../version.properties').withInputStream { ver.load(it) }
         versionCode ver['versionCode'].toInteger()
         versionName ver['versionName']
         // AppsFlyer Dev Key from appsflyer.properties next to this folder (NOT in git, like the

@@ -30,8 +30,11 @@ for (let i = 0; ; i++) {
   await new Promise(r => setTimeout(r, 2000));
 }
 const out = `${ROOT}build/android/proj/build/EverythingFits-Cocos/outputs`;
+const ver = Object.fromEntries(readFileSync(`${ROOT}native/engine/android/version.properties`, 'utf8').split('\n')
+  .map(l => l.match(/^\s*(\w+)\s*=\s*(.*)$/)).filter(Boolean).map(m => [m[1], m[2].trim()]));
+const name = `EverythingFits-v${ver.versionName}-code${ver.versionCode}`;   // app/build.gradle base.archivesName
 console.log({
-  store: `done:\n  ${out}/bundle/release/EverythingFits-Cocos-release.aab   (upload to Google Play)\n  ${out}/apk/release/EverythingFits-Cocos-release.apk`,
-  device: `done (installed if a phone is connected):\n  ${out}/apk/device/EverythingFits-Cocos-device.apk`,
-  test: `done:\n  ${out}/apk/preview/EverythingFits-Cocos-preview.apk`,
+  store: `done:\n  ${out}/bundle/release/${name}-release.aab   (upload to Google Play)\n  ${out}/apk/release/${name}-release.apk`,
+  device: `done (installed if a phone is connected):\n  ${out}/apk/device/${name}-device.apk`,
+  test: `done:\n  ${out}/apk/preview/${name}-preview.apk`,
 }[mode]);

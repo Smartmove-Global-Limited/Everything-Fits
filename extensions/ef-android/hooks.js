@@ -143,10 +143,12 @@ async function afterBuild(options) {
   await run('./gradlew', [...tasks, '--console=plain', '-q'], proj, { JAVA_HOME: javaHome() });
 
   const out = path.join(proj, 'build', MODULE, 'outputs');
+  // named by app/build.gradle (base.archivesName) after the version
+  const name = `EverythingFits-v${ver.versionName}-code${ver.versionCode}`;
   const files = {
-    store: [path.join(out, `bundle/release/${MODULE}-release.aab`), path.join(out, `apk/release/${MODULE}-release.apk`)],
-    device: [path.join(out, `apk/device/${MODULE}-device.apk`)],
-    test: [path.join(out, `apk/preview/${MODULE}-preview.apk`)],
+    store: [path.join(out, `bundle/release/${name}-release.aab`), path.join(out, `apk/release/${name}-release.apk`)],
+    device: [path.join(out, `apk/device/${name}-device.apk`)],
+    test: [path.join(out, `apk/preview/${name}-preview.apk`)],
   }[mode];
   for (const f of files) console.log(`[${PKG}] ${fs.existsSync(f) ? 'OK' : 'MISSING'} ${f}`);
 
