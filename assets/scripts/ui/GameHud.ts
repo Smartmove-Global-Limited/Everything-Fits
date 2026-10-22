@@ -76,8 +76,8 @@ export class GameHud extends Component {
   }
 
   onDestroy() {
-    this.gear.targetOff(this); this.shakePill.targetOff(this);
-    for (const b of this.boosters) b.root.targetOff(this);
+    // child nodes may already be destroyed with the scene; their listeners go with them
+    for (const n of [this.gear, this.shakePill, ...this.boosters.map(b => b.root)]) if (n && n.isValid) n.targetOff(this);
   }
 
   /** Press feedback like the web buttons: sink by the lip height, shadow gone, back on release */
@@ -161,6 +161,9 @@ export class GameHud extends Component {
     b.face.borderWidth = 1.3;
     b.face.setColors(locked ? GREY : CREAM, locked ? GREY_RING : state === BoosterState.ON ? ON_RING : CREAM);
   }
+
+  /** Badge text override (Freeze shows the seconds left, "12s") */
+  setBoosterBadge(id: BoosterId, text: string) { const b = this.boosters[id]; if (b) b.badgeText.string = text; }
 
   // ---------- toast ----------
   toastMessage(text: string, seconds = 1.4) {

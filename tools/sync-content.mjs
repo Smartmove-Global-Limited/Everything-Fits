@@ -6,7 +6,7 @@
 //
 //   snug/public/content/cozy  → assets/resources/content/cozy   (loaded on demand via resources.load)
 //   snug/public/audio         → assets/resources/audio
-//   snug/public/ui            → assets/art/ui                   (referenced directly by UI prefabs)
+//   snug/public/ui            → assets/resources/uiart                   (UI prefabs reference it; runtime loads e.g. uiart/icons/star-off)
 //
 // Only new or changed files are copied; existing .meta files are kept (same uuids, prefabs keep
 // their references). Files deleted at the source are deleted here together with their .meta.
@@ -20,7 +20,7 @@ const GAME = process.env.GAME || resolve(ROOT, '../snug');
 const PAIRS = [
   [join(GAME, 'public/content/cozy'), join(ROOT, 'assets/resources/content/cozy')],
   [join(GAME, 'public/audio'), join(ROOT, 'assets/resources/audio')],
-  [join(GAME, 'public/ui'), join(ROOT, 'assets/art/ui')],
+  [join(GAME, 'public/ui'), join(ROOT, 'assets/resources/uiart')],
 ];
 
 let added = 0, changed = 0, removed = 0;

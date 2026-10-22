@@ -8,7 +8,7 @@ const FONT_NUNITO = '688fc403-0a39-4b62-89b3-89e589281361'; // Nunito Bold (toas
 const FONT_SB = '69aeb3fb-5831-4bcc-a8d1-38892fa0b4af';    // Baloo 2 SemiBold (bag hint, web weight 600)
 const load = uuid => new Promise((ok, fail) => cc.assetManager.loadAny(uuid, (e, a) => (e ? fail(e) : ok(a))));
 const frameOf = async rel => {
-  const meta = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/art/ui', rel + '.meta'), 'utf8'));
+  const meta = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/resources/uiart', rel + '.meta'), 'utf8'));
   const sub = Object.values(meta.subMetas).find(s => s.importer === 'sprite-frame');
   return load(sub.uuid);
 };

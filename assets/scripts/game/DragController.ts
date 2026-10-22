@@ -13,6 +13,7 @@ import { GameState, isHeld } from '../core/GameState';
 import { DESIGN_W, levelToFieldY, FLOOR_Y } from '../core/GameConstants';
 import { ItemView } from './ItemView';
 import { computeGhost, overlapsInterior, bagZone, findFreeSpot, itemAABB, beginSpotBatch } from './BagRules';
+import { isFreezing, freezeItem } from './BoosterEffects';
 const { ccclass, property } = _decorator;
 
 const DRAG_START = 7;                       // pointer travel that turns a touch into a drag
@@ -264,6 +265,8 @@ export class DragController extends Component {
     }
     it.endHold();
     it.releasedAt = S.clock;
+    // Freeze booster running: an item dropped into the bag stays exactly where it was dropped
+    if (!bounced && isFreezing() && bagZone(it).fullyInside) freezeItem(it);
     if (bounced) it.body.linearVelocity = it.body.linearVelocity.set((Math.random() - .5) * 96, 0);
     this.events.onDrop?.(it, bounced);
   }

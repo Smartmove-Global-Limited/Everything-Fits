@@ -20,6 +20,8 @@ export const GameState = {
   levelIndex: 0,
   level: null as any,
   preview: false,
+  /** set by the main menu: open GameState.chapter / levelIndex instead of reading the URL */
+  fromMenu: false,
 
   bag: null as BagView | null,
   items: [] as ItemView[],
@@ -31,6 +33,8 @@ export const GameState = {
 
   /** item level indices counted as packed */
   packed: new Set<number>(),
+  /** items taken off the field by the Throw out booster (back to the pool on the next build) */
+  thrown: [] as ItemView[],
   /** item level indices removed by the throw-away booster */
   removed: new Set<number>(),
   winFrames: 0, won: false, lost: false, paused: false,
@@ -46,7 +50,6 @@ export const GameState = {
   /** how far the bag was raised above the web layout (level units): centred in the free band above the tray */
   bagLift: 0,
   freezeUntil: 0,
-  boosts: { freeze: 2, resize: 2, throw: 1 } as Record<string, number>,
 
   /** snapshot of the bag right before the last drop, to undo if that drop failed */
   bagSnapshot: null as null | { dropped: ItemView; list: { item: ItemView; x: number; y: number; angle: number }[] },

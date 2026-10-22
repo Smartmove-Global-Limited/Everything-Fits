@@ -3,7 +3,7 @@
 //   - the items, taken from a pool (no instantiate on restart), dropped in from above the screen
 //     one after another (FALLING group passes the ceiling), then the bag appears once they settle
 // Level coordinates (y down) are converted to Field coordinates (y up) here, and only here.
-import { Node, instantiate, tween, Vec3, UIOpacity, Prefab, UITransform } from 'cc';
+import { Node, instantiate, tween, Vec3, UIOpacity, Prefab, UITransform, ERigidBody2DType } from 'cc';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { DESIGN_H, BAG_FLOOR, BAG_CEIL, PhysicsGroup, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
@@ -77,6 +77,7 @@ export class LevelBuilder {
       item.locked = !!it.locked;
       item.releasedAt = 0; item.stuckFrames = item.insideFrames = item.outsideFrames = 0; item.fitAt = 0;
       item.frozen = false; item.holdUntil = 0; item.cracks = 0; item.broken = false;
+      item.body.type = ERigidBody2DType.Dynamic;   // a pooled item may come back frozen (static)
       let x = it.x, y = it.y;
       if (it.inBag) { x = (c.cx ?? 210) + (it.x ?? 0); y = bottomLevel + (it.y ?? -30); }
       item.node.setPosition(x, levelToFieldY(y), 0);
@@ -189,6 +190,14 @@ export class LevelBuilder {
     return bag;
   }
 
+  /** Scene teardown: pooled nodes sit outside the scene tree, destroy them explicitly */
+  dispose() {
+    for (const list of this.itemPool.values()) for (const it of list) if (it.isValid && !it.node.parent) it.node.destroy();
+    this.itemPool.clear();
+    for (const bag of this.bagPool.values()) if (bag.isValid && !bag.node.parent) bag.node.destroy();
+    this.bagPool.clear();
+  }
+
   /** Return everything of the previous round to the pools */
   clear() {
     const S = GameState;
@@ -199,6 +208,12 @@ export class LevelBuilder {
       list.push(it); this.itemPool.set(it.itemId, list);
     }
     S.items = [];
+    for (const it of S.thrown) {
+      it.node.active = false;
+      const list = this.itemPool.get(it.itemId) || [];
+      list.push(it); this.itemPool.set(it.itemId, list);
+    }
+    S.thrown = [];
     if (S.bag) {
       const bag = S.bag;
       if (bag.front) bag.front.setParent(bag.node, false);
@@ -207,6 +222,6 @@ export class LevelBuilder {
     }
     S.packed.clear(); S.removed.clear(); clearEjects();
     S.drag = null; S.selected = null; S.bagSnapshot = null;
-    S.winFrames = 0; S.won = false; S.lost = false; S.paused = false; S.bagReady = false;
+    S.winFrames = 0; S.won = false; S.lost = false; S.paused = false; S.bagReady = false; S.freezeUntil = 0;
   }
 }

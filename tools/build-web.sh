@@ -1,14 +1,17 @@
 #!/bin/sh
-# Build bản web-mobile bằng dòng lệnh rồi chép nội dung game (levels.json, ảnh) từ repo game web.
+# Command-line web-mobile build: Main.scene (Home / Shop) is the start scene, Game.scene is the level.
+# Game content (levels, items, bags, audio, UI art) ships inside the build (assets/resources).
+# Close the project in the Cocos editor first: the CLI build cannot run next to an open editor.
 #   sh tools/build-web.sh
 set -e
 P=$(cd "$(dirname "$0")/.." && pwd)
-GAME=${GAME:-$P/../snug}
-S=$(python3 -c "import json;print(json.load(open('$P/assets/scenes/Game.scene.meta'))['uuid'])")
+uuid() { python3 -c "import json;print(json.load(open('$P/assets/scenes/$1.scene.meta'))['uuid'])"; }
+MAIN=$(uuid Main); GAME=$(uuid Game)
 cat > /tmp/ef_build.json <<J
-{"platform":"web-mobile","debug":true,"name":"web-mobile","outputName":"web-mobile","startScene":"$S","scenes":[{"url":"db://assets/scenes/Game.scene","uuid":"$S"}],"md5Cache":false,"sourceMaps":false}
+{"platform":"web-mobile","debug":false,"name":"web-mobile","outputName":"web-mobile","startScene":"$MAIN",
+ "scenes":[{"url":"db://assets/scenes/Main.scene","uuid":"$MAIN"},{"url":"db://assets/scenes/Game.scene","uuid":"$GAME"}],
+ "md5Cache":true,"sourceMaps":false}
 J
 /Applications/Cocos/Creator/3.8.2/CocosCreator.app/Contents/MacOS/CocosCreator --project "$P" --build "configPath=/tmp/ef_build.json" > /tmp/ef_build.log 2>&1 || true
 grep -q "build success" /tmp/ef_build.log || { grep -iE "error" /tmp/ef_build.log | tail -20; exit 1; }
-rm -rf "$P/build/web-mobile/content" && mkdir -p "$P/build/web-mobile/content" && cp -R "$GAME/public/content/cozy" "$P/build/web-mobile/content/cozy"
-echo "build xong"
+echo "build done: $P/build/web-mobile"
