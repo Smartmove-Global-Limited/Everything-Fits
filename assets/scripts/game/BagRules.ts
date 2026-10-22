@@ -162,6 +162,14 @@ function isClaimed(r: Rect) {
   for (let i = 0; i < claimedCount; i++) if (claimed[i].intersects(r)) return true;
   return false;
 }
+/** Is the box centred on (cx, cy) free of other bodies and of spots handed out in this batch? (leaves it in probe) */
+function isFree(item: ItemView, cx: number, cy: number, hw: number, hh: number): boolean {
+  probe.set(cx - hw, cy - hh, hw * 2, hh * 2);
+  if (isClaimed(probe)) return false;
+  const hits = PhysicsSystem2D.instance.testAABB(probe);
+  for (let i = 0; i < hits.length; i++) if (hits[i].node !== item.node) return false;
+  return true;
+}
 function claim(r: Rect) {
   if (claimedCount === claimed.length) claimed.push(new Rect());
   claimed[claimedCount++].set(r);
@@ -178,30 +186,30 @@ export function findFreeSpot(item: ItemView, nearX: number): { x: number; y: num
   const ox = item.node.position.x - r.center.x, oy = item.node.position.y - r.center.y;   // origin offset from box center
   const minX = 20 + hw, maxX = Math.max(minX, DESIGN_W - 20 - hw);
   const topY = levelToFieldY(TABLE_Y + 10), bottomY = levelToFieldY(FLOOR_Y);
-  for (let t = 0; t < 60; t++) {
-    const spread = 46 + (t / 60) * DESIGN_W;
+  // highest an item may go: just under the bag (with its walls), the pile may rise above the table edge
+  const bag = GameState.bag;
+  const ceil = bag ? bag.minY - BAG_WALL - 2 : topY + 60;
+  const lowY = bottomY + hh + 2;
+  for (let t = 0; t < 90; t++) {
+    const spread = 46 + (t / 90) * DESIGN_W;
     const cx = Math.max(minX, Math.min(maxX, nearX + (Math.random() - .5) * 2 * spread));
-    const cy = bottomY + hh + 2 + Math.random() * Math.max(4, topY - bottomY - hh * 2);
-    probe.set(cx - hw, cy - hh, hw * 2, hh * 2);
-    if (isClaimed(probe)) continue;
-    const hits = PhysicsSystem2D.instance.testAABB(probe);
-    let free = true;
-    for (let i = 0; i < hits.length; i++) if (hits[i].node !== item.node) { free = false; break; }
-    if (free) { claim(probe); spot.x = cx + ox; spot.y = cy + oy; return spot; }
+    // first on the table itself, then anywhere up to the bag bottom
+    const highY = Math.max(lowY, (t < 45 ? topY : ceil) - hh);
+    const cy = lowY + Math.random() * (highY - lowY);
+    if (isFree(item, cx, cy, hw, hh)) { claim(probe); spot.x = cx + ox; spot.y = cy + oy; return spot; }
   }
-  // tray is full: drop it onto the pile, from the lowest height where nothing is in the way
+  // nothing free: lowest free height in a few columns, never above the bag bottom
+  const highY = Math.max(lowY, ceil - hh);
+  for (let k = 0; k < 7; k++) {
+    const cx = Math.max(minX, Math.min(maxX, nearX + (k === 0 ? 0 : (k % 2 ? 1 : -1) * Math.ceil(k / 2) * hw)));
+    for (let cy = lowY; cy <= highY; cy += 6) {
+      if (isFree(item, cx, cy, hw, hh)) { claim(probe); spot.x = cx + ox; spot.y = cy + oy; return spot; }
+    }
+  }
   const cx = Math.max(minX, Math.min(maxX, nearX));
-  let cy = topY + hh + 4;
-  for (let t = 0; t < 30; t++, cy += 8) {
-    probe.set(cx - hw, cy - hh, hw * 2, hh * 2);
-    if (isClaimed(probe)) continue;
-    const hits = PhysicsSystem2D.instance.testAABB(probe);
-    let free = true;
-    for (let i = 0; i < hits.length; i++) if (hits[i].node !== item.node) { free = false; break; }
-    if (free) break;
-  }
+  probe.set(cx - hw, highY - hh, hw * 2, hh * 2);
   claim(probe);
-  spot.x = cx + ox; spot.y = cy + oy;
+  spot.x = cx + ox; spot.y = highY + oy;
   return spot;
 }
 

@@ -13,10 +13,9 @@
 //       FxLayer         effects
 //       Handle          Graphics for the rotate handle
 //       Environment     static RigidBody2D: tray floor, screen sides (WALL), ceiling (CEILING)
-//     Hud               temporary labels (level, timer, items left)
+//     Hud               built by tools/editor/game-hud.js (run it after this script)
 //     GameController
 const BG_FRAME = '5c89c5d3-21b9-44e3-87c9-795568e20f72@f9941';
-const FONT = '277c3683-52ba-4f39-8bb4-d8d8d588c412';
 const W = 420, H = 760, FLOOR = 130, T = 60;
 const GROUP = { WALL: 1 << 2, CEILING: 1 << 4 };
 
@@ -76,29 +75,11 @@ box(-T / 2, H / 2, T, H * 2, GROUP.WALL, 'WallLeft');
 box(W + T / 2, H / 2, T, H * 2, GROUP.WALL, 'WallRight');
 box(W / 2, H + T, W * 2, T, GROUP.CEILING, 'Ceiling');
 
-// ---- temporary HUD ----
-const hud = make('Hud', canvas, W, H);
-const font = await load(FONT);
-const label = (name, x, y, size, align) => {
-  const n = make(name, hud, 200, 40);
-  n.setPosition(x, y, 0);
-  const l = n.addComponent(cc.Label);
-  l.font = font; l.useSystemFont = false;
-  l.fontSize = size; l.lineHeight = size + 4;
-  l.color = new cc.Color(0x5a, 0x40, 0x30, 255);
-  l.horizontalAlign = align;
-  return l;
-};
-const levelLabel = label('LevelLabel', 0, H / 2 - 40, 26, cc.Label.HorizontalAlign.CENTER);
-const timerLabel = label('TimerLabel', W / 2 - 110, H / 2 - 40, 22, cc.Label.HorizontalAlign.RIGHT);
-const itemsLeftLabel = label('ItemsLeftLabel', -W / 2 + 110, H / 2 - 40, 22, cc.Label.HorizontalAlign.LEFT);
-
 // ---- controller ----
 const ctrlNode = make('GameController', canvas);
 const ctrl = ctrlNode.addComponent(cls('GameController'));
 ctrl.bagLayer = bagLayer; ctrl.itemLayer = itemLayer; ctrl.frontLayer = frontLayer;
 ctrl.drag = drag;
-ctrl.levelLabel = levelLabel; ctrl.timerLabel = timerLabel; ctrl.itemsLeftLabel = itemsLeftLabel;
 
 // camera clears to the background fill so letterbox bands match the paper
 const cam = canvas.getChildByName('Camera').getComponent(cc.Camera);

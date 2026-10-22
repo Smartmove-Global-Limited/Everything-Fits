@@ -43,8 +43,10 @@ export const GameState = {
   round: 0,
 
   bagReady: false, bagShownAt: 0,
+  /** how far the bag was raised above the web layout (level units): centred in the free band above the tray */
+  bagLift: 0,
   freezeUntil: 0,
-  boosts: { freeze: 1, resize: 1, throw: 1 } as Record<string, number>,
+  boosts: { freeze: 2, resize: 2, throw: 1 } as Record<string, number>,
 
   /** snapshot of the bag right before the last drop, to undo if that drop failed */
   bagSnapshot: null as null | { dropped: ItemView; list: { item: ItemView; x: number; y: number; angle: number }[] },

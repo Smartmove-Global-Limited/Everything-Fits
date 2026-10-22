@@ -1,7 +1,7 @@
 // The game scene's controller and its ONLY per-frame loop. Every system (drag, level intro,
 // timer, bag rules…) is ticked from here in a fixed order; no other gameplay component has an
 // update(). Bag rules run right after the physics step (Director.EVENT_AFTER_PHYSICS).
-import { _decorator, Component, Node, Label, director, Director, PhysicsSystem2D, sys } from 'cc';
+import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys } from 'cc';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { LevelBuilder } from './LevelBuilder';
@@ -9,6 +9,7 @@ import { DragController } from './DragController';
 import * as BagRules from './BagRules';
 import { checkEject, updatePacked, setBagEvents, applyEjects } from './BagRules';
 import { DEV } from 'cc/env';
+import { GameHud, BoosterId, BoosterState } from '../ui/GameHud';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameController')
@@ -17,13 +18,10 @@ export class GameController extends Component {
   @property({ type: Node, tooltip: 'Layer holding the item nodes' }) itemLayer: Node = null!;
   @property({ type: Node, tooltip: 'Layer in front of the items: bag rim / opening' }) frontLayer: Node = null!;
   @property({ type: DragController }) drag: DragController = null!;
-  @property({ type: Label }) levelLabel: Label | null = null;
-  @property({ type: Label }) timerLabel: Label | null = null;
-  @property({ type: Label }) itemsLeftLabel: Label | null = null;
+  @property({ type: GameHud }) hud: GameHud = null!;
   @property({ tooltip: 'Level to open when the scene starts (0-based, within the first chapter)' }) startLevel = 0;
 
   private builder!: LevelBuilder;
-  private shownSecond = -1;
 
   onLoad() {
     // dev builds only: hooks for automated play-testing from the browser console
@@ -31,9 +29,10 @@ export class GameController extends Component {
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
     director.on(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     setBagEvents({
-      onListChanged: () => this.refreshItemsLeft(),
       onWin: () => this.onWin(),
     });
+    this.hud.onPause = () => this.onPause();
+    this.hud.onBooster = id => this.onBooster(id);
   }
 
   onDestroy() { director.off(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this); }
@@ -54,11 +53,16 @@ export class GameController extends Component {
     S.levelIndex = Math.max(0, Math.min(index, levels.length - 1));
     S.level = levels[S.levelIndex];
     S.timeLeft = (S.level.timer || 90) * 1000;
-    S.clock = 0; S.startTime = 0; this.shownSecond = -1;
+    S.clock = 0; S.startTime = 0;
     PhysicsSystem2D.instance.enable = true;
     await this.builder.build(S.level);
-    if (this.levelLabel) this.levelLabel.string = `Lv. ${ContentLoader.levelNumber(S.chapterId, S.levelIndex)}`;
-    this.refreshItemsLeft();
+    const number = ContentLoader.levelNumber(S.chapterId, S.levelIndex);
+    this.hud.setLevel(number);
+    this.hud.resetClock();
+    this.hud.setClock(S.timeLeft / 1000);
+    this.hud.setShakeEnergy(1);
+    this.hud.showBagHint(false);
+    this.renderBoosters(number);
   }
 
   restart() { return this.openLevel(GameState.levelIndex); }
@@ -84,26 +88,50 @@ export class GameController extends Component {
     if (!this.running) return;
     checkEject(GameState.clock);
     updatePacked(GameState.clock);
+    this.updateBagHint();
   }
+
+  // ---------- bag hint: shown while nothing lies inside the bag (web bags.js drawEmptyLabel) ----------
+  private hintPlacedFor: object | null = null;
+  private updateBagHint() {
+    const S = GameState, bag = S.bag;
+    if (!bag || !S.bagReady) { this.hud.showBagHint(false); return; }
+    if (this.hintPlacedFor !== bag) {
+      this.hintPlacedFor = bag;
+      const level = S.level;
+      this.hud.placeBagHint(level?.emptyTextEn || 'Pack your things here!', (bag.minX + bag.maxX) / 2, (bag.minY + bag.maxY) / 2);
+    }
+    let any = S.packed.size > 0;
+    for (let i = 0; !any && i < S.items.length; i++) {
+      const it = S.items[i];
+      if (it.waiting || it.held || it.itemId === 0) continue;
+      const r = BagRules.itemAABB(it);
+      any = r.yMin > bag.minY && r.yMax < bag.maxY + 4 && r.xMin > bag.minX - 4 && r.xMax < bag.maxX + 4;
+    }
+    this.hud.showBagHint(!any);
+  }
+
+  // ---------- boosters (web boosters.js: unlock at levels 3 / 6 / 9, 2 / 2 / 1 to start) ----------
+  private renderBoosters(levelNumber: number) {
+    const S = GameState;
+    const keys = ['freeze', 'resize', 'throw'], unlockAt = [3, 6, 9];
+    for (let i = 0; i < 3; i++) {
+      const n = S.boosts[keys[i]] ?? 0;
+      const locked = levelNumber < unlockAt[i];
+      this.hud.setBooster(i as BoosterId, n, locked ? BoosterState.LOCKED : n <= 0 ? BoosterState.EMPTY : BoosterState.READY, unlockAt[i]);
+    }
+  }
+  private onBooster(_id: BoosterId) { /* booster effects: next step */ }
+  private onPause() { /* settings popup: next step */ }
 
   private tickTimer(ms: number) {
     const S = GameState;
     if (!S.timerOn || !S.bagReady) return;
     S.timeLeft = Math.max(0, S.timeLeft - ms);
-    const sec = Math.ceil(S.timeLeft / 1000);
-    if (sec !== this.shownSecond && this.timerLabel) {
-      this.shownSecond = sec;
-      const m = Math.floor(sec / 60), s = sec % 60;
-      this.timerLabel.string = `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-    }
+    this.hud.setClock(S.timeLeft / 1000);
     if (S.timeLeft <= 0) { S.lost = true; this.onLose(); }
   }
 
-  private refreshItemsLeft() {
-    if (!this.itemsLeftLabel) return;
-    this.itemsLeftLabel.string = `${Math.max(0, GameState.itemsToPack - GameState.packed.size)} LEFT`;
-  }
-
-  private onWin() { if (this.levelLabel) this.levelLabel.string = 'Packed!'; }
-  private onLose() { if (this.timerLabel) this.timerLabel.string = "Time's up"; }
+  private onWin() { this.hud.toastMessage('Packed!'); }
+  private onLose() { this.hud.toastMessage("Time's up"); }
 }

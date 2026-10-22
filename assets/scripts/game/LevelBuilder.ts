@@ -6,7 +6,7 @@
 import { Node, instantiate, tween, Vec3, UIOpacity, Prefab, UITransform } from 'cc';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
-import { DESIGN_H, BAG_FLOOR, PhysicsGroup, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
+import { DESIGN_H, BAG_FLOOR, BAG_CEIL, PhysicsGroup, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
 import { ItemView } from './ItemView';
 import { overlapsBagArea, findFreeSpot, clearEjects, beginSpotBatch } from './BagRules';
 import { BagView } from './BagView';
@@ -45,7 +45,13 @@ export class LevelBuilder {
     if (round !== S.round) return;
     const bag = this.takeBag(c.skin, bagPrefab);
     const s = c.scale || 1;
-    const bottomLevel = BAG_FLOOR + bag.imageBottom * s;          // origin = center-bottom of the interior
+    // The bag image is centred in the free band between the HUD (BAG_CEIL) and the table edge
+    // (BAG_FLOOR) instead of resting on the table: a small bag no longer sits right on top of
+    // the items on the tray. Level positions designed against the bag (inBag items, solutions)
+    // follow it through S.bagLift.
+    const imageH = (bag.body?.getComponent(UITransform)?.height ?? 0) * s;
+    S.bagLift = Math.max(0, (BAG_FLOOR - imageH - BAG_CEIL) / 2);
+    const bottomLevel = BAG_FLOOR - S.bagLift + bag.imageBottom * s;   // origin = center-bottom of the interior
     bag.node.setScale(s, s, 1);
     bag.node.setPosition(c.cx ?? 210, levelToFieldY(bottomLevel), 0);
     bag.node.active = true;
