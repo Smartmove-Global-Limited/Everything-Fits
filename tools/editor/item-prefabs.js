@@ -1,4 +1,4 @@
-// Generate one prefab per item: assets/resources/items/<id>.prefab
+// Generate one prefab per item: assets/gamecontent/items/<id>.prefab
 // Run inside the editor:  node tools/run-in-editor.mjs tools/editor/item-prefabs.js '{"ids":[13]}'
 // (no ids = every item in content/cozy/assets/index.json)
 //
@@ -9,7 +9,7 @@
 // Existing prefabs are replaced. Body of an async function: (cc, Editor, args).
 const fs = require('fs'), path = require('path');
 const ROOT = Editor.Project.path;
-const CONTENT = path.join(ROOT, 'assets/resources/content/cozy');
+const CONTENT = path.join(ROOT, 'assets/gamecontent/content/cozy');
 const index = JSON.parse(fs.readFileSync(path.join(CONTENT, 'assets/index.json'), 'utf8'));
 const PTM = 32;                                  // Cocos physics: pixels per meter
 const MASS_BY_CLASS = [1, 1.6, 2.5], BASE_MASS = 3;
@@ -102,7 +102,7 @@ for (const id of ids) {
   const outline = m.outline || (c.kind === 'poly' || c.kind === 'compound' ? c.pts : null);
   view.outline = outline && outline.length >= 3 ? outline.map(([x, y]) => new Vec2(x, -y)) : [];
 
-  const url = `db://assets/resources/items/${id}.prefab`;
+  const url = `db://assets/gamecontent/items/${id}.prefab`;
   const existing = await Editor.Message.request('asset-db', 'query-asset-info', url);
   if (existing) await Editor.Message.request('asset-db', 'delete-asset', url);
   await Editor.Message.request('scene', 'create-prefab', node.uuid, url);

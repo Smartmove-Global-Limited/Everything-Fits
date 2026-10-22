@@ -64,9 +64,9 @@ export class MainMenu extends Component {
     this.openHome();
     if (covered) Overlays.uncover();
     await splash;
-    // while the player looks at Home: everything the level needs, so Play opens it at once
+    // while the player looks at Home: the bag and items of the level Play opens, nothing more
     const s = this.spot();
-    if (s) ContentLoader.preloadChapter(s.chapter);
+    if (s) ContentLoader.preloadLevel(s.chapter.levels[s.index]);
     Overlays.loadPrefab('ui/SettingsPopup');
     this.ensureShop();   // ready before the first tap on Shop
   }

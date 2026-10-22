@@ -8,7 +8,7 @@ export enum ItemPhysics { NORMAL = 0, ROLLING = 1, FLOAT = 2, VIBRATING = 3, BOU
 export enum MassClass { LIGHT = 0, MEDIUM = 1, HEAVY = 2 }
 
 /**
- * One packable item. Lives on each item prefab (assets/resources/items/<id>.prefab) together
+ * One packable item. Lives on each item prefab (assets/gamecontent/items/<id>.prefab) together
  * with a Sprite, a RigidBody2D (group ITEM) and the Polygon/CircleCollider2D shapes of the item.
  * Prefabs are generated from the web item data (tools/generate-item-prefabs) and can be edited
  * by hand in Cocos afterwards: collider points, mass class, material…

@@ -1,4 +1,4 @@
-// Generate one prefab per bag style: assets/resources/bags/<skin>.prefab
+// Generate one prefab per bag style: assets/gamecontent/bags/<skin>.prefab
 // Run inside the editor:  node tools/run-in-editor.mjs tools/editor/bag-prefabs.js '{"ids":["box"]}'
 // (no ids = every bag in content/cozy/assets/index.json). Run in small batches: the editor writes
 // prefabs asynchronously.
@@ -13,7 +13,7 @@
 // Body of an async function: (cc, Editor, args).
 const fs = require('fs'), path = require('path');
 const ROOT = Editor.Project.path;
-const CONTENT = path.join(ROOT, 'assets/resources/content/cozy');
+const CONTENT = path.join(ROOT, 'assets/gamecontent/content/cozy');
 const index = JSON.parse(fs.readFileSync(path.join(CONTENT, 'assets/index.json'), 'utf8'));
 const WALL = 14, GROUP_BAG = 1 << 3;
 const { Node, UITransform, Sprite, RigidBody2D, ERigidBody2DType, PolygonCollider2D, CircleCollider2D, Vec2, Layers, assetManager, js } = cc;
@@ -93,7 +93,7 @@ for (const id of ids) {
   view.imageBottom = -(im.y + im.h);
   view.body = imgNodes.body || null; view.front = imgNodes.frame || null; view.walls = walls;
 
-  const url = `db://assets/resources/bags/${id}.prefab`;
+  const url = `db://assets/gamecontent/bags/${id}.prefab`;
   const existing = await Editor.Message.request('asset-db', 'query-asset-info', url);
   if (existing) await Editor.Message.request('asset-db', 'delete-asset', url);
   await Editor.Message.request('scene', 'create-prefab', root.uuid, url);

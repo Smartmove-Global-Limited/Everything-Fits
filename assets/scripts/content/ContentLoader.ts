@@ -1,12 +1,23 @@
-// Loads game content shipped inside the app (assets/resources): levels.json from the web Level
-// Editor, item prefabs and bag prefabs. Everything is cached; nothing touches the network.
-import { resources, JsonAsset, Prefab, SpriteFrame } from 'cc';
+// Loads game content shipped inside the app, from the asset bundle "content" (assets/gamecontent):
+// levels.json from the web Level Editor, item prefabs and bag prefabs. The bundle is opened the
+// first time something is asked for, and only what a level uses is loaded (never a whole chapter):
+// the app starts without reading the catalogue of every item and bag. Everything is cached;
+// nothing touches the network.
+import { assetManager, AssetManager, JsonAsset, Prefab, SpriteFrame } from 'cc';
 
 const prefabCache = new Map<string, Prefab>();
 let book: any = null;
+let bundle: Promise<AssetManager.Bundle> | null = null;
 
-function load<T>(path: string, type: any): Promise<T> {
-  return new Promise((ok, fail) => resources.load(path, type, (err, asset) => (err ? fail(err) : ok(asset as T))));
+function openBundle(): Promise<AssetManager.Bundle> {
+  return bundle ||= new Promise((ok, fail) => assetManager.loadBundle('content', (err, b) => {
+    if (err) { bundle = null; fail(err); } else ok(b);
+  }));
+}
+
+async function load<T>(path: string, type: any): Promise<T> {
+  const b = await openBundle();
+  return new Promise((ok, fail) => b.load(path, type, (err, asset) => (err ? fail(err) : ok(asset as T))));
 }
 
 export const ContentLoader = {
@@ -37,11 +48,12 @@ export const ContentLoader = {
   itemPrefab(id: number) { return this.prefab(`items/${id}`); },
   bagPrefab(skin: string) { return this.prefab(`bags/${skin}`); },
 
-  /** Preload every prefab a chapter needs so the round starts without hitches */
-  async preloadChapter(ch: any) {
-    const ids: number[] = ch?.assets?.items || [];
-    const bags: string[] = ch?.assets?.bags || [];
-    await Promise.all([...ids.map(id => this.itemPrefab(id).catch(() => null)), ...bags.map(b => this.bagPrefab(b).catch(() => null))]);
+  /** Load the bag and items of one level (a level object of levels.json), so it opens without hitches */
+  async preloadLevel(level: any) {
+    if (!level) return;
+    const ids: number[] = (level.items || []).map((it: any) => it.id);
+    const skin: string | undefined = level.container?.skin;
+    await Promise.all([...[...new Set(ids)].map(id => this.itemPrefab(id).catch(() => null)), skin ? this.bagPrefab(skin).catch(() => null) : null]);
   },
 
   spriteFrame(path: string) { return load<SpriteFrame>(`${path}/spriteFrame`, SpriteFrame); },

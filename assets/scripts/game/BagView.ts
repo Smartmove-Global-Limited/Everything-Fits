@@ -2,7 +2,7 @@ import { _decorator, Component, Node, Vec2, Intersection2D } from 'cc';
 const { ccclass, property } = _decorator;
 
 /**
- * One bag style. Lives on the bag prefab (assets/resources/bags/<skin>.prefab), generated from the
+ * One bag style. Lives on the bag prefab (assets/gamecontent/bags/<skin>.prefab), generated from the
  * web bag data. The node origin is the CENTER-BOTTOM of the bag interior (the level origin), scale 1.
  *
  *   body   bag image drawn BEHIND the items

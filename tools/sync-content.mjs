@@ -4,7 +4,7 @@
 //   node tools/sync-content.mjs                 (web repo defaults to ../snug)
 //   GAME=/path/to/web/repo node tools/sync-content.mjs
 //
-//   snug/public/content/cozy  → assets/resources/content/cozy   (loaded on demand via resources.load)
+//   snug/public/content/cozy  → assets/gamecontent/content/cozy (asset bundle "content", loaded per level)
 //   snug/public/audio         → assets/resources/audio
 //   snug/public/ui            → assets/resources/uiart                   (UI prefabs reference it; runtime loads e.g. uiart/icons/star-off)
 //
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GAME = process.env.GAME || resolve(ROOT, '../snug');
 const PAIRS = [
-  [join(GAME, 'public/content/cozy'), join(ROOT, 'assets/resources/content/cozy')],
+  [join(GAME, 'public/content/cozy'), join(ROOT, 'assets/gamecontent/content/cozy')],
   [join(GAME, 'public/audio'), join(ROOT, 'assets/resources/audio')],
   [join(GAME, 'public/ui'), join(ROOT, 'assets/resources/uiart')],
 ];

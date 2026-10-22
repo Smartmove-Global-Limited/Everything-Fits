@@ -128,7 +128,6 @@ export class GameController extends Component {
       if (spot) { S.chapter = spot.chapter; S.chapterId = spot.chapter.id; idx = spot.index; }
       if (sys.isBrowser) { const q = Number(new URLSearchParams(location.search).get('i')); if (!Number.isNaN(q) && q > 0) idx = q; }
     }
-    await ContentLoader.preloadChapter(S.chapter);
     Sound.startMusic();
     await this.openLevel(idx);
     if (covered) Overlays.uncover();
@@ -157,6 +156,7 @@ export class GameController extends Component {
     this.freezeShown = -1;
     this.shakeHintOnce();
     Analytics.levelStart(this.levelNumber, S.level.id || String(S.levelIndex), S.level.difficulty?.tier);
+    ContentLoader.preloadLevel(levels[(S.levelIndex + 1) % levels.length]);   // the next one, while this one is played
     this.renderBoosters();
     Sound.duckMusic(false);
   }
