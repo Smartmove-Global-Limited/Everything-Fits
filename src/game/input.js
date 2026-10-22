@@ -7,7 +7,7 @@
 //    Chồng lên món khác hoặc chòi mép túi thì thành ảo ảnh, thả ra sẽ bật ngược ra ngoài.
 //  - Món buộc dây được nhấc theo cặp, coi như một khối, để dây không kéo lê món kia.
 import Matter from 'matter-js';
-import { S, partsOf, daVao } from './state.js';
+import { S, partsOf, daVao, W, FLOOR_Y } from './state.js';
 import { canvas, toLogical } from './canvas.js';
 import { computeGhost, findFreeSpot, bagZone, lanVaoLongTui } from './rules.js';
 import { tetherSuspend, tetherRestore } from './mechanics.js';
@@ -79,6 +79,21 @@ export function pickUp(body, p, { touch = true } = {}) {
 }
 
 /** Đặt lại vị trí các món phụ trong nhóm theo món chính */
+/**
+ * Món đang kéo không được lọt xuống dưới mặt sàn (FLOOR_Y, ngay trên thanh booster) hay ra
+ * ngoài hai mép màn: kéo quá tay thì món dừng ở sàn / mép. Không chặn, món đi xuyên sàn,
+ * thả tay ra là rơi mất xuống dưới.
+ */
+function giuTrongSan(d) {
+  let x0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const x of d.group) { x0 = Math.min(x0, x.bounds.min.x); x1 = Math.max(x1, x.bounds.max.x); y1 = Math.max(y1, x.bounds.max.y); }
+  const dy = Math.min(0, FLOOR_Y - 1 - y1);
+  const dx = x0 < 0 ? -x0 : x1 > W ? W - x1 : 0;
+  if (!dx && !dy) return;
+  Body.setPosition(d.body, { x: d.body.position.x + dx, y: d.body.position.y + dy });
+  syncGroup(d);
+}
+
 function syncGroup(d) {
   const b0 = d.body;
   for (const r of d.rel) {
@@ -136,6 +151,7 @@ export function moveHeld(dt = 16) {
   if (d.nang) { want.x = b.position.x + (want.x - b.position.x) * .6; want.y = b.position.y + (want.y - b.position.y) * .6; }
   Body.setPosition(b, want);
   syncGroup(d);
+  giuTrongSan(d);
   d.ghost = d.group.some(x => computeGhost(x, d.group));
   if (!d.ghost) d.lastValid = { x: b.position.x, y: b.position.y, angle: b.angle };
 }

@@ -324,10 +324,13 @@ function frame(now) {
       ctx.restore();
     };
     veTui(drawBag);
-    const order = S.bodies.slice().sort((a, b) => (isHeld(a) ? 1 : isHeld(b) ? -1 : 0));
-    for (const b of order) drawBody(b);
+    // Món đang cầm vẽ SAU viền trước của túi: vẽ trước thì kéo món ra khỏi túi nhìn như nó
+    // chui xuống dưới túi (viền túi đè lên món).
+    const cam = S.bodies.filter(b => isHeld(b));
+    for (const b of S.bodies) if (!isHeld(b)) drawBody(b);
     drawStrings();
     veTui(drawBagFront);
+    for (const b of cam) drawBody(b);
     if (HIEN_COLLIDER) veTui(veVungTui);
     drawSelection();
     drawPuffs(dt);
