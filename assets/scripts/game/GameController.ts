@@ -3,8 +3,8 @@
 // update(). Bag rules run right after the physics step (Director.EVENT_AFTER_PHYSICS).
 // Round flow like the web game (src/main.js, rules.js, hud.js): settings pause the round, a win
 // saves progress + gold and shows the reward popup, running out of time shows the lose popup.
-import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera } from 'cc';
-import { levelToFieldY } from '../core/GameConstants';
+import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view } from 'cc';
+import { levelToFieldY, FLOOR_Y, DOCK_TOP_Y, DESIGN_H } from '../core/GameConstants';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { LevelBuilder } from './LevelBuilder';
@@ -53,10 +53,31 @@ export class GameController extends Component {
 
   private offCamera: (() => void) | null = null;
 
+  /**
+   * Tall screens: the HUD row and the booster dock follow the screen edges (EdgePin) while the
+   * Field stays on the 420×760 design. Use the extra room: the bag may rise as far as the HUD went
+   * up, and the tray floor drops to halve its gap to the dock.
+   */
+  private fitToScreen() {
+    const vis = ScreenFit.visible(), ins = ScreenFit.insets();
+    const extra = Math.max(0, vis.height - DESIGN_H) / 2;
+    GameState.ceilGain = Math.max(0, extra - ins.top);
+    const dockDrop = extra - ins.bottom;                       // how far EdgePin moved the dock down
+    GameState.floorDrop = Math.max(0, (DOCK_TOP_Y + dockDrop - FLOOR_Y) / 2);
+    const floor = this.node.parent!.getChildByName('Field')?.getChildByName('Environment')?.getChildByName('Floor');
+    if (floor) {
+      if (this.floorBaseY === null) this.floorBaseY = floor.position.y;
+      floor.setPosition(floor.position.x, this.floorBaseY - GameState.floorDrop, 0);
+    }
+  }
+  private floorBaseY: number | null = null;
+
   onLoad() {
     ScreenFit.apply();
     // Game.scene keeps its Canvas at the design centre (Field space == physics world space)
     this.offCamera = ScreenFit.fitCamera(this.node.parent!.getComponentInChildren(Camera)!);
+    this.fitToScreen();
+    view.on('canvas-resize', this.fitToScreen, this);   // the bag follows at the next level build
     // dev builds only: hooks for automated play-testing from the browser console
     if (DEV) (globalThis as any).__ef = { GameState, BagRules, Sound, Analytics, physics: PhysicsSystem2D.instance, game: this };
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
@@ -88,6 +109,7 @@ export class GameController extends Component {
     director.off(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     this.offBoosters?.();
     this.offCamera?.();
+    view.off('canvas-resize', this.fitToScreen, this);
     Shake.unbind(); Shake.reset();
     this.builder.dispose();
     const S = GameState;

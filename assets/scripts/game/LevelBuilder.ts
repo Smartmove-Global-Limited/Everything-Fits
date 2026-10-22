@@ -78,7 +78,7 @@ export class LevelBuilder {
     // the items on the tray. Level positions designed against the bag (inBag items, solutions)
     // follow it through S.bagLift.
     const imageH = (bag.body?.getComponent(UITransform)?.height ?? 0) * s;
-    S.bagLift = Math.max(0, (BAG_FLOOR - imageH - BAG_CEIL) / 2);
+    S.bagLift = Math.max(0, (BAG_FLOOR - imageH - (BAG_CEIL - S.ceilGain)) / 2);
     const bottomLevel = BAG_FLOOR - S.bagLift + bag.imageBottom * s;   // origin = center-bottom of the interior
     bag.node.setScale(s, s, 1);
     bag.node.setPosition(c.cx ?? 210, levelToFieldY(bottomLevel), 0);

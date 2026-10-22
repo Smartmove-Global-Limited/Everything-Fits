@@ -49,6 +49,11 @@ export const GameState = {
   bagReady: false, bagShownAt: 0,
   /** how far the bag was raised above the web layout (level units): centred in the free band above the tray */
   bagLift: 0,
+  /**
+   * Tall screens (see GameController.fitToScreen), level units: how far the tray floor sits below
+   * FLOOR_Y, and how much higher the bag may rise than BAG_CEIL (the HUD moved up)
+   */
+  floorDrop: 0, ceilGain: 0,
   freezeUntil: 0,
 
   /** snapshot of the bag right before the last drop, to undo if that drop failed */

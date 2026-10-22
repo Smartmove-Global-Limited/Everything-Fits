@@ -4,13 +4,13 @@
 //   3. FALL  items drop one after another through the bottom edge; then the splash fades out
 // A touch skips ahead (falls at once, or closes while falling). No physics: hand-made falling.
 // Lives only while it plays, then destroys its node.
-import { _decorator, Component, Node, Sprite, SpriteFrame, UITransform, UIOpacity, Graphics, Color, resources, JsonAsset, tween, Layers, view } from 'cc';
+import { _decorator, Component, Node, Sprite, SpriteFrame, UITransform, UIOpacity, Graphics, Color, resources, tween, Layers, view, director, Director } from 'cc';
 import { Sound } from '../audio/Sound';
 const { ccclass } = _decorator;
 
 const W = 420;
 let H = 760;   // the visible height (tall phones show more than the 760 design)
-const CELL = 82;                 // grid cell: the biggest item side
+const CELL = 100;                // grid cell: the biggest item side (web 82; fewer, bigger items are lighter on weak phones)
 const SHOW = 700, POP = 260, SWAY = 1250, SPREAD = 650;
 const G = .0024;                 // fall acceleration, units / ms²
 const TOTAL = SHOW + SWAY + SPREAD + 900;
@@ -31,8 +31,11 @@ export class SplashView extends Component {
   private lastTick = 0;
   private done: () => void = () => {};
 
-  /** Load some item images and play. Resolves when the splash has faded out. */
-  static play(parent: Node): Promise<void> {
+  /**
+   * Load the splash images and play. Resolves when the splash has faded out. `onShown` runs once
+   * the items have been drawn a few frames (the native launch cover can go then, no black frame).
+   */
+  static play(parent: Node, onShown?: () => void): Promise<void> {
     H = Math.max(760, view.getVisibleSize().height);
     // cover the screen in this very frame: nothing behind it (Home) may show before the splash
     const node = new Node('Splash'); node.layer = Layers.Enum.UI_2D; parent.addChild(node);
@@ -42,26 +45,24 @@ export class SplashView extends Component {
     splash.enabled = false;                       // no update() until the items are there
     return new Promise(res => {
       splash.done = res;
-      SplashView.loadFrames(40).then(frames => {
-        if (!frames.length) { splash.close(); return; }
+      SplashView.loadFrames().then(frames => {
+        if (!frames.length) { onShown?.(); splash.close(); return; }
         splash.build(frames); splash.enabled = true;
+        if (onShown) { let n = 0; const after = () => { if (++n >= 2) { director.off(Director.EVENT_AFTER_DRAW, after); onShown(); } }; director.on(Director.EVENT_AFTER_DRAW, after); }
       });
     });
   }
 
-  private static async loadFrames(n: number): Promise<SpriteFrame[]> {
-    const index = await new Promise<any>(ok => resources.load('content/cozy/assets/index', JsonAsset, (e, a) => ok(e ? null : a.json)));
-    const paths: string[] = index ? Object.keys(index.items).map(k => index.items[k]) : [];
-    for (let i = paths.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [paths[i], paths[j]] = [paths[j], paths[i]]; }
-    const pick = paths.slice(0, n).map(p => 'content/cozy/' + p.replace(/\.json$/, '') + '/spriteFrame');
-    return new Promise(ok => resources.load(pick, SpriteFrame, (_e, list) => ok((list || []).filter(Boolean) as SpriteFrame[])));
+  /** Small copies of item images packed in one auto atlas (resources/splash): one texture, one draw call */
+  private static loadFrames(): Promise<SpriteFrame[]> {
+    return new Promise(ok => resources.loadDir('splash', SpriteFrame, (_e, list) => ok((list || []).filter(Boolean))));
   }
 
   private build(frames: SpriteFrame[]) {
     const cols = Math.ceil(W / CELL) + 1, rows = Math.ceil(H / (CELL * .86)) + 1;
     let k = 0;
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-      const f = frames[k++ % frames.length];
+      const f = frames[(k++ * 7 + ((Math.random() * 5) | 0)) % frames.length];   // mixed, no repeating pattern
       const x = (i - .5 + (j % 2) * .5) * CELL + off(CELL * .16);
       const y = (j - .3) * CELL * .86 + off(CELL * .14);          // web y down
       const size = f.originalSize, longest = Math.max(size.width, size.height);

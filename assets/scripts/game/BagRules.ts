@@ -187,7 +187,7 @@ export function findFreeSpot(item: ItemView, nearX: number): { x: number; y: num
   const hw = r.width / 2, hh = r.height / 2;
   const ox = item.node.position.x - r.center.x, oy = item.node.position.y - r.center.y;   // origin offset from box center
   const minX = 20 + hw, maxX = Math.max(minX, DESIGN_W - 20 - hw);
-  const topY = levelToFieldY(TABLE_Y + 10), bottomY = levelToFieldY(FLOOR_Y);
+  const topY = levelToFieldY(TABLE_Y + 10), bottomY = levelToFieldY(FLOOR_Y + GameState.floorDrop);
   // highest an item may go: just under the bag (with its walls), the pile may rise above the table edge
   const bag = GameState.bag;
   const ceil = bag ? bag.minY - BAG_WALL - 2 : topY + 60;

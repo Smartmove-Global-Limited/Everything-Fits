@@ -102,21 +102,23 @@ await image(box('Icon', gear, [372, 30, 27, 27], gR), 'menu/gear.webp');
 
 // ---- booster dock (web .efh-dock .efb) ----
 const boosters = [];
+// the dock sits 10 lower than the web (closer to the screen bottom, GameConstants.DOCK_TOP_Y)
+const DOCK = 10;
 const defs = [['Freeze', 'icons/freeze.webp', 66], ['Resize', 'icons/resize.webp', 167], ['Throw out', 'icons/throw.webp', 268]];
 for (const [name, icon, x] of defs) {
-  const bR = [x, 639, 86, 88];
+  const bR = [x, 639 + DOCK, 86, 88];
   const b = box('Booster' + name.replace(' ', ''), hud, bR, hudRect);
   const face = panel(b, { fill: CREAM, radius: 19.4, border: 1.3, borderColor: CREAM, lip: 2.9, lipColor: C('#E2D6BC'),
     shadowY: 3.9, shadowBlur: 5.8, shadowColor: new cc.Color(71, 77, 64, 46) });
-  const ic = await image(box('Icon', b, [x + 19.5, 646, 47, 47], bR), icon);
-  const nm = text(box('Name', b, [x, 699.5, 86, 13], bR), name, 11.7, INK);
-  const lock = box('Lock', b, [x + 25, 648, 36, 36], bR);
+  const ic = await image(box('Icon', b, [x + 19.5, 646 + DOCK, 47, 47], bR), icon);
+  const nm = text(box('Name', b, [x, 699.5 + DOCK, 86, 13], bR), name, 11.7, INK);
+  const lock = box('Lock', b, [x + 25, 648 + DOCK, 36, 36], bR);
   await image(lock, 'icons/lock.webp'); lock.active = false;
-  const lockLv = text(box('LockLevel', b, [x, 688, 86, 16], bR), 'Lv. 3', 14, INK); lockLv.node.active = false;
-  const badgeR = [x + 61, 634, 21, 21];
+  const lockLv = text(box('LockLevel', b, [x, 688 + DOCK, 86, 16], bR), 'Lv. 3', 14, INK); lockLv.node.active = false;
+  const badgeR = [x + 61, 634 + DOCK, 21, 21];
   const badge = box('Badge', b, badgeR, bR);
   panel(badge, { fill: C('#BD6D69'), radius: 10.5, border: 2, borderColor: CREAM });
-  const bt = text(box('Count', badge, [x + 61, 635, 21, 21], badgeR), '0', 12.6, CREAM);
+  const bt = text(box('Count', badge, [x + 61, 635 + DOCK, 21, 21], badgeR), '0', 12.6, CREAM);
   const BB = cls('BoosterButton');
   const entry = new BB();
   entry.root = b; entry.face = face; entry.icon = ic; entry.title = nm; entry.badge = badge; entry.badgeText = bt; entry.lock = lock; entry.lockLevel = lockLv;

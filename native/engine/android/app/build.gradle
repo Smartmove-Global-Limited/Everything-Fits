@@ -97,6 +97,18 @@ android {
 
         }
 
+        // optimised test build (engine C++ in release, no validator) that installs next to the
+        // store / web app: gradlew assemblePreview
+        preview {
+            initWith release
+            applicationIdSuffix ".cocos"
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            getIsDefault().set(false)
+        }
+
         debug {
             // test builds install next to the store / web app instead of replacing it
             applicationIdSuffix ".cocos"

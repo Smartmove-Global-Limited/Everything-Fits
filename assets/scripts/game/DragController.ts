@@ -191,7 +191,7 @@ export class DragController extends Component {
     let y = d.targetY - (d.offsetX * s + d.offsetY * c) + d.lift;
     it.node.setPosition(x, y, 0);
     // keep the item above the tray floor and inside the screen sides (exact shape, this frame)
-    const r = itemAABB(it), floor = levelToFieldY(FLOOR_Y);
+    const r = itemAABB(it), floor = levelToFieldY(FLOOR_Y + GameState.floorDrop);
     let fx = 0, fy = 0;
     if (r.yMin < floor + 1) fy = floor + 1 - r.yMin;
     if (r.xMin < 0) fx = -r.xMin; else if (r.xMax > DESIGN_W) fx = DESIGN_W - r.xMax;

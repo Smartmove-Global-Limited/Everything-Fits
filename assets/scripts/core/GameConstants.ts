@@ -27,6 +27,9 @@ export const BAG_WALL = 14;
 export const BAG_FLOOR = 444, BAG_CEIL = 112;
 export const BAG_MAX_SCALE = 1.3, BAG_MIN_SCALE = .5, BAG_MAX_W = 408;
 
+/** Booster dock: design top edge (level coordinates) */
+export const DOCK_TOP_Y = 649;
+
 /** Level y (down) → Field y (up) */
 export const levelToFieldY = (y: number) => DESIGN_H - y;
 /** Level angle (radians, clockwise) → node angle (degrees, counter-clockwise) */

@@ -49,22 +49,26 @@ export class MainMenu extends Component {
 
   async start() {
     const covered = Overlays.startCoveredIfPending();
-    const splash = splashPlayed ? null : SplashView.play(this.node.parent!);
+    // The native launch cover stays until the splash has drawn (else a black frame shows while the
+    // first shaders compile). Home is built only once the splash is on screen, and the preloads
+    // wait until it is gone: nothing heavy runs before the first picture or during its animation.
+    let shown: () => void = () => {};
+    const onScreen = new Promise<void>(res => (shown = res));
+    const splash = splashPlayed ? null : SplashView.play(this.node.parent!, () => { NativeBridge.hideLaunchCover(); shown(); });
     splashPlayed = true;
-    // the splash colour is on screen from the next frame: the native cover can go
-    this.scheduleOnce(() => NativeBridge.hideLaunchCover(), 0.05);
+    if (splash) { await onScreen; await new Promise(r => this.scheduleOnce(r, .8)); }   // after the items have popped in
     await this.buildScreens();
     this.book = await ContentLoader.loadBook();
     Sound.preload();
     Sound.startMusic();
     this.openHome();
     if (covered) Overlays.uncover();
+    await splash;
     // while the player looks at Home: everything the level needs, so Play opens it at once
     const s = this.spot();
     if (s) ContentLoader.preloadChapter(s.chapter);
     Overlays.loadPrefab('ui/SettingsPopup');
-    await splash;
-    this.ensureShop();   // after the splash: ready before the first tap on Shop
+    this.ensureShop();   // ready before the first tap on Shop
   }
 
   private spot() { return Progress.getSpot(ContentLoader.chapters()); }
