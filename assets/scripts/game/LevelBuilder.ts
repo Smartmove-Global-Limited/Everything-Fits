@@ -6,9 +6,11 @@
 import { Node, instantiate, tween, Vec3, UIOpacity, Prefab, UITransform, ERigidBody2DType } from 'cc';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
-import { DESIGN_H, BAG_FLOOR, BAG_CEIL, PhysicsGroup, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
+import { DESIGN_H, BAG_FLOOR, BAG_CEIL, PhysicsGroup, PTM, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
 import { ItemView } from './ItemView';
 import { overlapsBagArea, findFreeSpot, clearEjects, beginSpotBatch } from './BagRules';
+import { Sound } from '../audio/Sound';
+import { Fx } from './Fx';
 import { BagView } from './BagView';
 
 const DROP_INTERVAL = 110;     // ms between two items dropping in
@@ -16,7 +18,7 @@ const FIRST_DROP = 150;        // pause before the first one
 const DROP_HEIGHT = 90;        // items start this far above the top of the screen
 const AVOID_CENTER = 62;       // never drop straight onto the top of the bag
 const BAG_MAX_WAIT = 2600;     // show the bag at the latest this long after the last drop (ms)
-const SETTLED_SPEED = .7 * 60; // "settled" speed for the bag reveal (units/s)
+const SETTLED_SPEED = .7 * 60 / PTM; // "settled" speed for the bag reveal (m/s; web .7 units per step)
 
 export class LevelBuilder {
   private itemPool = new Map<number, ItemView[]>();
@@ -121,8 +123,9 @@ export class LevelBuilder {
       if (it.waiting && S.clock >= it.enterAt) {
         this.activate(it, PhysicsGroup.FALLING);
         it.entering = true;
-        it.body.linearVelocity = it.body.linearVelocity.set((Math.random() - .5) * 72, -(120 + Math.random() * 120));
-        it.body.angularVelocity = (Math.random() - .5) * 4.8;
+        // web: 0.6 units/step sideways, 2–4 units/step down (units/s ÷ PTM = m/s)
+        it.body.linearVelocity = it.body.linearVelocity.set((Math.random() - .5) * 72 / PTM, -(120 + Math.random() * 120) / PTM);
+        it.body.angularVelocity = (Math.random() - .5) * .08 * 60;   // web ±.04 rad per step
       }
       if (it.entering && it.node.position.y < DESIGN_H - 10) {
         // fully inside the screen: collide with everything again (including the ceiling)
@@ -157,6 +160,11 @@ export class LevelBuilder {
     bag.refreshWorldShape();
     S.bagReady = true; S.bagShownAt = S.clock;
     this.setBagVisible(bag, true);
+    // web tickTuiHien: whoosh, then a thud with dust when the bag lands at the end of its pop
+    Sound.play('whoosh', { gain: .45 });
+    Sound.play('land', { gain: .5, delay: .22 });
+    const fx = Fx.instance;
+    if (fx) { const cx = (bag.minX + bag.maxX) / 2, y = bag.minY - 8; fx.dust(cx - 40, y, { n: 6, strength: .8 }); fx.dust(cx + 40, y, { n: 6, strength: .8 }); }
     // small pop when the bag lands on the table
     const s = bag.node.scale.x;
     for (const n of [bag.node, this.frontHolder]) {
@@ -190,6 +198,21 @@ export class LevelBuilder {
     return bag;
   }
 
+  // ---------- bag sway while shaking (images only; the physical walls do not move) ----------
+  private swayBody = new Vec3(); private swayFront = new Vec3(); private swayOn = false;
+  setSway(dx: number, dy: number, angle: number) {
+    const bag = GameState.bag; if (!bag || !bag.body) return;
+    const s = bag.node.scale.x || 1;
+    if (!this.swayOn) { this.swayBody.set(bag.body.position); if (bag.front) this.swayFront.set(bag.front.position); this.swayOn = true; }
+    bag.body.setPosition(this.swayBody.x + dx / s, this.swayBody.y + dy / s, 0); bag.body.angle = angle;
+    if (bag.front) { bag.front.setPosition(this.swayFront.x + dx / s, this.swayFront.y + dy / s, 0); bag.front.angle = angle; }
+  }
+  resetSway() {
+    const bag = GameState.bag;
+    if (this.swayOn && bag && bag.body) { bag.body.setPosition(this.swayBody); bag.body.angle = 0; if (bag.front) { bag.front.setPosition(this.swayFront); bag.front.angle = 0; } }
+    this.swayOn = false;
+  }
+
   /** Scene teardown: pooled nodes sit outside the scene tree, destroy them explicitly */
   dispose() {
     for (const list of this.itemPool.values()) for (const it of list) if (it.isValid && !it.node.parent) it.node.destroy();
@@ -201,6 +224,7 @@ export class LevelBuilder {
   /** Return everything of the previous round to the pools */
   clear() {
     const S = GameState;
+    this.resetSway();
     for (const it of S.items) {
       it.node.active = false;
       it.waiting = it.entering = false;

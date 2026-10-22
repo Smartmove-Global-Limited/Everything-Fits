@@ -10,6 +10,7 @@ const { ccclass } = _decorator;
 
 const ON_BG = new Color(0x34, 0x74, 0x50, 255), OFF_BG = new Color(0xB9, 0xB4, 0xA8, 255);
 const KNOB_TRAVEL = 23.4;   // web: knob right 4 → right 52 (×0.972)
+const MENU_CARD_HEIGHT = 345.6; // web card height when Home / Restart are hidden
 
 type Toggle = { node: Node; bg: RoundRect; knob: Node; label: Label };
 
@@ -23,6 +24,8 @@ export class SettingsPopup extends Component {
   private restart: Node = null!;
   private version: Label | null = null;
   private opts: SettingsOptions = {};
+  private cardHeight = 0;
+  private baseY = new Map<Node, number>();
 
   onLoad() {
     const n = this.node;
@@ -32,6 +35,8 @@ export class SettingsPopup extends Component {
     this.home = findNode(n, 'setHome')!;
     this.restart = findNode(n, 'setRestart')!;
     this.version = labelIn(findNode(n, 'setVer'));
+    this.cardHeight = this.card.getComponent(UITransform)!.height;
+    for (const c of this.card.children) this.baseY.set(c, c.position.y);
 
     tap(this.toggles.bgm.node, () => { Sound.setMusic(!Sound.musicOn); this.redraw(true); }, 'tap', this);
     tap(this.toggles.sfx.node, () => { Sound.setSfx(!Sound.sfxOn); this.redraw(true); }, null, this);
@@ -53,6 +58,7 @@ export class SettingsPopup extends Component {
     this.opts = opts;
     this.home.active = !!opts.inGame;
     this.restart.active = !!opts.inGame;
+    this.layout(!!opts.inGame);
     if (this.version) this.version.string = opts.version != null ? `Levels v${opts.version}` : '';
     this.redraw(false);
     openPopup(this.node, this.card);
@@ -62,6 +68,20 @@ export class SettingsPopup extends Component {
   close(notify = true) {
     const cb = notify ? this.opts.onClose : undefined;
     closePopup(this.node, cb);
+  }
+
+  /**
+   * The prefab is the in-game layout (Home + Restart shown). Opened from the menu the web card
+   * collapses around the rows: 176 units shorter, still centred, the version line right under them.
+   */
+  private layout(inGame: boolean) {
+    const shrink = inGame ? 0 : this.cardHeight - MENU_CARD_HEIGHT;
+    this.card.getComponent(UITransform)!.height = this.cardHeight - shrink;
+    for (const [c, y] of this.baseY) {
+      if (c === this.home || c === this.restart) continue;
+      const isVersion = c.name === 'setVer';
+      c.setPosition(c.position.x, y + (isVersion ? shrink / 2 : -shrink / 2), 0);
+    }
   }
 
   private redraw(animate: boolean) {
@@ -78,7 +98,9 @@ export class SettingsPopup extends Component {
     const ax = t.label.node.getComponent(UITransform)!.anchorX;
     // web: "ON" 13px from the left edge, "OFF" 12px from the right edge
     const left = on ? -w / 2 + 12.6 : w / 2 - 11.7 - lw;
-    t.label.node.setPosition(left + lw * ax, t.label.node.position.y, 0);
+    // the label sits inside its <span> node: move the span so the text's left edge lands there
+    const span = t.label.node.parent!;
+    span.setPosition(left - t.label.node.position.x + lw * ax, span.position.y, 0);
     const to = new Vec3(on ? KNOB_TRAVEL : -KNOB_TRAVEL, t.knob.position.y, 0);
     Tween.stopAllByTarget(t.knob);
     if (animate) tween(t.knob).to(.2, { position: to }, { easing: 'sineOut' }).start();

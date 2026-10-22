@@ -10,7 +10,7 @@
 // GameController loop, Cocos never calls an update() here.
 import { _decorator, Component, Node, EventTouch, Vec2, Vec3, Color, PhysicsSystem2D, UITransform, Graphics, Sprite, ERigidBody2DType, sys } from 'cc';
 import { GameState, isHeld } from '../core/GameState';
-import { DESIGN_W, levelToFieldY, FLOOR_Y } from '../core/GameConstants';
+import { DESIGN_W, levelToFieldY, FLOOR_Y, PTM } from '../core/GameConstants';
 import { ItemView } from './ItemView';
 import { computeGhost, overlapsInterior, bagZone, findFreeSpot, itemAABB, beginSpotBatch } from './BagRules';
 import { isFreezing, freezeItem } from './BoosterEffects';
@@ -28,7 +28,6 @@ const angleOf = (n: Node) => n.eulerAngles.z;
 const HANDLE_INK = new Color(59, 42, 74, 255);
 const FIT_INK = new Color(0x3D, 0xBE, 0x78, 255), GHOST_INK = new Color(0xE5, 0x48, 0x4D, 255);
 const OPAQUE = new Color(255, 255, 255, 255), GHOST_ALPHA = new Color(255, 255, 255, 153);   // web: globalAlpha .6
-const SHADOW_INK = new Color(59, 42, 74, 90), SHADOW_DROP = 8;                                // web: rgba(59,42,74,.4), offset 8
 const POP_MS = 220, POP_GAIN = .09;                                                            // item swells once when picked up
 
 export type DragEvents = { onPick?(item: ItemView): void; onDrop?(item: ItemView, bounced: boolean): void; onSelect?(item: ItemView | null): void };
@@ -38,7 +37,6 @@ export class DragController extends Component {
   @property({ type: Graphics, tooltip: 'Draws the rotate handle of the selected item' }) handle: Graphics | null = null;
   @property({ type: Node, tooltip: 'Layer above the bag rim: the held item is moved here while dragged' }) heldLayer: Node = null!;
   @property({ type: Graphics, tooltip: 'Outline of the held item (green fits / red does not), child of heldLayer' }) outline: Graphics = null!;
-  @property({ type: Sprite, tooltip: 'Soft shadow under the held item, child of heldLayer' }) shadow: Sprite = null!;
   @property({ type: Node, tooltip: 'Layer the items live in when not held' }) itemLayer: Node = null!;
 
   events: DragEvents = {};
@@ -50,14 +48,9 @@ export class DragController extends Component {
   private readonly tmpV2 = new Vec2();
   private readonly tmpOut = new Vec2();
   private popAt = 0;
-  private shadowTransform: UITransform = null!;
 
   onLoad() {
     this.transform = this.getComponent(UITransform)!;
-    this.shadowTransform = this.shadow.getComponent(UITransform)!;
-    this.shadow.sizeMode = Sprite.SizeMode.CUSTOM;
-    this.shadow.color = SHADOW_INK;
-    this.shadow.node.active = false;
     this.node.on(Node.EventType.TOUCH_START, this.onStart, this);
     this.node.on(Node.EventType.TOUCH_MOVE, this.onMove, this);
     this.node.on(Node.EventType.TOUCH_END, this.onEnd, this);
@@ -164,11 +157,8 @@ export class DragController extends Component {
     item.holdUntil = 0; item.frozen = false;
     item.beginHold();
     // above the bag rim while held (else dragging it out of the bag looks like it slides under it)
-    this.shadow.node.setSiblingIndex(0);
     item.node.setParent(this.heldLayer, true);
     this.outline.node.setSiblingIndex(this.heldLayer.children.length - 1);
-    this.shadow.spriteFrame = item.sprite ? item.sprite.spriteFrame : null;
-    this.shadow.node.active = true;
     this.popAt = S.clock;
     const p = item.node.position;
     const a = -angleOf(item.node) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
@@ -207,18 +197,9 @@ export class DragController extends Component {
     this.drawHeld(it, d.ghost);
   }
 
-  /** Web look: 60% item + red outline when it does not fit; shadow + green outline when it does */
+  /** Web look: 60% item + red outline when it does not fit, green outline when it does (no copy of the item as a shadow) */
   private drawHeld(it: ItemView, ghost: boolean) {
     if (it.sprite) it.sprite.color = ghost ? GHOST_ALPHA : OPAQUE;
-    const sh = this.shadow.node;
-    sh.active = !ghost;
-    if (!ghost) {
-      const p = it.node.position;
-      sh.setPosition(p.x, p.y - SHADOW_DROP, 0);
-      sh.setRotation(it.node.rotation); sh.setScale(it.node.scale);
-      const ui = it.transform2d, sui = this.shadowTransform;
-      if (sui.width !== ui.width || sui.height !== ui.height) sui.setContentSize(ui.width, ui.height);
-    }
     const g = this.outline;
     g.clear();
     g.strokeColor = ghost ? GHOST_INK : FIT_INK;
@@ -240,8 +221,6 @@ export class DragController extends Component {
 
   private clearHeld(it: ItemView) {
     this.outline.clear();
-    this.shadow.node.active = false;
-    this.shadow.spriteFrame = null;
     if (it.sprite) it.sprite.color = OPAQUE;
     it.node.setScale(it.levelScale, it.levelScale, 1);
     it.node.setParent(this.itemLayer, true);           // on top of the other items
@@ -267,7 +246,7 @@ export class DragController extends Component {
     it.releasedAt = S.clock;
     // Freeze booster running: an item dropped into the bag stays exactly where it was dropped
     if (!bounced && isFreezing() && bagZone(it).fullyInside) freezeItem(it);
-    if (bounced) it.body.linearVelocity = it.body.linearVelocity.set((Math.random() - .5) * 96, 0);
+    if (bounced) it.body.linearVelocity = it.body.linearVelocity.set((Math.random() - .5) * 96 / PTM, 0);   // web ±.8 units/step sideways
     this.events.onDrop?.(it, bounced);
   }
 

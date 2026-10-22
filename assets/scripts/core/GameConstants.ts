@@ -6,6 +6,13 @@
 // convention: the Field node has its origin at the BOTTOM-left of the design area, y points up,
 // angles are degrees counter-clockwise. Conversion happens once, when a level is read.
 
+/**
+ * Pixels per Box2D metre. RigidBody2D.linearVelocity is in METRES per second (getLinearVelocity
+ * reads Box2D as is) while getLinearVelocityFromWorldPoint returns units per second: divide unit
+ * speeds by PTM before comparing with / writing linearVelocity.
+ */
+export const PTM = 32;
+
 export const DESIGN_W = 420;
 export const DESIGN_H = 760;
 

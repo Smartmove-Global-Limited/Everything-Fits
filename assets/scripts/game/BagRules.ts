@@ -7,15 +7,17 @@
 // (PolygonCollider2D.worldPoints, testAABB). Nothing here allocates per call.
 import { Vec2, Rect, PolygonCollider2D, CircleCollider2D, Intersection2D, PhysicsSystem2D } from 'cc';
 import { GameState, isHeld, isOnField } from '../core/GameState';
-import { DESIGN_W, TABLE_Y, FLOOR_Y, BAG_WALL, PhysicsGroup, levelToFieldY } from '../core/GameConstants';
+import { DESIGN_W, TABLE_Y, FLOOR_Y, BAG_WALL, PhysicsGroup, PTM, levelToFieldY } from '../core/GameConstants';
 import type { ItemView } from './ItemView';
 
 /** Tolerance when testing "inside the bag": physics lets bodies sink slightly into walls */
 const FIT_TOL = 3;
 /** Wait after release before judging an item stuck in the opening (ms) */
 const WAIT_AFTER_RELEASE = 700;
-/** Speeds below these count as resting. Web values were per 1/60 s step; here per second. */
-const REST_SPEED = .25 * 60, REST_SPIN = .03 * 60;
+/** Speeds below these count as resting. Web: units / rad per 1/60 s step → m/s and rad/s here. */
+const REST_SPEED = .25 * 60 / PTM, REST_SPIN = .03 * 60;
+/** Packed items must have slowed down below this (web .9 units per step), m/s */
+const PACKED_SPEED = .9 * 60 / PTM;
 /** Frames resting while poking out before the item is pushed back to the tray (~1.2 s) */
 const STUCK_FRAMES = 75;
 /** Frames needed to count an item as packed / unpacked (debounce) */
@@ -279,7 +281,7 @@ export function updatePacked(now: number) {
     if (outOfPlay) { it.insideFrames = 0; it.outsideFrames = OUT_FRAMES; }
     else { it.insideFrames = inside ? it.insideFrames + 1 : 0; it.outsideFrames = inside ? 0 : it.outsideFrames + 1; }
     const v = it.body.linearVelocity;
-    const slow = v.x * v.x + v.y * v.y < (.9 * 60) * (.9 * 60) || it.isStatic;
+    const slow = v.x * v.x + v.y * v.y < PACKED_SPEED * PACKED_SPEED || it.isStatic;
     const ok = was ? it.outsideFrames < OUT_FRAMES : inside && it.insideFrames >= IN_FRAMES && slow;
     if (ok !== was) {
       if (ok) { S.packed.add(it.levelIndex); events.onPacked?.(it, S.packed.size); }

@@ -1,4 +1,4 @@
-import { _decorator, Component, Enum, RigidBody2D, Collider2D, PolygonCollider2D, CircleCollider2D, UITransform, Sprite, ERigidBody2DType, Vec2, Rect, Mat4 } from 'cc';
+import { _decorator, Component, Enum, RigidBody2D, Collider2D, PolygonCollider2D, CircleCollider2D, UITransform, Sprite, ERigidBody2DType, Vec2, Rect, Mat4, Contact2DType, IPhysics2DContact } from 'cc';
 import { PhysicsGroup } from '../core/GameConstants';
 const { ccclass, property, requireComponent, disallowMultiple } = _decorator;
 
@@ -54,11 +54,21 @@ export class ItemView extends Component {
   frozen = false; holdUntil = 0;
   cracks = 0; crackedAt = 0; broken = false;
   held = false;
+  lastImpactAt = 0;       // impact sound throttle (game clock)
+  buzzClock = 0;          // phone: time spent inside the bag
+  pressedUntil = 0;       // balloon: something lies on top of it until then
+  shakeFriction: number[] | null = null;   // collider friction saved while shaking
+  frictionBackAt = 0;
+
+  /** Set by game/Mechanics: impact sounds, dust, fragile cracks */
+  static contactHandler: ((item: ItemView, self: Collider2D, other: Collider2D, c: IPhysics2DContact | null) => void) | null = null;
 
   // ---- shape at the CURRENT node transform ----
   // Box2D world data (worldPoints, worldAABB) is only refreshed by a physics step, so it lags one
   // frame behind a node moved by hand (the held item). The bag rules read this instead.
   private localPolys: Vec2[][] = [];
+  /** shape area at scale 1 (units²) */
+  private baseArea = 0;
   private worldPolys: Vec2[][] = [];
   /** world bounds of the shape, valid after updateShape() */
   readonly bounds = new Rect();
@@ -71,14 +81,23 @@ export class ItemView extends Component {
     this.baseDensity = this.colliders.map(c => c.density);
     this.transform2d = this.getComponent(UITransform)!;
     this.sprite = this.getComponent(Sprite);
+    for (const c of this.colliders) c.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
     for (const c of this.colliders) {
       const pts: Vec2[] = [];
       if (c instanceof PolygonCollider2D) for (const p of c.points) pts.push(new Vec2(p.x + c.offset.x, p.y + c.offset.y));
       else if (c instanceof CircleCollider2D) for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; pts.push(new Vec2(c.offset.x + Math.cos(a) * c.radius, c.offset.y + Math.sin(a) * c.radius)); }
       if (pts.length < 3) continue;
       this.localPolys.push(pts);
+      let a = 0; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; a += p.x * q.y - q.x * p.y; }
+      this.baseArea += Math.abs(a) / 2;
       this.worldPolys.push(pts.map(() => new Vec2()));
     }
+  }
+
+  onDestroy() { for (const c of this.colliders) if (c.isValid) c.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this); }
+
+  private onBeginContact(self: Collider2D, other: Collider2D, contact: IPhysics2DContact | null) {
+    ItemView.contactHandler?.(this, self, other, contact);
   }
 
   /** Polygons of the item in world (= Field) space at the current node transform */
@@ -132,6 +151,14 @@ export class ItemView extends Component {
     this.node.setScale(k, k, 1);
     const inv = 1 / (k * k);
     for (let i = 0; i < this.colliders.length; i++) { this.colliders[i].density = this.baseDensity[i] * inv; this.colliders[i].apply(); }
+    // Air drag by grams per area, like the web (physics.js apDungCanNang): an apple-like item keeps
+    // Matter's 0.01, tickets and paper glide down (0.06), a laptop falls almost freely (0.003).
+    // Web frictionAir f per 1/60 s step → Box2D linear damping −ln(1 − f) × 60 per second.
+    if (this.physicsType !== ItemPhysics.FLOAT) {
+      const density = (this.grams || 150) / Math.max(1, this.baseArea * k * k);
+      const f = Math.max(.003, Math.min(.07, .012 * Math.pow(.04 / density, .9)));
+      this.body.linearDamping = -Math.log(1 - f) * 60;
+    }
   }
 
   stop() { this.body.linearVelocity = this.body.linearVelocity.set(0, 0); this.body.angularVelocity = 0; }
