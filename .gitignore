@@ -11,3 +11,6 @@ android/keystore.properties
 android/appsflyer.properties
 android/*.jks
 android/.idea/
+
+# Nháp thiết kế level (kết quả tạm, script tạm); level đã gộp vào public/content/cozy/levels.json
+tools/thietke-tam/
