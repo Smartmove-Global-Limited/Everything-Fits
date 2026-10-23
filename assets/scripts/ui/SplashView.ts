@@ -4,13 +4,13 @@
 //   3. FALL  items drop in a random order through the bottom edge; then the splash fades out
 // A touch skips ahead (falls at once, or closes while falling). No physics: hand-made falling.
 // Lives only while it plays, then destroys its node.
-import { _decorator, Component, Node, Sprite, SpriteFrame, UITransform, UIOpacity, Graphics, Color, resources, tween, Layers, view, director, Director } from 'cc';
+import { _decorator, Component, Node, Sprite, SpriteFrame, UITransform, UIOpacity, Graphics, Color, resources, tween, Layers, view, director, Director, assetManager } from 'cc';
 import { Sound } from '../audio/Sound';
 const { ccclass } = _decorator;
 
 const W = 420;
 let H = 760;   // the visible height (tall phones show more than the 760 design)
-const CELL = 115;                // grid cell: the biggest item side (web 82); ~55 cells on a phone, one per splash image
+const CELL = 72;                 // grid cell: the biggest item side (web 82); ~120 cells on a phone, one per splash image
 const SHOW = 700, POP = 260, SWAY = 1250, SPREAD = 650;
 const G = .0024;                 // fall acceleration, units / ms²
 const TOTAL = SHOW + SWAY + SPREAD + 900;
@@ -31,6 +31,7 @@ export class SplashView extends Component {
   private closing = false;
   private lastTick = 0;
   private done: () => void = () => {};
+  private frames: SpriteFrame[] = [];
 
   /**
    * Load the splash images and play. Resolves when the splash has faded out. `onShown` runs once
@@ -54,12 +55,13 @@ export class SplashView extends Component {
     });
   }
 
-  /** 56 small copies of different item images in an auto atlas (resources/splash): few textures, few draw calls */
+  /** 120 small copies of different item images in an auto atlas (resources/splash): a few textures, a few draw calls */
   private static loadFrames(): Promise<SpriteFrame[]> {
     return new Promise(ok => resources.loadDir('splash', SpriteFrame, (_e, list) => ok((list || []).filter(Boolean))));
   }
 
   private build(frames: SpriteFrame[]) {
+    this.frames = frames;
     const cols = Math.ceil(W / CELL) + 1, rows = Math.ceil(H / (CELL * .86)) + 1;
     // dealt from a shuffled deck: every image once before any repeats (a very tall screen only)
     let deck: SpriteFrame[] = [];
@@ -101,7 +103,10 @@ export class SplashView extends Component {
     if (this.closing) return;
     this.closing = true;
     const op = this.node.addComponent(UIOpacity);
-    tween(op).to(.38, { opacity: 0 }).call(() => { this.done(); this.node.destroy(); }).start();
+    tween(op).to(.38, { opacity: 0 }).call(() => {
+      this.done(); this.node.destroy();
+      for (const f of this.frames) assetManager.releaseAsset(f);   // shown once per launch: free the atlas pages
+    }).start();
   }
 
   update(dt: number) {

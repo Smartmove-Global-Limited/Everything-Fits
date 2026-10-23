@@ -22,10 +22,21 @@ const LIFT_MAX = 70, FINGER_CLEARANCE = 26; // item is lifted above the finger b
 const LIFT_MOUSE = 8;                       // with a mouse only a small lift
 const HOLD_AFTER_SPIN = 1000;               // ms an item keeps its new angle inside the bag after rotating
 /**
- * Node angle in degrees. Do not read node.angle on physics bodies: Box2D writes the rotation as a
- * quaternion and node.angle keeps returning the old euler value; eulerAngles recomputes it.
+ * Node angle in degrees, from the rotation quaternion. Do not read node.angle on physics bodies:
+ * Box2D writes the rotation as a quaternion and node.angle keeps returning the old euler value
+ * (eulerAngles too on the native build).
  */
-const angleOf = (n: Node) => n.eulerAngles.z;
+export const angleOf = (n: Node) => { const q = n.rotation; return 2 * Math.atan2(q.z, q.w) * 180 / Math.PI; };
+/** a − b in degrees, folded into −180..180 */
+const turnDiff = (a: number, b: number) => ((a - b) % 360 + 540) % 360 - 180;
+/**
+ * Turn an item and tell Box2D at once. On the native build the body does not always pick up a
+ * node angle set from script: it kept its old angle and turned the item back when let go.
+ */
+function setAngle(it: ItemView, deg: number) {
+  it.node.angle = deg;
+  (it.body as any).impl?.syncRotationToPhysics?.();
+}
 const SELECT_INK = new Color(0xE2, 0x63, 0x7F, 255), BUTTON_SHADOW = new Color(59, 42, 74, 56);   // web #E2637F, rgba(59,42,74,.22)
 const FIT_INK = new Color(0x3D, 0xBE, 0x78, 255), GHOST_INK = new Color(0xE5, 0x48, 0x4D, 255);
 const OPAQUE = new Color(255, 255, 255, 255), GHOST_ALPHA = new Color(255, 255, 255, 153);   // web: globalAlpha .6
@@ -259,7 +270,7 @@ export class DragController extends Component {
       if (bagZone(it).inZone && overlapsInterior(it)) {   // does not fit in the bag → back to the tray
         const spot = findFreeSpot(it, it.node.position.x);
         it.node.setPosition(spot.x, spot.y, 0); bounced = true;
-      } else if (d.lastValid) { it.node.setPosition(d.lastValid.x, d.lastValid.y, 0); it.node.angle = d.lastValid.angle; }
+      } else if (d.lastValid) { it.node.setPosition(d.lastValid.x, d.lastValid.y, 0); setAngle(it, d.lastValid.angle); }
       else { const spot = findFreeSpot(it, it.node.position.x); it.node.setPosition(spot.x, spot.y, 0); }
     }
     it.endHold();
@@ -287,11 +298,11 @@ export class DragController extends Component {
     const sp = this.spin!, it = sp.item, p = it.node.position;
     sp.moved = true;
     it.holdAngle = sp.startAngle + (Math.atan2(y - p.y, x - p.x) - sp.startPointer) * 180 / Math.PI;
-    it.node.angle = it.holdAngle;
+    setAngle(it, it.holdAngle);
   }
   /** Angle locked, no sliding sideways (contacts may still nudge it), falling stays natural */
   private holdAngle(it: ItemView, still: boolean) {
-    if (Math.abs(angleOf(it.node) - it.holdAngle) > .01) it.node.angle = it.holdAngle;
+    if (Math.abs(turnDiff(angleOf(it.node), it.holdAngle)) > .01) setAngle(it, it.holdAngle);
     const v = it.body.linearVelocity;
     it.body.linearVelocity = v.set(0, still ? 0 : Math.min(0, v.y));
     it.body.angularVelocity = 0;

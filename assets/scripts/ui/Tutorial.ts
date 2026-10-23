@@ -12,6 +12,7 @@
 import { _decorator, Component, Node, Label, UITransform, Vec3, Vec2, tween, Tween, UIOpacity, EventTouch } from 'cc';
 import { LocalStore } from '../services/LocalStore';
 import { GameState } from '../core/GameState';
+import { angleOf } from '../game/DragController';
 import type { ItemView } from '../game/ItemView';
 const { ccclass, property } = _decorator;
 
@@ -98,7 +99,7 @@ export class Tutorial extends Component {
     const host = this.host!;
     // the item whose place in the solution needs no turning
     const sol = host.solution().filter(s => host.items()[s.i] && !host.packed(s.i));
-    const pick = sol.slice().sort((a, b) => turnBetween(host.items()[a.i].node.eulerAngles.z, a.angle) - turnBetween(host.items()[b.i].node.eulerAngles.z, b.angle))[0];
+    const pick = sol.slice().sort((a, b) => turnBetween(angleOf(host.items()[a.i].node), a.angle) - turnBetween(angleOf(host.items()[b.i].node), b.angle))[0];
     if (!pick) { this.finish(); return; }
     this.step = 'drag';
     this.target = host.items()[pick.i];
@@ -111,7 +112,7 @@ export class Tutorial extends Component {
     const host = this.host!;
     // the item that must turn the most to fit its place
     const sol = host.solution().filter(s => host.items()[s.i] && !host.packed(s.i));
-    const pick = sol.slice().sort((a, b) => turnBetween(host.items()[b.i].node.eulerAngles.z, b.angle) - turnBetween(host.items()[a.i].node.eulerAngles.z, a.angle))[0];
+    const pick = sol.slice().sort((a, b) => turnBetween(angleOf(host.items()[b.i].node), b.angle) - turnBetween(angleOf(host.items()[a.i].node), a.angle))[0];
     const items = host.items().filter((it, i) => !host.packed(i) && it.node.activeInHierarchy);
     this.target = pick ? host.items()[pick.i] : items[0] || null;
     if (!this.target) { this.finish(); return; }

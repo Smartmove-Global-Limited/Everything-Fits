@@ -40,6 +40,7 @@ public class AppActivity extends CocosActivity {
         SDKWrapper.shared().init(this);
         SdkBridge.init(this);   // Firebase Analytics + AppsFlyer (assets/scripts/services/NativeBridge.ts)
         SdkBridge.showLaunchCover(this);
+        MotionBridge.init(this);   // shaking: linear acceleration (assets/scripts/game/Shake.ts)
 
     }
 
@@ -47,12 +48,14 @@ public class AppActivity extends CocosActivity {
     protected void onResume() {
         super.onResume();
         SDKWrapper.shared().onResume();
+        MotionBridge.resume();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         SDKWrapper.shared().onPause();
+        MotionBridge.pause();
     }
 
     @Override
