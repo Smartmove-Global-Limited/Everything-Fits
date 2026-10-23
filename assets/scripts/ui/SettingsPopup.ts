@@ -2,7 +2,7 @@
 //   BGM / SFX / Vibration switches, saved and applied at once (all ON for a new player);
 //   Home and Restart only while a round is being played; the levels.json version at the bottom;
 //   X or a tap on the dim area closes it.
-import { _decorator, Component, Node, Color, Vec3, Tween, tween, UITransform, EventTouch, Label } from 'cc';
+import { _decorator, Component, Node, Color, Vec3, Tween, tween, UITransform, EventTouch, Label, instantiate } from 'cc';
 import { findNode, labelIn, tap, openPopup, closePopup } from './UiKit';
 import { RoundRect } from './RoundRect';
 import { Sound } from '../audio/Sound';
@@ -12,10 +12,17 @@ const ON_BG = new Color(0x34, 0x74, 0x50, 255), OFF_BG = new Color(0xB9, 0xB4, 0
 const KNOB_TRAVEL = 23.4;   // web: knob right 4 → right 52 (×0.972)
 const MENU_CARD_HEIGHT = 345.6; // web card height when Home / Restart are hidden
 const SIDE_BY_SIDE = 56;        // in game: Home left, Restart right of the centre
+/**
+ * TEMPORARY test buttons (in game): « previous level / next level », on the row Restart used to
+ * take, to go through the levels quickly. Set to false before a release.
+ */
+export const DEV_LEVEL_BUTTONS = true;
+const DEV_SIDE = 74;
 
 type Toggle = { node: Node; bg: RoundRect; knob: Node; label: Label };
 
-export type SettingsOptions = { inGame?: boolean; version?: number | string | null; onHome?: () => void; onRestart?: () => void; onClose?: () => void };
+export type SettingsOptions = { inGame?: boolean; version?: number | string | null; onHome?: () => void; onRestart?: () => void; onClose?: () => void;
+  onPrevLevel?: () => void; onNextLevel?: () => void };
 
 @ccclass('SettingsPopup')
 export class SettingsPopup extends Component {
@@ -23,6 +30,8 @@ export class SettingsPopup extends Component {
   private toggles: Record<'bgm' | 'sfx' | 'vib', Toggle> = null!;
   private home: Node = null!;
   private restart: Node = null!;
+  private prevLevel: Node | null = null;
+  private nextLevel: Node | null = null;
   private version: Label | null = null;
   private opts: SettingsOptions = {};
   private cardHeight = 0;
@@ -45,6 +54,10 @@ export class SettingsPopup extends Component {
     tap(findNode(n, 'setX'), () => this.close(), 'tap', this);
     tap(this.home, () => { const cb = this.opts.onHome; this.close(false); cb?.(); }, 'tap', this);
     tap(this.restart, () => { const cb = this.opts.onRestart; this.close(false); cb?.(); }, 'tap', this);
+    if (DEV_LEVEL_BUTTONS) {
+      this.prevLevel = this.devButton('« Level trước', () => this.opts.onPrevLevel);
+      this.nextLevel = this.devButton('Level sau »', () => this.opts.onNextLevel);
+    }
     // a tap on the dim area (not on the card) closes it
     n.on(Node.EventType.TOUCH_END, (e: EventTouch) => {
       const ui = this.card.getComponent(UITransform)!;
@@ -55,11 +68,26 @@ export class SettingsPopup extends Component {
 
   onDestroy() { this.node.targetOff(this); }
 
+  /** A copy of the Restart button without its icon, for the temporary level buttons */
+  private devButton(text: string, cb: () => (() => void) | undefined): Node {
+    const b = instantiate(this.restart);
+    b.name = 'devLevel';
+    b.parent = this.card;
+    const icon = findNode(b, 'svg'); if (icon) icon.active = false;
+    const label = labelIn(findNode(b, 'span'));
+    if (label) { label.string = text; label.fontSize = 17; }
+    tap(b, () => { const f = cb(); this.close(false); f?.(); }, 'tap', this);
+    return b;
+  }
+
   open(opts: SettingsOptions = {}) {
     this.opts = opts;
     this.home.active = !!opts.inGame;
     this.restart.active = !!opts.inGame;
-    this.layout(!!opts.inGame);
+    const dev = !!opts.inGame && !!this.prevLevel;
+    if (this.prevLevel) this.prevLevel.active = dev;
+    if (this.nextLevel) this.nextLevel.active = dev;
+    this.layout(!!opts.inGame, dev);
     if (this.version) this.version.string = opts.version != null ? `Levels v${opts.version}` : '';
     this.redraw(false);
     openPopup(this.node, this.card);
@@ -76,19 +104,24 @@ export class SettingsPopup extends Component {
    * sit side by side on one row (shorter card, still centred); from the menu they are hidden and
    * the card collapses around the switches like the web.
    */
-  private layout(inGame: boolean) {
+  private layout(inGame: boolean, devRow = false) {
     const homeY = this.baseY.get(this.home)!, restartY = this.baseY.get(this.restart)!;
     const rowGap = homeY - restartY;                          // the stacked Restart row
-    const shrink = inGame ? rowGap : this.cardHeight - MENU_CARD_HEIGHT;
+    // the temporary level buttons take the row Restart left: the card keeps its full height
+    const shrink = inGame ? (devRow ? 0 : rowGap) : this.cardHeight - MENU_CARD_HEIGHT;
     this.card.getComponent(UITransform)!.height = this.cardHeight - shrink;
     for (const [c, y] of this.baseY) {
-      if (c === this.home || c === this.restart) continue;
+      if (c === this.home || c === this.restart || c === this.prevLevel || c === this.nextLevel) continue;
       const isVersion = c.name === 'setVer';
       c.setPosition(c.position.x, y + (isVersion ? shrink / 2 : -shrink / 2), 0);
     }
     if (inGame) {
       this.home.setPosition(-SIDE_BY_SIDE, homeY - shrink / 2, 0);
       this.restart.setPosition(SIDE_BY_SIDE, homeY - shrink / 2, 0);
+    }
+    if (devRow) {
+      this.prevLevel!.setPosition(-DEV_SIDE, restartY + 14, 0);
+      this.nextLevel!.setPosition(DEV_SIDE, restartY + 14, 0);
     }
   }
 

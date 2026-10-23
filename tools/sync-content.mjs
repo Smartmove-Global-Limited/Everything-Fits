@@ -9,7 +9,8 @@
 //   snug/public/ui            → assets/resources/uiart                   (UI prefabs reference it; runtime loads e.g. uiart/icons/star-off)
 //
 // Only new or changed files are copied; existing .meta files are kept (same uuids, prefabs keep
-// their references). Files deleted at the source are deleted here together with their .meta.
+// their references). Files deleted at the source are deleted here together with their .meta,
+// except the Cocos-only folders in KEEP (uiart/generated).
 // If the editor is open with EF Bridge enabled, it is told to refresh the asset database.
 import { readdirSync, statSync, mkdirSync, copyFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
@@ -25,6 +26,9 @@ const PAIRS = [
 ];
 
 let added = 0, changed = 0, removed = 0;
+// Folders that exist only in the Cocos project (never deleted even though the web side lacks them):
+//   generated  SVG icons rasterised for the UI prefabs (tools/web-ui/import-dump.mjs)
+const KEEP = new Set(['generated']);
 const same = (a, b) => statSync(a).size === statSync(b).size && readFileSync(a).equals(readFileSync(b));
 
 function copyDir(src, dst) {
@@ -40,6 +44,7 @@ function copyDir(src, dst) {
   }
   for (const name of readdirSync(dst)) {
     if (name.endsWith('.meta') || seen.has(name)) continue;
+    if (KEEP.has(name)) continue;   // made in the Cocos project, not copies of web files
     rmSync(join(dst, name), { recursive: true, force: true });
     rmSync(join(dst, name + '.meta'), { force: true });
     removed++;

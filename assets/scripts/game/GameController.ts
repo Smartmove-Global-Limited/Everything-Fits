@@ -302,6 +302,9 @@ export class GameController extends Component {
       onClose: () => { S.paused = wasPaused; Sound.duckMusic(false); },
       onHome: () => this.goHome(),
       onRestart: () => { S.paused = false; this.restart(); },
+      // temporary test buttons (SettingsPopup.DEV_LEVEL_BUTTONS)
+      onPrevLevel: () => this.jumpLevel(-1),
+      onNextLevel: () => this.jumpLevel(1),
     });
   }
 
@@ -354,6 +357,16 @@ export class GameController extends Component {
         onCollectX2: () => Wallet.add(reward),
       });
     }, WIN_POPUP_DELAY);
+  }
+
+  /** Temporary test buttons: the previous / next level of the chapter (wrapping), behind the veil */
+  private async jumpLevel(step: number) {
+    const S = GameState, n = S.chapter.levels.length;
+    S.paused = false; Sound.duckMusic(false);
+    Analytics.setReason('next');
+    await Overlays.cover();
+    await this.openLevel((S.levelIndex + step + n) % n);
+    await Overlays.uncover();
   }
 
   /** web level.js nextLevel: the following level of the chapter, wrapping after the last one; behind the veil */
