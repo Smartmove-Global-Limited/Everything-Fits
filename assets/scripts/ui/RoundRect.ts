@@ -49,11 +49,14 @@ export class RoundRect extends Component {
 
   onLoad() { this.g = this.getComponent(Graphics); }
   private drawn = false;
+  private drawnW = 0; private drawnH = 0;
   onEnable() {
     this.node.on(Node.EventType.SIZE_CHANGED, this.redraw, this);
     this.node.on(Node.EventType.ANCHOR_CHANGED, this.redraw, this);
-    // Graphics keeps its shape while the node is inactive: re-showing a screen redraws nothing
-    if (!this.drawn) this.redraw();
+    // Graphics keeps its shape while the node is inactive: re-showing a screen redraws nothing,
+    // unless the box was resized meanwhile (a bar pinned above the ad banner while hidden)
+    const ui = this.getComponent(UITransform);
+    if (!this.drawn || (ui && (ui.width !== this.drawnW || ui.height !== this.drawnH))) this.redraw();
   }
   onDisable() { this.node.off(Node.EventType.SIZE_CHANGED, this.redraw, this); this.node.off(Node.EventType.ANCHOR_CHANGED, this.redraw, this); }
 
@@ -65,6 +68,7 @@ export class RoundRect extends Component {
     const ui = this.getComponent(UITransform);
     if (!g || !ui) return;
     this.drawn = true;
+    this.drawnW = ui.width; this.drawnH = ui.height;
     const w = ui.width, h = ui.height, x = -w * ui.anchorX, y = -h * ui.anchorY;
     const r = Math.max(0, Math.min(this._radius, w / 2, h / 2));
     const c = RoundRect.tmp;

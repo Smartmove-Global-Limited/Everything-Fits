@@ -1,0 +1,9 @@
+# AppLovin MAX keys. Copy to applovin.properties (same folder, NOT in git) and fill in.
+# AppLovin dashboard > Account > Keys: SDK key. MAX > Ad Units: one unit per format for
+# everything.fits.packing.puzzle.organize (Android). Empty sdkKey = simulated "TEST AD" screens.
+sdkKey=
+bannerUnit=
+interUnit=
+rewardedUnit=
+# advertising ids of test phones, comma separated (or register them in MAX > Test Mode)
+testDevices=

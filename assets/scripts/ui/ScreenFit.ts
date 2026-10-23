@@ -1,12 +1,25 @@
 // Multi-resolution: the game is designed on 420×760. Taller screens (phones 19.5–21:9) keep the
 // width and get extra height; wider screens (tablets) keep the height and get extra width. The
 // 420×760 design box is always fully visible; EdgePin moves bars to the real screen edges.
-import { view, ResolutionPolicy, sys, Rect, profiler, Camera } from 'cc';
+import { view, ResolutionPolicy, sys, Rect, profiler, Camera, Size } from 'cc';
 
 export const DESIGN_W = 420, DESIGN_H = 760;
+const EMBEDDED_SIZE = new Size(DESIGN_W, DESIGN_H);
 let applied = false;
 
+let embedded = false;
+/** Height of the bottom ad banner in design units (0 = none); bottom bars sit above it */
+let adBottom = 0;
+const insetListeners: (() => void)[] = [];
+
 export const ScreenFit = {
+  /**
+   * The game runs inside the Level Editor (Editor.scene): its camera draws into the editor's
+   * preview box, the editor owns the design resolution. The game then sees exactly the 420×760
+   * design area (no extra height, no notch insets), so bars and the field keep their design places.
+   */
+  setEmbedded() { embedded = true; applied = true; },
+  get embedded() { return embedded; },
   /** Call once from the first scene controller (MainMenu / GameController onLoad) */
   apply() {
     if (applied) return;
@@ -32,15 +45,27 @@ export const ScreenFit = {
     view.on('design-resolution-changed', fit);
     return () => { view.off('canvas-resize', fit); view.off('design-resolution-changed', fit); };
   },
-  /** Visible area in design units */
-  visible() { return view.getVisibleSize(); },
-  /** Insets of the unsafe areas (notch, status bar, gesture bar) in design units */
+  /** Visible area in design units (the bare design area inside the editor) */
+  visible() { return embedded ? EMBEDDED_SIZE : view.getVisibleSize(); },
+  /**
+   * The bottom banner appeared (height in design units) or went away (0): bars pinned to the
+   * bottom edge (EdgePin) move up above it.
+   */
+  setAdBottom(h: number) {
+    if (Math.abs(h - adBottom) < .5) return;
+    adBottom = h;
+    for (const f of insetListeners) f();
+  },
+  get adBottom() { return adBottom; },
+  onInsetsChange(fn: () => void) { insetListeners.push(fn); return () => { const i = insetListeners.indexOf(fn); if (i >= 0) insetListeners.splice(i, 1); }; },
+  /** Insets of the unsafe areas (notch, status bar, gesture bar, bottom ad banner) in design units */
   insets(out = { top: 0, bottom: 0 }) {
+    if (embedded) { out.top = 0; out.bottom = 0; return out; }
     const vis = view.getVisibleSize();
     let safe: Rect | null = null;
     try { safe = sys.getSafeAreaRect(); } catch { safe = null; }
-    if (!safe || safe.width <= 0) { out.top = 0; out.bottom = 0; return out; }
-    out.bottom = Math.max(0, safe.y);
+    if (!safe || safe.width <= 0) { out.top = 0; out.bottom = adBottom; return out; }
+    out.bottom = Math.max(0, safe.y) + adBottom;
     out.top = Math.max(0, vis.height - (safe.y + safe.height));
     return out;
   },

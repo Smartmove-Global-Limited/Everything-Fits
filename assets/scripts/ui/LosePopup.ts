@@ -1,5 +1,5 @@
 // Lose popup (web hud.js showLose, Figma "EF · Lose"): time ran out → "So close!", items left,
-// Try again / +60 sec (rewarded ad). A broken item → "Oops!" with the reason, no extra time.
+// Try again / +60 sec (rewarded ad add_60s). A broken item → "Oops!" with the reason, no extra time.
 import { _decorator, Component, Node } from 'cc';
 import { findNode, setText, tap, openPopup, closePopup } from './UiKit';
 import { Overlays } from './Overlays';
@@ -38,9 +38,8 @@ export class LosePopup extends Component {
   }
 
   private async extraTime() {
-    if (!Overlays.adAvailable()) { Overlays.toast('Ad unavailable. Try again later.'); return; }
     this.extraEnable(false);
-    const full = await Overlays.watchAd();
+    const full = await Overlays.rewarded('add_60s');
     this.extraEnable(true);
     if (full) { closePopup(this.node); this.opts.onExtraTime(); }
   }

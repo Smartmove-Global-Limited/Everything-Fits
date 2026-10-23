@@ -2,12 +2,14 @@
 // everything else stays put. The device acceleration pushes each item the opposite way (inertia);
 // a strong shake also lifts a little so packed items loosen and settle tighter; friction of the
 // bag items is lowered while shaking and restored shortly after. The bag image sways (visual only).
-// Energy: a full bar empties after 8 s of real shaking; empty = shaking locked, the popup opens
-// once, a rewarded ad refills it. No sensor (desktop): arrow keys shake.
+// Energy (Daily.ts ShakeEnergy): 100 points a day, every hard jolt (the shake changing direction)
+// costs 2; empty = shaking locked, the popup opens once, a rewarded ad refills it. No sensor
+// (desktop): arrow keys shake.
 import { input, Input, EventAcceleration, EventKeyboard, KeyCode, Vec2, sys } from 'cc';
 import { GameState, isHeld } from '../core/GameState';
 import { bagZone } from './BagRules';
 import { Sound } from '../audio/Sound';
+import { ShakeEnergy } from '../services/Daily';
 
 const G = 9.81;
 const DEAD = .7, MAX = 14;               // m/s²: ignore hand tremor below, cap above
@@ -19,19 +21,19 @@ const RESTORE_MS = 280;                  // friction comes back this long after 
 const FILTER = .8;                       // low-pass that removes gravity from the sensor
 const DEAD_Y = 1.2, MAX_UP = 4;          // vertical axis: walking / tilting ignored, upward toss capped
 const GAME_G = 34.375;                   // m/s², game gravity (Project Settings → Physics)
-const EMPTY_AFTER = 8000;                // ms of shaking from full to empty
+const JOLT_MIN = 3.5;                    // m/s²: a direction change this strong is a jolt (costs energy)
+const JOLT_GAP = 85;                     // ms: at most one jolt counted per this interval
 const KEY_SIDE = 7, KEY_UP = 3.2, KEY_DOWN = 7;
 
 let ax = 0, ay = 0, gx = 0, gy = 0;      // filtered device acceleration (m/s²), gravity estimate
 let fakeX = 0, fakeY = 0, fakeUntil = 0; // keyboard / scripted shake
-let energy = 1;
 let onEnergy: (e: number) => void = () => {};
 let onEmpty: () => void = () => {};
 const keys = new Set<KeyCode>();
 let bound = false;
 const sway = { x: 0, v: 0, y: 0, vy: 0 };
 const force = new Vec2();
-let dirX = 0, dirY = 0, buzzAt = 0;
+let dirX = 0, dirY = 0, joltAt = 0;
 
 function onMotion(e: EventAcceleration) {
   // Cocos reports acceleration including gravity, in g: filter gravity out, per axis
@@ -71,8 +73,9 @@ export const Shake = {
     if (sys.isMobile) input.setAccelerometerEnabled(false);
     keys.clear();
   },
-  get energy() { return energy; },
-  setEnergy(v: number) { energy = Math.max(0, Math.min(1, v)); onEnergy(energy); },
+  get energy() { return ShakeEnergy.fraction; },
+  /** Redraw the bar (a new round, or the energy was refilled) */
+  showEnergy() { onEnergy(ShakeEnergy.fraction); },
 
   /** Every frame while the round runs, before the physics step */
   tick(dtMs: number, clock: number) {
@@ -83,7 +86,7 @@ export const Shake = {
     if (Math.abs(a) < DEAD) a = 0;
     if (Math.abs(v) < DEAD_Y) v = 0;
     if (!a && !v) return;
-    if (energy <= 0) return;                 // empty: shaking locked
+    if (ShakeEnergy.empty) return;           // empty: shaking locked
     a = Math.max(-MAX, Math.min(MAX, a));
     v = Math.max(-MAX_UP, Math.min(MAX, v)); // negative = toss up: capped lower
     const unit = GAME_G * GAIN / G;
@@ -106,16 +109,18 @@ export const Shake = {
       moved = true;
     }
     if (!moved) return;
-    // a short buzz each time the shake changes direction (items knock against the bag walls)
+    // each hard jolt (the shake changes direction): a short buzz (items knock against the bag
+    // walls) and 2 energy points
     const sx = Math.sign(a), sy = Math.sign(v), strength = Math.hypot(a, v);
     const turned = (sx && dirX && sx !== dirX) || (sy && dirY && sy !== dirY);
     if (sx) dirX = sx; if (sy) dirY = sy;
     const now = Date.now();
-    if (turned && strength >= 3.5 && now >= buzzAt) { buzzAt = now + 85; Sound.vibrate(Math.round(Math.min(48, 12 + strength * 2.4))); }
-    const before = Math.round(energy * 100);
-    energy = Math.max(0, energy - dtMs / EMPTY_AFTER);
-    if (Math.round(energy * 100) !== before || energy === 0) onEnergy(energy);
-    if (energy === 0) onEmpty();
+    if (!turned || strength < JOLT_MIN || now < joltAt) return;
+    joltAt = now + JOLT_GAP;
+    Sound.vibrate(Math.round(Math.min(48, 12 + strength * 2.4)));
+    ShakeEnergy.spend();
+    onEnergy(ShakeEnergy.fraction);
+    if (ShakeEnergy.empty) onEmpty();
   },
 
   /** Bag sway following the hand (spring), offsets in units */

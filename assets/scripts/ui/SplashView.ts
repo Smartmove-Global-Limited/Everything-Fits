@@ -1,7 +1,7 @@
 // Splash at app start (web src/ui/splash.js): items cover the screen, no logo, no button.
 //   1. SHOW  items pop in from the centre outwards on a staggered grid (grow, small overshoot)
 //   2. SWAY  the whole heap wobbles, each item at its own pace
-//   3. FALL  items drop one after another through the bottom edge; then the splash fades out
+//   3. FALL  items drop in a random order through the bottom edge; then the splash fades out
 // A touch skips ahead (falls at once, or closes while falling). No physics: hand-made falling.
 // Lives only while it plays, then destroys its node.
 import { _decorator, Component, Node, Sprite, SpriteFrame, UITransform, UIOpacity, Graphics, Color, resources, tween, Layers, view, director, Director } from 'cc';
@@ -10,7 +10,7 @@ const { ccclass } = _decorator;
 
 const W = 420;
 let H = 760;   // the visible height (tall phones show more than the 760 design)
-const CELL = 100;                // grid cell: the biggest item side (web 82; fewer, bigger items are lighter on weak phones)
+const CELL = 115;                // grid cell: the biggest item side (web 82); ~55 cells on a phone, one per splash image
 const SHOW = 700, POP = 260, SWAY = 1250, SPREAD = 650;
 const G = .0024;                 // fall acceleration, units / ms²
 const TOTAL = SHOW + SWAY + SPREAD + 900;
@@ -20,6 +20,7 @@ type Piece = { node: Node; x: number; y: number; scale: number; angle: number; s
   fallDelay: number; vx: number; vy: number; vr: number; dx: number; dy: number; dr: number };
 
 const off = (k: number) => (Math.random() - .5) * 2 * k;
+const shuffle = <T>(a: T[]) => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 @ccclass('SplashView')
 export class SplashView extends Component {
@@ -53,16 +54,18 @@ export class SplashView extends Component {
     });
   }
 
-  /** Small copies of item images packed in one auto atlas (resources/splash): one texture, one draw call */
+  /** 56 small copies of different item images in an auto atlas (resources/splash): few textures, few draw calls */
   private static loadFrames(): Promise<SpriteFrame[]> {
     return new Promise(ok => resources.loadDir('splash', SpriteFrame, (_e, list) => ok((list || []).filter(Boolean))));
   }
 
   private build(frames: SpriteFrame[]) {
     const cols = Math.ceil(W / CELL) + 1, rows = Math.ceil(H / (CELL * .86)) + 1;
-    let k = 0;
+    // dealt from a shuffled deck: every image once before any repeats (a very tall screen only)
+    let deck: SpriteFrame[] = [];
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-      const f = frames[(k++ * 7 + ((Math.random() * 5) | 0)) % frames.length];   // mixed, no repeating pattern
+      if (!deck.length) deck = shuffle(frames.slice());
+      const f = deck.pop()!;
       const x = (i - .5 + (j % 2) * .5) * CELL + off(CELL * .16);
       const y = (j - .3) * CELL * .86 + off(CELL * .14);          // web y down
       const size = f.originalSize, longest = Math.max(size.width, size.height);
@@ -88,8 +91,8 @@ export class SplashView extends Component {
     this.falling = true; this.fallAt = this.t;
     const spread = fast ? SPREAD * .45 : SPREAD;
     for (const p of this.pieces) {
-      p.fallDelay = (1 - p.y / H) * spread * .7 + Math.random() * spread * .3;   // bottom rows go first
-      p.vx = off(.06); p.vy = -.12 - Math.random() * .18; p.vr = off(.0035);    // little hop first
+      p.fallDelay = Math.random() * spread;                                     // any order
+      p.vx = off(.1); p.vy = -.08 - Math.random() * .22; p.vr = off(.006);      // little hop, some spin
     }
     Sound.play('whoosh', { gain: .5 });
   }

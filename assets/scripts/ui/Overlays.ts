@@ -1,7 +1,11 @@
-// Screen-wide overlays shared by every scene: the short toast (web efToast) and the rewarded ad
-// (web game/ads.js). Prefabs load once; one instance per scene sits on top of the Canvas.
-import { Node, Prefab, instantiate, director, resources, UIOpacity, Tween, tween, UITransform, Graphics, Color, Layers } from 'cc';
+// Screen-wide overlays shared by every scene: the short toast (web efToast), the simulated ads
+// (TEST AD screen, TEST BANNER strip) and the views Ads.ts draws real banners around.
+// Prefabs load once; one instance per scene sits on top of the Canvas.
+import { Node, Prefab, instantiate, director, resources, UIOpacity, Tween, tween, UITransform, Graphics, Color, Layers, view } from 'cc';
 import { findNode, setText, tap, labelIn } from './UiKit';
+import { ScreenFit } from './ScreenFit';
+import { Ads, AdViews, BannerPlacement } from '../services/Ads';
+import { Purchases } from '../services/Purchases';
 
 const prefabs = new Map<string, Prefab>();
 function loadPrefab(path: string): Promise<Prefab> {
@@ -39,6 +43,42 @@ function veilNode(): Node {
   return n;
 }
 let adPlaying: Promise<boolean> | null = null;
+let bannerWanted: BannerPlacement | null = null;
+/** TestBanner prefab height and its texts' places, before it was stretched to the screen edge */
+let bannerBase: { h: number; ys: number[] } | null = null;
+
+/** Simulated banner: the TEST BANNER strip at the bottom edge, above the gesture bar */
+async function simBanner(placement: BannerPlacement | null) {
+  bannerWanted = placement;
+  const canvas = director.getScene()?.getChildByName('Canvas');
+  if (!placement) {
+    const n = canvas?.getChildByName('__testBanner');
+    if (n) n.active = false;
+    ScreenFit.setAdBottom(0);
+    return;
+  }
+  const n = await onTop('ui/TestBanner', '__testBanner');
+  if (bannerWanted !== placement) return;          // hidden again while the prefab loaded
+  n.active = true;
+  setText(findNode(n, 'placement'), placement);
+  // the strip sits above the gesture / navigation bar and its background fills down to the screen
+  // edge (no game picture under the banner); the texts stay in the banner part
+  const ui = n.getComponent(UITransform)!;
+  bannerBase ||= { h: ui.height, ys: n.children.map(c => c.position.y) };
+  const h = bannerBase.h;
+  const sys = ScreenFit.insets().bottom - ScreenFit.adBottom;     // system inset only
+  ui.height = h + sys;
+  n.setPosition(0, -ScreenFit.visible().height / 2 + (h + sys) / 2, 0);
+  n.children.forEach((c, i) => c.setPosition(c.position.x, bannerBase!.ys[i] + sys / 2, 0));
+  ScreenFit.setAdBottom(h);
+}
+
+/** The views Ads.ts uses: simulated screens here, real banner height from the native SDK */
+const adViews: AdViews = {
+  simulateFullScreen: (kind, placement) => Overlays.watchAd(kind, placement),
+  simulateBanner: placement => { simBanner(placement); },
+  setBannerInset(px, screenPx) { ScreenFit.setAdBottom(px > 0 && screenPx > 0 ? px * view.getVisibleSize().height / screenPx : 0); },
+};
 
 export const Overlays = {
   loadPrefab,
@@ -71,7 +111,9 @@ export const Overlays = {
     l.string = text;
     l.updateRenderData(true);
     // pill hugs the text (web padding .5em 1.1em)
-    n.getComponent(UITransform)!.width = l.node.getComponent(UITransform)!.width + l.fontSize * 2.2;
+    const lu = l.node.getComponent(UITransform)!;
+    lu.anchorX = .5;                                   // the text run from the web dump is left-anchored
+    n.getComponent(UITransform)!.width = lu.width + l.fontSize * 2.2;
     l.node.setPosition(0, l.node.position.y, 0);
     const op = n.getComponent(UIOpacity) || n.addComponent(UIOpacity);
     Tween.stopAllByTarget(op);
@@ -79,18 +121,28 @@ export const Overlays = {
     tween(op).to(.15, { opacity: 255 }).delay(seconds).to(.25, { opacity: 0 }).call(() => { n.active = false; }).start();
   },
 
-  /** Is a rewarded ad available (a real SDK says false while loading / offline) */
-  adAvailable: () => true,
+  /** Start the ad and store services once (every scene controller calls it in onLoad) */
+  startServices() { Ads.start(adViews); Purchases.start(); },
 
   /**
-   * TEMPORARY simulated rewarded ad: a "TEST AD" cover counting down. Resolves true when watched
-   * to the end, false when closed early. Plug the real ad SDK in here, callers stay the same.
+   * Player chose a rewarded ad: true only when watched to the end. Not loaded → the toast
+   * "Ad unavailable. Try again later." and false, nothing is taken.
    */
-  watchAd(): Promise<boolean> {
+  async rewarded(placement: Parameters<typeof Ads.rewarded>[0]): Promise<boolean> {
+    if (!Ads.rewardedAvailable()) { this.toast('Ad unavailable. Try again later.'); return false; }
+    return Ads.rewarded(placement);
+  },
+
+  /**
+   * Simulated full-screen ad (no ad SDK key yet): a "TEST AD" cover counting down. Resolves true
+   * when watched to the end, false when closed early.
+   */
+  watchAd(kind: 'rewarded' | 'interstitial' = 'rewarded', placement = ''): Promise<boolean> {
     if (adPlaying) return adPlaying;
     adPlaying = (async () => {
       const n = await onTop('ui/AdOverlay', '__ad');
       n.active = true;
+      setText(findNode(n, 'p'), `${kind === 'rewarded' ? 'Rewarded' : 'Interstitial'} ad playing… (${placement})`);
       const count = findNode(n, 'b'), close = findNode(n, 'button');
       return new Promise<boolean>(done => {
         const end = Date.now() + AD_SECONDS * 1000;

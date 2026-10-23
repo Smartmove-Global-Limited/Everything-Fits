@@ -23,14 +23,19 @@ export class EdgePin extends Component {
   private extended: { node: Node; h: number; y: number; kids: [Node, number][] }[] | null = null;
   private baseSize = new Size();
   private insets = { top: 0, bottom: 0 };
+  private offInsets: (() => void) | null = null;
 
   onLoad() {
     this.base.set(this.node.position);
     const ui = this.getComponent(UITransform);
     if (ui) this.baseSize.set(ui.contentSize);
   }
-  onEnable() { view.on('canvas-resize', this.apply, this); view.on('design-resolution-changed', this.apply, this); this.apply(); }
-  onDisable() { view.off('canvas-resize', this.apply, this); view.off('design-resolution-changed', this.apply, this); }
+  onEnable() {
+    view.on('canvas-resize', this.apply, this); view.on('design-resolution-changed', this.apply, this);
+    this.offInsets = ScreenFit.onInsetsChange(() => this.apply());   // bottom ad banner shown / hidden
+    this.apply();
+  }
+  onDisable() { view.off('canvas-resize', this.apply, this); view.off('design-resolution-changed', this.apply, this); this.offInsets?.(); this.offInsets = null; }
 
   /** Grow the bar (and its full-height tabs) downward by `d`, keeping every label / icon in place */
   private extend(d: number) {
@@ -60,7 +65,8 @@ export class EdgePin extends Component {
       case PinMode.TOP: this.node.setPosition(b.x, b.y + extraY - ins.top, b.z); break;
       case PinMode.BOTTOM:
         this.node.setPosition(b.x, b.y - extraY + ins.bottom, b.z);
-        if (this.extendToEdge) this.extend(ins.bottom);
+        // a bottom ad banner covers the system bar area itself: the bar then stops on top of it
+        if (this.extendToEdge) this.extend(ScreenFit.adBottom > 0 ? 0 : ins.bottom);
         break;
       case PinMode.STRETCH:
         if (ui) ui.setContentSize(Math.max(this.baseSize.width, vis.width), Math.max(this.baseSize.height, vis.height));

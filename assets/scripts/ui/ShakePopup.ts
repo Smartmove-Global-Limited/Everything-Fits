@@ -20,9 +20,8 @@ export class ShakePopup extends Component {
     tap(findNode(n, 'shakeX'), close, 'tap', this);
     tap(findNode(n, 'shakeNo'), close, 'tap', this);
     this.adEnable = tap(findNode(n, 'shakeAd'), async () => {
-      if (!Overlays.adAvailable()) { Overlays.toast('Ad unavailable. Try again later.'); return; }
       this.adEnable(false);
-      const full = await Overlays.watchAd();
+      const full = await Overlays.rewarded('refill_energy');
       this.adEnable(true);
       if (full) { this.opts.onRefill(); close(); }
     }, 'tapBig', this);

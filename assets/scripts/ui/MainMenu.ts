@@ -13,6 +13,7 @@ import { SplashView } from './SplashView';
 import { Analytics } from '../services/Analytics';
 import { NativeBridge } from '../services/NativeBridge';
 import { Overlays } from './Overlays';
+import { Ads } from '../services/Ads';
 
 /** The splash plays once per app launch, not when coming back from a level */
 let splashPlayed = false;
@@ -24,9 +25,12 @@ export class MainMenu extends Component {
   private home: HomeScreen = null!;
   private shop: ShopScreen | null = null;
   private book: any = null;
+  /** no banner over the splash: Home shows it once the splash is gone */
+  private splashDone = false;
 
   onLoad() {
     ScreenFit.apply();
+    Overlays.startServices();
     director.preloadScene('Game');
   }
 
@@ -61,9 +65,11 @@ export class MainMenu extends Component {
     this.book = await ContentLoader.loadBook();
     Sound.preload();
     Sound.startMusic();
+    this.splashDone = !splash;
     this.openHome();
     if (covered) Overlays.uncover();
     await splash;
+    if (!this.splashDone) { this.splashDone = true; if (this.home.node.active) Ads.showBanner('banner_main_menu', this.playerLevel()); }
     // while the player looks at Home: the bag and items of the level Play opens, nothing more
     const s = this.spot();
     if (s) ContentLoader.preloadLevel(s.chapter.levels[s.index]);
@@ -78,9 +84,16 @@ export class MainMenu extends Component {
     this.home.node.active = true;
     const s = this.spot();
     if (s) this.home.show(ContentLoader.levelNumber(s.chapter.id, s.index), s.chapter.levels[s.index]);
+    if (this.splashDone) Ads.showBanner('banner_main_menu', this.playerLevel());
   }
 
-  private async openShop(toGold: boolean) { const shop = await this.ensureShop(); this.home.node.active = false; shop.show(toGold); }
+  private async openShop(toGold: boolean) {
+    const shop = await this.ensureShop(); this.home.node.active = false; shop.show(toGold);
+    Ads.showBanner('banner_shop', this.playerLevel());
+  }
+
+  /** Level the player is at (the one Play opens), for banner_start_level */
+  private playerLevel() { const s = this.spot(); return s ? ContentLoader.levelNumber(s.chapter.id, s.index) : 1; }
 
   private async openSettings() {
     const p = await showPopup('SettingsPopup', SettingsPopup);
@@ -92,6 +105,7 @@ export class MainMenu extends Component {
     GameState.chapter = s.chapter; GameState.chapterId = s.chapter.id; GameState.levelIndex = s.index;
     GameState.fromMenu = true;
     Analytics.setReason('home');
+    Ads.hideBanner();                       // no banner in gameplay
     Overlays.cover(true).then(() => director.loadScene('Game'));
   }
 }

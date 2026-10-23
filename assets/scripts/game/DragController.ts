@@ -31,7 +31,11 @@ const FIT_INK = new Color(0x3D, 0xBE, 0x78, 255), GHOST_INK = new Color(0xE5, 0x
 const OPAQUE = new Color(255, 255, 255, 255), GHOST_ALPHA = new Color(255, 255, 255, 153);   // web: globalAlpha .6
 const POP_MS = 220, POP_GAIN = .09;                                                            // item swells once when picked up
 
-export type DragEvents = { onPick?(item: ItemView): void; onDrop?(item: ItemView, bounced: boolean): void; onSelect?(item: ItemView | null): void };
+export type DragEvents = {
+  onPick?(item: ItemView): void; onDrop?(item: ItemView, bounced: boolean): void; onSelect?(item: ItemView | null): void;
+  /** the player let go of the rotate handle after turning `item` by `degrees` */
+  onRotate?(item: ItemView, degrees: number): void;
+};
 
 @ccclass('DragController')
 export class DragController extends Component {
@@ -136,7 +140,7 @@ export class DragController extends Component {
     const id = e.getID();
     if (this.spin && id === this.spin.id) {
       const sp = this.spin; this.spin = null;
-      if (sp.moved) this.holdAfterSpin(sp.item);
+      if (sp.moved) { this.holdAfterSpin(sp.item); this.events.onRotate?.(sp.item, angleOf(sp.item.node) - sp.startAngle); }
       else { const p = this.local(e); if (!this.hitHandle(p.x, p.y)) this.select(null); }
       return;
     }

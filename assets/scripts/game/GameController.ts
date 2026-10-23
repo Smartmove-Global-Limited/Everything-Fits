@@ -3,7 +3,7 @@
 // update(). Bag rules run right after the physics step (Director.EVENT_AFTER_PHYSICS).
 // Round flow like the web game (src/main.js, rules.js, hud.js): settings pause the round, a win
 // saves progress + gold and shows the reward popup, running out of time shows the lose popup.
-import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view, Sprite } from 'cc';
+import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view, Sprite, instantiate } from 'cc';
 import { levelToFieldY, FLOOR_Y, DOCK_TOP_Y, DESIGN_H } from '../core/GameConstants';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
@@ -31,12 +31,21 @@ import { Overlays } from '../ui/Overlays';
 import { Sound } from '../audio/Sound';
 import { Progress } from '../services/Progress';
 import { Wallet } from '../services/Wallet';
-import { Boosters, BOOSTER_KEYS } from '../services/Boosters';
+import { Boosters, BOOSTER_KEYS, UNLOCK_LEVEL } from '../services/Boosters';
+import { Tutorial, TutorialHost } from '../ui/Tutorial';
+import { Ads } from '../services/Ads';
+import { ShakeEnergy } from '../services/Daily';
 import { ScreenFit } from '../ui/ScreenFit';
 import { BackgroundBleed } from '../ui/BackgroundBleed';
 const { ccclass, property } = _decorator;
 
 const WIN_POPUP_DELAY = .7;   // let the player see the celebration before the popup covers it
+/** One line for each booster's first level (Tutorial booster intro) */
+const BOOSTER_INTRO: Record<string, string> = {
+  freeze: 'New booster! Freeze stops the clock for a few seconds',
+  resize: 'New booster! Resize shrinks the biggest item outside the bag',
+  throw: 'New booster! Throw out removes an item that will not fit',
+};
 
 @ccclass('GameController')
 export class GameController extends Component {
@@ -53,6 +62,7 @@ export class GameController extends Component {
   private freezeShown = -1;
   private offBoosters: (() => void) | null = null;
   private shakePopupShown = false;
+  private tutorial: Tutorial | null = null;
 
   private offCamera: (() => void) | null = null;
 
@@ -75,10 +85,16 @@ export class GameController extends Component {
   }
   private floorBaseY: number | null = null;
 
+  /** Running inside the Level Editor (Editor.scene): the editor gives the level and owns the screen */
+  get embedded() { return this.node.scene?.name === 'Editor'; }
+
   onLoad() {
-    ScreenFit.apply();
-    // Game.scene keeps its Canvas at the design centre (Field space == physics world space)
-    this.offCamera = ScreenFit.fitCamera(this.node.parent!.getComponentInChildren(Camera)!);
+    if (this.embedded) ScreenFit.setEmbedded();
+    else {
+      ScreenFit.apply();
+      // Game.scene keeps its Canvas at the design centre (Field space == physics world space)
+      this.offCamera = ScreenFit.fitCamera(this.node.parent!.getComponentInChildren(Camera)!);
+    }
     this.fitToScreen();
     view.on('canvas-resize', this.fitToScreen, this);   // the bag follows at the next level build
     // dev builds only: hooks for automated play-testing from the browser console
@@ -88,6 +104,7 @@ export class GameController extends Component {
       checkLevels: (only?: number[]) => checkLevels(this, only),
       checkItems: (opts?: any) => checkItems(this, opts),
     };
+    Overlays.startServices();
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
     director.on(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     setBagEvents({
@@ -98,6 +115,8 @@ export class GameController extends Component {
     setMechanicsEvents({ onBroken: it => this.onLose(`${it.nameEn || it.nameVi} broke!`) });
     this.drag.events = {
       onPick: () => Sound.play('pick'),
+      onSelect: it => this.tutorial?.onSelect(it),
+      onRotate: (_it, deg) => this.tutorial?.onRotated(deg),
       onDrop: (it, bounced) => {
         if (bounced) { Sound.play('nope'); this.puff(it); this.hud.toastMessage("Doesn't fit!"); }
         else Sound.play('drop', { gain: .9 });
@@ -126,6 +145,7 @@ export class GameController extends Component {
 
   async start() {
     const S = GameState;
+    if (this.embedded) return;   // the editor calls playLevel()
     const covered = Overlays.startCoveredIfPending();
     const book = await ContentLoader.loadBook();
     let idx = this.startLevel;
@@ -149,15 +169,16 @@ export class GameController extends Component {
     const levels = S.chapter.levels;
     S.levelIndex = Math.max(0, Math.min(index, levels.length - 1));
     S.level = levels[S.levelIndex];
+    this.tutorial?.stop();
     this.drag.reset();
     S.timeLeft = (S.level.timer || 90) * 1000;
     S.clock = 0; S.startTime = 0;
     PhysicsSystem2D.instance.enable = true;
     Shake.reset(); this.fx?.clear();
     await Promise.all([this.builder.build(S.level), this.showBackground(S.level.background)]);
-    Shake.setEnergy(1); this.shakePopupShown = false;
+    Shake.showEnergy(); this.shakePopupShown = false;
     this.levelNumber = ContentLoader.levelNumber(S.chapterId, S.levelIndex);
-    Progress.setSpot(S.chapterId, S.levelIndex);
+    if (!this.embedded) Progress.setSpot(S.chapterId, S.levelIndex);   // the editor preview is not the player's game
     this.hud.setLevel(this.levelNumber);
     this.hud.resetClock();
     this.hud.setClock(S.timeLeft / 1000);
@@ -168,6 +189,50 @@ export class GameController extends Component {
     ContentLoader.preloadLevel(levels[(S.levelIndex + 1) % levels.length]);   // the next one, while this one is played
     this.renderBoosters();
     Sound.duckMusic(false);
+    if (!this.embedded) this.maybeTutorial();
+  }
+
+  // ---------- tutorial (ui/Tutorial.ts) ----------
+  /** Level 1 basics, or the intro of a booster opening at this level; once each */
+  private maybeTutorial() {
+    const n = this.levelNumber;
+    const booster = BOOSTER_KEYS.findIndex(k => UNLOCK_LEVEL[k] === n && Tutorial.needsBooster(k));
+    if (!Tutorial.needsBasics(n) && booster < 0) return;
+    const round = GameState.round;
+    let waited = 0;
+    // after the bag has shown and the items have dropped in (checked a few times a second)
+    const wait = async () => {
+      const S = GameState;
+      if (S.round !== round || S.won || S.lost) return;
+      // a fresh closure each time: the scheduler ignores re-scheduling the callback it is running
+      if (!S.bagReady && (waited += .25) < 8) { this.scheduleOnce(() => wait(), .25); return; }
+      const t = await this.ensureTutorial();
+      if (S.round !== round || t.active) return;
+      if (Tutorial.needsBasics(n)) t.startBasics(this.tutorialHost());
+      else t.startBooster(BOOSTER_KEYS[booster], this.hud.boosters[booster].root, BOOSTER_INTRO[BOOSTER_KEYS[booster]], this.tutorialHost());
+    };
+    this.scheduleOnce(() => wait(), 1.4);
+  }
+
+  private async ensureTutorial() {
+    if (this.tutorial) return this.tutorial;
+    const n = instantiate(await Overlays.loadPrefab('ui/TutorialOverlay'));
+    this.node.parent!.addChild(n);
+    this.tutorial = n.getComponent(Tutorial)!;
+    return this.tutorial;
+  }
+
+  private tutorialHost(): TutorialHost {
+    const S = GameState;
+    return {
+      items: () => S.items,
+      // the level's solution in Field units / degrees (same conversion as LevelCheck)
+      solution: () => (S.level?.solution || []).map((s: any) => ({ i: s.i, x: s.x, y: levelToFieldY(s.y - S.bagLift), angle: -s.angle * 180 / Math.PI })),
+      itemLayer: this.itemLayer,
+      packed: i => S.packed.has(i),
+      // the clock stops and no interstitial shows while a tutorial runs
+      setActive: on => { S.timerOn = !on; Ads.tutorial = on; },
+    };
   }
 
   /** The level's background picture (levels.json "background"); the bands on tall screens follow */
@@ -212,6 +277,7 @@ export class GameController extends Component {
     // no chime while items are still raining in / preset items settle (web LANG_DAU_MAN)
     if (S.clock - S.startTime < 1000 || it.fitAt > S.clock - 900) return;
     it.fitAt = S.clock;
+    this.tutorial?.onPacked();
     Sound.play('fit', { gain: 1 + Math.min(6, count - 1) * 0 });
     const p = it.node.position;
     this.fx?.ring(p.x, p.y, { color: '#5FBF9B', r1: 46 });
@@ -313,10 +379,25 @@ export class GameController extends Component {
     if (S.won || S.lost || S.paused) return;
     S.paused = true;
     const p = await showPopup('ShakePopup', ShakePopup);
-    p.open({ onRefill: () => Shake.setEnergy(1), onClose: () => { S.paused = false; } });
+    p.open({ onRefill: () => { ShakeEnergy.refill(); Shake.showEnergy(); }, onClose: () => { S.paused = false; } });
+  }
+
+  /**
+   * Level Editor preview (web editor's postMessage 'level'): play `level` as level `index` of
+   * `chapter`, built from scratch like opening it in the game. The level object is used as is.
+   */
+  async playLevel(level: any, chapter: { id: string; levels: any[] }, index: number) {
+    const S = GameState;
+    S.chapter = chapter; S.chapterId = chapter.id;
+    chapter.levels[index] = level;
+    Sound.startMusic();
+    await this.openLevel(index);
   }
 
   goHome() {
+    if (this.embedded) { this.restart(); return; }   // no Home inside the editor
+    this.tutorial?.stop();
+    Ads.hideBanner();
     GameState.paused = true;
     Sound.duckMusic(false);
     Overlays.cover(true).then(() => director.loadScene('Main'));
@@ -336,12 +417,13 @@ export class GameController extends Component {
 
   private onWin() {
     const S = GameState;
+    this.tutorial?.stop();
     Analytics.levelEnd('win');
-    const first = Progress.markDone(S.chapterId, S.levelIndex);
-    Progress.setSpot(S.chapterId, Math.min(S.levelIndex + 1, S.chapter.levels.length - 1));
+    const first = !this.embedded && Progress.markDone(S.chapterId, S.levelIndex);
+    if (!this.embedded) Progress.setSpot(S.chapterId, Math.min(S.levelIndex + 1, S.chapter.levels.length - 1));
     if (first && S.levelIndex + 1 < S.chapter.levels.length) Sound.play('unlockLv', { delay: 1.15, gain: .9 });
     const reward = S.level?.reward?.coin ?? 20;
-    Wallet.add(reward);
+    if (!this.embedded) Wallet.add(reward);
     Sound.play('win'); Sound.duckMusic(true);
     this.fx?.confetti(90);
     this.fx?.floatText(210, levelToFieldY(300), 'It fits!', { color: '#5FBF9B', size: 26, life: 1200 });
@@ -349,10 +431,11 @@ export class GameController extends Component {
     this.scheduleOnce(async () => {
       if (!S.won) return;
       const p = await showPopup('WinPopup', WinPopup);
+      this.showResultBanner();
       p.open({
         levelNumber: this.levelNumber, seconds: score.secondsUsed, reward,
         stars: Math.max(1, Math.min(3, Math.round(score.stars * 3 / 5))), mistake: score.mistakes[0] || null,
-        onContinue: () => this.nextLevel(),
+        onContinue: () => this.nextLevel(true),
         onHome: () => this.goHome(),
         onCollectX2: () => Wallet.add(reward),
       });
@@ -369,10 +452,21 @@ export class GameController extends Component {
     await Overlays.uncover();
   }
 
-  /** web level.js nextLevel: the following level of the chapter, wrapping after the last one; behind the veil */
-  private async nextLevel() {
+  /**
+   * Result popups (win / lose) cover the field: the in-game banner shows at the bottom while one is
+   * open, never during play (it would cover the bag and the dragging).
+   */
+  private showResultBanner() { if (!this.embedded) Ads.showBanner('banner_gameplay', this.levelNumber); }
+
+  /**
+   * web level.js nextLevel: the following level of the chapter, wrapping after the last one; behind
+   * the veil. After Continue on the win popup: interstitial trigger level_win.
+   */
+  private async nextLevel(fromWin = false) {
     Analytics.setReason('next');
     const S = GameState;
+    Ads.hideBanner();
+    if (fromWin && !this.embedded) await Ads.interstitial('level_win', this.levelNumber);
     await Overlays.cover();
     await this.openLevel((S.levelIndex + 1) % S.chapter.levels.length);
     await Overlays.uncover();
@@ -383,14 +477,22 @@ export class GameController extends Component {
     const S = GameState;
     if (S.lost || S.won) return;
     S.lost = true;
+    this.tutorial?.stop();
     Analytics.levelEnd('lose');
     Sound.play('lose'); Sound.duckMusic(true);
     this.fx?.shake(420);
     const p = await showPopup('LosePopup', LosePopup);
+    this.showResultBanner();
     p.open({
       itemsLeft: Math.max(0, S.itemsToPack - S.packed.size), reason,
-      onRetry: () => this.restart(),
+      // Try again: interstitial trigger level_lose, then the same level from the start
+      onRetry: async () => {
+        Ads.hideBanner();
+        if (!this.embedded) await Ads.interstitial('level_lose', this.levelNumber);
+        this.restart();
+      },
       onExtraTime: () => {
+        Ads.hideBanner();
         S.timeLeft = 60000; S.lost = false;
         Analytics.extraTime();
         this.hud.resetClock(); this.hud.setClock(60);

@@ -1,6 +1,6 @@
 // Level complete popup (web hud.js showWin, Figma "EF · Reward"):
 //   LEVEL N COMPLETE! · Packed! · three stars popping in · time used and gold reward ·
-//   Continue / Collect ×2 (rewarded ad).
+//   Continue / Collect ×2 (rewarded ad collect_x2).
 import { _decorator, Component, Node, Sprite, SpriteFrame, resources, Color, Vec3, tween, Tween, UIOpacity, UITransform } from 'cc';
 import { findNode, findAll, setText, tap, openPopup, closePopup } from './UiKit';
 import { RoundRect } from './RoundRect';
@@ -89,9 +89,8 @@ export class WinPopup extends Component {
 
   private async collectX2() {
     if (this.collected) return;
-    if (!Overlays.adAvailable()) { Overlays.toast('Ad unavailable. Try again later.'); return; }
     this.x2Enable(false);
-    const full = await Overlays.watchAd();
+    const full = await Overlays.rewarded('collect_x2');
     if (!full) { this.x2Enable(true); return; }
     this.collected = true;
     this.opts.onCollectX2();

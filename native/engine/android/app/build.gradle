@@ -37,6 +37,16 @@ android {
         def afFile = file('../appsflyer.properties')
         if (afFile.exists()) afFile.withInputStream { afProps.load(it) }
         resValue "string", "af_dev_key", afProps.getProperty('devKey', '')
+        // AppLovin MAX keys from applovin.properties next to this folder (NOT in git). Missing file
+        // or empty sdkKey = no ad SDK started, the game shows its simulated "TEST AD" screens.
+        def alProps = new Properties()
+        def alFile = file('../applovin.properties')
+        if (alFile.exists()) alFile.withInputStream { alProps.load(it) }
+        resValue "string", "applovin_sdk_key", alProps.getProperty('sdkKey', '')
+        resValue "string", "applovin_banner_unit", alProps.getProperty('bannerUnit', '')
+        resValue "string", "applovin_inter_unit", alProps.getProperty('interUnit', '')
+        resValue "string", "applovin_rewarded_unit", alProps.getProperty('rewardedUnit', '')
+        resValue "string", "applovin_test_devices", alProps.getProperty('testDevices', '')
 
         externalNativeBuild {
             cmake {
@@ -160,6 +170,10 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.appsflyer:af-android-sdk:6.17.0'
     implementation 'com.facebook.android:facebook-core:18.3.0'
+    implementation 'com.google.firebase:firebase-config'
+    // ---- ads and purchases ----
+    implementation 'com.applovin:applovin-sdk:13.6.4'
+    implementation 'com.android.billingclient:billing:8.0.0'
     implementation project(':libcocos')
     if (Boolean.parseBoolean(PROP_ENABLE_INPUTSDK)) {
         implementation 'com.google.android.libraries.play.games:inputmapping:1.1.0-beta'

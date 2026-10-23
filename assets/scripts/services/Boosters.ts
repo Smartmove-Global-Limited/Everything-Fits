@@ -1,10 +1,10 @@
 // Booster stock (web src/game/boosters.js, key snug.boosts.v1): a shared stock saved on the device,
-// not refilled per level. Starts at 2 / 2 / 1. Unlocks at levels 3 / 6 / 9.
+// not refilled per level. Starts at 2 / 2 / 2. Unlocks at levels 3 / 6 / 9.
 import { LocalStore } from './LocalStore';
 
 export type BoosterKey = 'freeze' | 'resize' | 'throw';
 export const BOOSTER_KEYS: BoosterKey[] = ['freeze', 'resize', 'throw'];
-export const DEFAULT_BOOSTS: Record<BoosterKey, number> = { freeze: 2, resize: 2, throw: 1 };
+export const DEFAULT_BOOSTS: Record<BoosterKey, number> = { freeze: 2, resize: 2, throw: 2 };
 export const UNLOCK_LEVEL: Record<BoosterKey, number> = { freeze: 3, resize: 6, throw: 9 };
 const KEY = 'snug.boosts.v1';
 

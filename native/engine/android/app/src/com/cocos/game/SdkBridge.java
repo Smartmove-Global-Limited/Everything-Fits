@@ -17,7 +17,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Native side of the game's analytics (TypeScript: assets/scripts/services/NativeBridge.ts).
+ * Native side of the game's analytics, ads and purchases (TypeScript: assets/scripts/services/NativeBridge.ts).
  * Every event goes to Firebase Analytics and AppsFlyer with the same name and parameters, like
  * the web game (src/game/events.js). Facebook App Events log installs / opens by themselves
  * (AutoLogAppEventsEnabled in the manifest).
@@ -60,6 +60,8 @@ public final class SdkBridge {
         firebase = FirebaseAnalytics.getInstance(activity);
         int id = activity.getResources().getIdentifier("af_dev_key", "string", activity.getPackageName());
         String key = id != 0 ? activity.getString(id) : "";
+        BillingBridge.init(activity);
+        AdsBridge.init(activity);
         if (key == null || key.isEmpty()) { Log.w(TAG, "AppsFlyer: no Dev Key, not sending"); return; }
         AppsFlyerLib af = AppsFlyerLib.getInstance();
         af.init(key, null, activity.getApplicationContext());
@@ -87,4 +89,17 @@ public final class SdkBridge {
             Log.w(TAG, "logEvent " + name + " failed", e);
         }
     }
+
+    // ---------- ads (AdsBridge), billing (BillingBridge), remote config (RemoteConfigBridge) ----------
+    // Called from TypeScript (NativeBridge.ts): static void methods with String arguments only.
+    public static void adsHello() { AdsBridge.hello(); }
+    public static void adsShowBanner(String placement) { AdsBridge.showBanner(placement); }
+    public static void adsHideBanner() { AdsBridge.hideBanner(); }
+    public static void adsShowInter(String placement) { AdsBridge.showInter(placement); }
+    public static void adsShowRewarded(String placement) { AdsBridge.showRewarded(placement); }
+    public static void billingSetup(String catalogueJson) { BillingBridge.setup(catalogueJson); }
+    public static void billingBuy(String productId) { BillingBridge.buy(productId); }
+    public static void billingFinish(String token, String consumable) { BillingBridge.finish(token, consumable); }
+    public static void billingRestore() { BillingBridge.restore(); }
+    public static void remoteConfigFetch(String keysJson) { RemoteConfigBridge.fetch(keysJson); }
 }
