@@ -40,7 +40,8 @@ if (!DIEN_TICH[CO]) { console.error(`--co phải là Small / Medium / Large, nh�
 
 // ---------- đọc CSV đơn giản (trường có thể bọc trong dấu nháy kép, không chứa dấu phẩy) ----------
 function docCSV(duong) {
-  const [dau, ...dong] = readFileSync(duong, 'utf8').trim().split(/\r?\n/);
+  // bỏ BOM ở đầu file (bộ sinh ảnh từ 2026-10 ghi CSV kèm BOM)
+  const [dau, ...dong] = readFileSync(duong, 'utf8').replace(/^\uFEFF/, '').trim().split(/\r?\n/);
   const cot = dau.split(',').map(s => s.replace(/^"|"$/g, ''));
   return dong.filter(Boolean).map(l => {
     const v = l.split(',').map(s => s.replace(/^"|"$/g, ''));
@@ -50,7 +51,8 @@ function docCSV(duong) {
 
 // thứ tự món: theo Entry trong manifest.csv của bộ sinh ảnh
 const danhSach = docCSV(join(nguon, 'manifest.csv'))
-  .map(r => ({ entry: Number(r.Entry), tenEn: r.Name, file: r.File }))
+  // cột viết hoa (Entry, Name, File) ở các đợt cũ, viết thường (entry, name, file) từ đợt 2026-10
+  .map(r => ({ entry: Number(r.Entry ?? r.entry), tenEn: r.Name ?? r.name, file: r.File ?? r.file }))
   .sort((a, b) => a.entry - b.entry);
 
 // tên tiếng Việt theo tên file

@@ -39,16 +39,23 @@
       "name": "creative",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
-        "run",
-        "dev",
+        "start",
         "--prefix",
-        "/Users/buiduy/Documents/game/EverythingFits-Tool-Creative",
-        "--",
-        "--port",
-        "5174",
-        "--strictPort"
+        "/Users/buiduy/Documents/game/EverythingFits-Tool-Creative"
       ],
-      "port": 5174
+      "port": 5191
+    },
+    {
+      "name": "cocos",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5300",
+        "--directory",
+        "/Users/buiduy/Documents/game/EverythingFits-Cocos/build/web-mobile"
+      ],
+      "port": 5300
     }
   ]
 }

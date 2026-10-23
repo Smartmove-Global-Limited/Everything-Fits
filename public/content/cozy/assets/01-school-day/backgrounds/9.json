@@ -1,0 +1,14 @@
+{
+  "id": 9,
+  "name": "Xanh trời kẻ sọc",
+  "fill": "#D2E0EC",
+  "layers": [
+    {
+      "src": "assets/01-school-day/backgrounds/bg-9.png",
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 760
+    }
+  ]
+}

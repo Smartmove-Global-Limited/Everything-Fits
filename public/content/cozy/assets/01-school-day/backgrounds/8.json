@@ -1,0 +1,14 @@
+{
+  "id": 8,
+  "name": "Bạc hà kẻ caro",
+  "fill": "#CFE3D4",
+  "layers": [
+    {
+      "src": "assets/01-school-day/backgrounds/bg-8.png",
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 760
+    }
+  ]
+}

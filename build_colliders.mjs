@@ -12,7 +12,7 @@ import { docPNG } from './tools/png.mjs';
 import { doVien, rutGon, dienTich } from './tools/vien.mjs';
 
 import { CONTENT, ARGS } from './tools/art.mjs';
-const CHI = new Set(ARGS.filter(a => /^-?\d+$/.test(a)));
+const CHI = new Set(ARGS.filter((a, i) => /^-?\d+$/.test(a) && ARGS[i - 1] !== '--dinh'));   // số sau --dinh không phải mã món
 const GHI = process.argv.includes('--ghi');
 // --vien: chỉ sinh ĐƯỜNG VIỀN VẼ (outline), giữ nguyên collider đang có. Dùng cho món đã chỉnh
 // collider bằng tay (bóng bay chỉ ôm quả bóng) hoặc khi chỉ muốn làm lại nét viền.
@@ -60,7 +60,7 @@ function matNa(anh) {
 // luôn chạm biên dải), nên từng mảnh của dải là một đa giác đơn. Gom các mảnh thành
 // collider kiểu "polys"; Matter dựng thân nhiều phần, lỗ rỗng thật.
 const LO_TOI_THIEU = 40;        // đơn vị², lỗ nhỏ hơn thì món nào cũng không chui vào được
-const TOI_DA_DINH_MANH = 24;    // đỉnh tối đa của một mảnh
+const TOI_DA_DINH_MANH_GOC = 24; // đỉnh tối đa của một mảnh (trần 40 của cả món); --dinh tăng theo tỉ lệ
 const MANH_TOI_THIEU = 24;      // px, mảnh nhỏ hơn là vụn do cắt, bỏ
 
 /** Tách mặt nạ thành các thành phần liền nhau (4 hướng). Trả về [{m, dem, x0, x1, cx}] */
@@ -116,7 +116,19 @@ function daGiacTuVien(vien, toiDa, anh, ppu) {
 /** Cắt thân theo đường dọc qua tâm từng lỗ, trả về các mảnh đa giác đơn */
 function catTheoLo(m, lo, anh, ppu) {
   const { w, h } = anh;
-  const cat = [...new Set(lo.map(l => Math.round(l.cx)))].sort((a, b) => a - b);
+  // Mỗi lỗ chỉ cần MỘT đường dọc đi qua nó (không cần đúng tâm). Lỗ nào chung được một cột thì
+  // gộp, cắt một đường ở giữa phần chung: trước đây cắt riêng qua tâm từng lỗ, mấy lỗ thẳng hàng
+  // (chuỗi xoắn kép: 4 lỗ cùng cột) cho ra các đường cách nhau 1–2 px, dải giữa chúng bị bỏ vì quá
+  // nhỏ → khe hở dọc thân món.
+  const LE_CAT = 3;   // px, đường cắt cách mép lỗ ít nhất chừng này
+  const nhom = [];
+  for (const l of [...lo].sort((a, b) => a.cx - b.cx)) {
+    const a = l.x0 + LE_CAT, b = l.x1 - LE_CAT;
+    const g = nhom.find(g => Math.max(g.a, a) <= Math.min(g.b, b));
+    if (g) { g.a = Math.max(g.a, a); g.b = Math.min(g.b, b); }
+    else nhom.push({ a: Math.min(a, Math.round(l.cx)), b: Math.max(b, Math.round(l.cx)) });
+  }
+  const cat = [...new Set(nhom.map(g => Math.round((g.a + g.b) / 2)))].sort((a, b) => a - b);
   const daiCua = x => cat.filter(c => c <= x).length;
   const soDai = cat.length + 1;
   const manh = [];
@@ -130,7 +142,7 @@ function catTheoLo(m, lo, anh, ppu) {
       if (tp.dem < MANH_TOI_THIEU) continue;
       const vien = doVien(tp.m, w, h);
       if (vien.length < 6) continue;
-      const pts = daGiacTuVien(vien, TOI_DA_DINH_MANH, anh, ppu);
+      const pts = daGiacTuVien(vien, Math.round(TOI_DA_DINH_MANH_GOC * TOI_DA_DINH / 40), anh, ppu);
       if (pts.length >= 3 && Math.abs(dienTich(pts)) > 1) manh.push(pts);
     }
   }
@@ -142,7 +154,10 @@ function catTheoLo(m, lo, anh, ppu) {
 // mặt trăng khuyết) thì bước rút gọn lấp luôn chỗ lõm thành một cạnh thẳng — vùng va chạm to
 // hơn hình thật, người chơi thấy món "chạm" nhau giữa khoảng trống. 40 đỉnh thì ôm được cả vòng
 // cong; poly-decomp cắt thành vài mảnh lồi, vật lý vẫn nhẹ với ≤11 món một màn.
-const TOI_DA_DINH = 40;
+// --dinh N: trần đỉnh riêng cho các món chạy lần này (hình nhiều gai, nhánh, sợi xoắn: san hô,
+// cọ rửa chai, chuỗi xoắn kép). Không ghi thì 40 như cũ. Mảnh cắt quanh lỗ tăng theo cùng tỉ lệ.
+const DINH_ARG = (() => { const i = process.argv.indexOf('--dinh'); return i > 0 ? Number(process.argv[i + 1]) : 0; })();
+const TOI_DA_DINH = DINH_ARG > 0 ? DINH_ARG : 40;
 const TOI_DA_DINH_VIEN = 64;   // đường viền vẽ
 
 function sinhCollider(duongDanAnh, ppu, buocLaCircle) {
