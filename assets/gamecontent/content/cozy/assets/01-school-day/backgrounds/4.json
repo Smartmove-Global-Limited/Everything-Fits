@@ -1,0 +1,14 @@
+{
+  "id": 4,
+  "name": "Giấy xanh trời",
+  "fill": "#D2E0EC",
+  "layers": [
+    {
+      "src": "assets/01-school-day/backgrounds/bg-4.png",
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 760
+    }
+  ]
+}

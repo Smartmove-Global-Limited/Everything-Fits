@@ -1,0 +1,14 @@
+{
+  "id": 10,
+  "name": "Vàng bơ chấm bi",
+  "fill": "#F1E6C2",
+  "layers": [
+    {
+      "src": "assets/01-school-day/backgrounds/bg-10.png",
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 760
+    }
+  ]
+}

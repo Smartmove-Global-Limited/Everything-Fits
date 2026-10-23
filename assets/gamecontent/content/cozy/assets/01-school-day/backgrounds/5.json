@@ -1,0 +1,14 @@
+{
+  "id": 5,
+  "name": "Giấy tím oải hương",
+  "fill": "#DDD3EA",
+  "layers": [
+    {
+      "src": "assets/01-school-day/backgrounds/bg-5.png",
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 760
+    }
+  ]
+}

@@ -17,6 +17,8 @@ import { ContentLoader } from '../content/ContentLoader';
 import { ItemPhysics } from './ItemView';
 import { levelToFieldY } from '../core/GameConstants';
 import { Progress } from '../services/Progress';
+import { computeGhost, itemAABB } from './BagRules';
+import { BagView } from './BagView';
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -127,17 +129,15 @@ export async function checkItems(game: { openLevel(i: number): Promise<void> },
       await sleep(800);
       const bag = S.bag;
       if (!bag) continue;
+      let placed = 0;
       for (const it of S.items) {
-        const x = bag.minX + 25 + Math.random() * Math.max(1, bag.maxX - bag.minX - 50);
-        it.node.setPosition(x, bag.maxY - 10, 0);
-        it.node.angle = (Math.random() - .5) * 60;
-        it.stop(); it.body.wakeUp();
+        if (dropLikeAPlayer(it, bag)) placed++;
         await sleep(450);
       }
       await sleep(4000);
       const found = await watch(3000);
       problems.push(...found.map(f => ({ level: 0, id: level.id, ...f })));
-      rows.push({ bag: skin, items: group.join(' '), resting: `${S.items.filter(it => !it.body.isAwake()).length}/${S.items.length}`,
+      rows.push({ bag: skin, items: group.join(' '), inBag: `${placed}/${S.items.length}`, resting: `${S.items.filter(it => !it.body.isAwake()).length}/${S.items.length}`,
         result: found.length ? found.map(p => `${p.item} ${p.what}`).join('; ') : 'ok' });
     }
   }
@@ -146,4 +146,27 @@ export async function checkItems(game: { openLevel(i: number): Promise<void> },
   console.table(rows);
   console.log(problems.length ? `checkItems: ${problems.length} problem(s)` : 'checkItems: every group comes to rest');
   return problems;
+}
+
+/**
+ * Drop one item into the bag the way a player can: only where it overlaps nothing (the same exact
+ * shape test as dragging, BagRules.computeGhost), top rows of the bag first so it falls onto the
+ * pile. No free spot: the item stays on the tray. Teleporting into occupied spots would wedge items
+ * into each other, which a player can never do (the drop turns red), and fake the shaking.
+ */
+function dropLikeAPlayer(it: any, bag: BagView): boolean {
+  const old = it.node.position.clone(), oldAngle = it.node.angle;
+  const rows = 8, cols = 7;
+  for (let r = 0; r < rows; r++) {
+    for (let k = 0; k < cols * 2; k++) {
+      const x = bag.minX + 12 + Math.random() * Math.max(1, bag.maxX - bag.minX - 24);
+      const y = bag.maxY - 12 - r * (bag.maxY - bag.minY) / rows;
+      it.node.setPosition(x, y, 0);
+      it.node.angle = [0, 90, -90, 180][k % 4] + (Math.random() - .5) * 20;
+      itemAABB(it);
+      if (!computeGhost(it)) { it.stop(); it.body.wakeUp(); return true; }
+    }
+  }
+  it.node.setPosition(old); it.node.angle = oldAngle; it.stop();
+  return false;
 }

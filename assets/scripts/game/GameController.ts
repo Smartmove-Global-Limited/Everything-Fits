@@ -3,7 +3,7 @@
 // update(). Bag rules run right after the physics step (Director.EVENT_AFTER_PHYSICS).
 // Round flow like the web game (src/main.js, rules.js, hud.js): settings pause the round, a win
 // saves progress + gold and shows the reward popup, running out of time shows the lose popup.
-import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view } from 'cc';
+import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view, Sprite } from 'cc';
 import { levelToFieldY, FLOOR_Y, DOCK_TOP_Y, DESIGN_H } from '../core/GameConstants';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
@@ -33,6 +33,7 @@ import { Progress } from '../services/Progress';
 import { Wallet } from '../services/Wallet';
 import { Boosters, BOOSTER_KEYS } from '../services/Boosters';
 import { ScreenFit } from '../ui/ScreenFit';
+import { BackgroundBleed } from '../ui/BackgroundBleed';
 const { ccclass, property } = _decorator;
 
 const WIN_POPUP_DELAY = .7;   // let the player see the celebration before the popup covers it
@@ -148,11 +149,12 @@ export class GameController extends Component {
     const levels = S.chapter.levels;
     S.levelIndex = Math.max(0, Math.min(index, levels.length - 1));
     S.level = levels[S.levelIndex];
+    this.drag.reset();
     S.timeLeft = (S.level.timer || 90) * 1000;
     S.clock = 0; S.startTime = 0;
     PhysicsSystem2D.instance.enable = true;
     Shake.reset(); this.fx?.clear();
-    await this.builder.build(S.level);
+    await Promise.all([this.builder.build(S.level), this.showBackground(S.level.background)]);
     Shake.setEnergy(1); this.shakePopupShown = false;
     this.levelNumber = ContentLoader.levelNumber(S.chapterId, S.levelIndex);
     Progress.setSpot(S.chapterId, S.levelIndex);
@@ -166,6 +168,16 @@ export class GameController extends Component {
     ContentLoader.preloadLevel(levels[(S.levelIndex + 1) % levels.length]);   // the next one, while this one is played
     this.renderBoosters();
     Sound.duckMusic(false);
+  }
+
+  /** The level's background picture (levels.json "background"); the bands on tall screens follow */
+  private async showBackground(id: number) {
+    const frame = await ContentLoader.background(id);
+    const bg = this.node.parent!.getChildByName('Background');
+    const sprite = bg?.getComponent(Sprite);
+    if (!frame || !sprite || sprite.spriteFrame === frame) return;
+    sprite.spriteFrame = frame;
+    bg!.getComponent(BackgroundBleed)?.apply();
   }
 
   restart() { Analytics.setReason('restart'); return this.openLevel(GameState.levelIndex); }

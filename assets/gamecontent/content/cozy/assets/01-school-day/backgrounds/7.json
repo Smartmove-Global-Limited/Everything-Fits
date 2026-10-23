@@ -1,0 +1,14 @@
+{
+  "id": 7,
+  "name": "Hồng chấm bi",
+  "fill": "#F0D6D2",
+  "layers": [
+    {
+      "src": "assets/01-school-day/backgrounds/bg-7.png",
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 760
+    }
+  ]
+}

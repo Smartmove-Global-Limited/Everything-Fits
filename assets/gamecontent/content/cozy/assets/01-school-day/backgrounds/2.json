@@ -1,0 +1,14 @@
+{
+  "id": 2,
+  "name": "Giấy xanh bạc hà",
+  "fill": "#CFE3D4",
+  "layers": [
+    {
+      "src": "assets/01-school-day/backgrounds/bg-2.png",
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 760
+    }
+  ]
+}

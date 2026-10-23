@@ -6,6 +6,7 @@
 import { assetManager, AssetManager, JsonAsset, Prefab, SpriteFrame } from 'cc';
 
 const prefabCache = new Map<string, Prefab>();
+const backgroundCache = new Map<string, SpriteFrame | null>();
 let book: any = null;
 let bundle: Promise<AssetManager.Bundle> | null = null;
 
@@ -48,12 +49,35 @@ export const ContentLoader = {
   itemPrefab(id: number) { return this.prefab(`items/${id}`); },
   bagPrefab(skin: string) { return this.prefab(`bags/${skin}`); },
 
-  /** Load the bag and items of one level (a level object of levels.json), so it opens without hitches */
+  /** Load the bag, items and background of one level (a level object of levels.json), so it opens without hitches */
   async preloadLevel(level: any) {
     if (!level) return;
     const ids: number[] = (level.items || []).map((it: any) => it.id);
     const skin: string | undefined = level.container?.skin;
-    await Promise.all([...[...new Set(ids)].map(id => this.itemPrefab(id).catch(() => null)), skin ? this.bagPrefab(skin).catch(() => null) : null]);
+    await Promise.all([...[...new Set(ids)].map(id => this.itemPrefab(id).catch(() => null)), skin ? this.bagPrefab(skin).catch(() => null) : null,
+      this.background(level.background)]);
+  },
+
+  /**
+   * Picture of a level background (levels.json "background" id → content index → background json →
+   * its first layer). Cached; null when the id is unknown (the scene keeps its picture).
+   */
+  async background(id: number): Promise<SpriteFrame | null> {
+    const key = String(id || 1);
+    const hit = backgroundCache.get(key);
+    if (hit !== undefined) return hit;
+    let frame: SpriteFrame | null = null;
+    try {
+      const index = (await load<JsonAsset>('content/cozy/assets/index', JsonAsset)).json as any;
+      const defPath: string | undefined = index.backgrounds?.[key];
+      if (defPath) {
+        const def = (await load<JsonAsset>('content/cozy/' + defPath.replace(/\.json$/, ''), JsonAsset)).json as any;
+        const src: string | undefined = def.layers?.[0]?.src;
+        if (src) frame = await load<SpriteFrame>('content/cozy/' + src.replace(/\.[a-z]+$/i, '') + '/spriteFrame', SpriteFrame);
+      }
+    } catch { frame = null; }
+    backgroundCache.set(key, frame);
+    return frame;
   },
 
   /** Ids of every item shipped (content index), for dev checks */

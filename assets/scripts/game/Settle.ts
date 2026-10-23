@@ -14,9 +14,11 @@ import { GameState, isHeld } from '../core/GameState';
 import { ItemView, ItemPhysics } from './ItemView';
 import { itemAABB } from './BagRules';
 
-const MOVE = .6;      // units
-const TURN = 1.5;     // degrees
-const REST = .6;      // seconds
+// An item rocking around one spot (wedged deeper: the pushes are bigger) must count as resting
+// too, so the spot is allowed to wander a little; a real slide or fall goes past it at once.
+const MOVE = 2;       // units
+const TURN = 4;       // degrees
+const REST = .8;      // seconds
 const TOUCH = 1.5;    // units between bounding boxes that still count as touching
 
 function eligible(it: ItemView) {

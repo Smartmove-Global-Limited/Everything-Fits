@@ -154,6 +154,16 @@ export class DragController extends Component {
     this.events.onSelect?.(item);
   }
 
+  /**
+   * A new round (open / restart / next level): forget a drag or a turn in progress and wipe what
+   * they drew. Without it the red outline of an item held while the level changed stayed on screen.
+   */
+  reset() {
+    this.pending = null; this.spin = null;
+    this.outline.clear();
+    this.handle?.clear(); this.drawnKey = '';
+  }
+
   // ---------- pick / move / drop ----------
   pickUp(item: ItemView, x: number, y: number, touchId: number, mouse = false) {
     const S = GameState;
