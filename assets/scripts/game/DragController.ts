@@ -116,7 +116,7 @@ export class DragController extends Component {
   }
   private hitHandle(x: number, y: number): boolean {
     const sel = GameState.selected; if (!sel) return false;
-    const p = this.handlePos(sel, this.tmpWorld);
+    const p = this.node.inverseTransformPoint(this.tmpWorld, this.handlePos(sel, this.tmpWorld));   // Field space, like x / y
     return Math.hypot(x - p.x, y - p.y) <= this.handleRadius(sel) + 12;
   }
 
@@ -347,12 +347,15 @@ export class DragController extends Component {
     const it = sel!;
     // dashed outline, pushed 3 units out from the centre of the shape
     g.strokeColor = SELECT_INK; g.lineWidth = 2;
-    const m = it.node.worldMatrix;
+    // world → the handle layer's own space (the same in the game; inside the Level Editor the
+    // field sits elsewhere in its preview box)
+    const m = it.node.worldMatrix, gn = g.node, w = this.tmpLocal;
+    const local = (p: Vec2) => { w.set(p.x, p.y, 0); gn.inverseTransformPoint(w, w); return new Vec2(w.x, w.y); };
     const src = it.outline.length >= 3 ? [it.outline] : null;
-    const polys: Vec2[][] = src ? src.map(pts => pts.map(p => Vec2.transformMat4(new Vec2(), p, m))) : it.shapes;
+    const polys: Vec2[][] = src ? src.map(pts => pts.map(p => local(Vec2.transformMat4(new Vec2(), p, m)))) : it.shapes.map(poly => poly.map(local));
     for (const poly of polys) dashedOutline(g, poly, 3, 5, 4);
     // button
-    const c = this.handlePos(it, this.tmpWorld), R = this.handleRadius(it);
+    const c = gn.inverseTransformPoint(this.tmpWorld, this.handlePos(it, this.tmpWorld)), R = this.handleRadius(it);
     g.fillColor = BUTTON_SHADOW; g.circle(c.x, c.y - R * .18, R); g.fill();
     g.fillColor = SELECT_INK; g.circle(c.x, c.y, R); g.fill();
     g.strokeColor = Color.WHITE; g.lineWidth = Math.max(1.6, R * .18); g.circle(c.x, c.y, R); g.stroke();
