@@ -3,17 +3,13 @@
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-  <!-- haptics (Settings > Vibration, shaking) -->
   <uses-permission android:name="android.permission.VIBRATE"/>
-  <!-- advertising id (Android 13+): Firebase, AppsFlyer and Facebook attribution -->
   <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
-  <!-- Android 11+: lets the Facebook SDK see whether the Facebook app is installed -->
   <queries>
     <package android:name="com.facebook.katana"/>
   </queries>
   <application android:extractNativeLibs="true" android:allowBackup="true" android:label="@string/app_name" android:usesCleartextTraffic="false" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:resizeableActivity="true">
     <meta-data android:name="android.app.lib_name" android:value="cocos"/>
-    <!-- Facebook SDK starts with the app and logs basic App Events (installs, opens) -->
     <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>
     <meta-data android:name="com.facebook.sdk.ClientToken" android:value="@string/facebook_client_token"/>
     <meta-data android:name="com.facebook.sdk.AutoLogAppEventsEnabled" android:value="true"/>

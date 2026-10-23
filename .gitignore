@@ -31,3 +31,6 @@ node_modules/
 # Release signing: keystore.properties and the .jks it names stay outside git (copy from snug/android)
 /native/engine/android/keystore.properties
 /native/engine/android/*.jks
+
+# Cocos Creator per-user script templates
+/.creator/asset-template/
