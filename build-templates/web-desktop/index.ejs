@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- web-desktop is only used for the Level Editor (tools/web-editor-build.json). The page is the
+       old web editor's (snug editor.html + editor.css); its controls are run by
+       assets/scripts/editor (EditorApp), and the preview box holds the real Cocos game. -->
+  <title>Level Editor · Everything Fits</title>
+  <link rel="icon" href="favicon.ico">
+  <link rel="preload" href="Nunito.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body data-edit-art="cozy">
+  <header class="topbar">
+    <div class="brand">Level Editor</div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="build" class="on">🧩 Dựng level</button>
+      <button data-tab="library">🎨 Thư viện art</button>
+    </nav>
+    <div class="grow"></div>
+    <div class="artbox" title="Bộ art đang sửa trong editor">
+      <span class="artbox-lb">Đang sửa</span>
+      <div class="seg" id="artSeg"><button data-art="cozy" class="on">Cozy</button><button data-art="casual">Casual</button></div>
+    </div>
+    <div class="gamebox" id="gameBox" title="Bộ art người chơi thấy khi mở game">
+      🎮 Game đang chạy <b id="gameArt" data-art="cozy">COZY</b>
+    </div>
+    <label class="field">Level <select id="levelSelect"></select></label>
+    <button id="mgBtn" class="ghost">Quản lý level</button>
+    <button id="newLevel" class="ghost">+ Level mới</button>
+    <button id="publishBtn" class="publish" title="Ghi level đang sửa vào game (Cmd/Ctrl + S)">
+      <span class="dot" id="dirtyDot" hidden></span>Lưu level<span id="dirtyCount"></span> <b class="arttag" id="artTag">COZY</b> <span class="live" id="liveTag">v?</span>
+    </button>
+    <button id="downloadBtn" class="ghost" title="Tải levels.json của cả game — chép đè vào assets/gamecontent/content/cozy/ của project Cocos">Tải JSON</button>
+    <button id="downloadLevelBtn" class="ghost" title="Tải JSON của riêng level đang sửa — dán lại bằng Dán JSON">Tải level 1</button>
+    <button id="ghBtn" class="ghost" title="Nối với GitHub để lưu thẳng" hidden>🔑 <b id="ghTag">chưa nối</b></button>
+    <span id="status" class="status"></span>
+    <span id="webSync" class="websync" hidden></span>
+  </header>
+
+  <!-- ============ DỰNG LEVEL ============ -->
+  <main class="layout tab-page" id="tab-build">
+    <!-- Cột trái: xem và chơi thử (chính game Cocos) -->
+    <section class="preview">
+      <div class="panel-title">Xem thử</div>
+      <div class="phone-wrap" id="phone">
+        <div id="GameDiv">
+          <div id="Cocos3dGameContainer">
+            <canvas id="GameCanvas" oncontextmenu="event.preventDefault()" tabindex="99"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="preview-actions">
+        <button id="autoplayBtn" class="primary wide">▶︎ Máy chơi thử</button>
+        <button id="restartBtn" class="wide">↺ Chơi lại</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="timerToggle" checked> Đếm giờ khi xem thử</label>
+      <label class="chk"><input type="checkbox" id="colliderToggle"> Hiện vùng va chạm</label>
+      <label class="chk"><input type="checkbox" id="audioToggle"> Bật tiếng khi xem thử</label>
+      <p class="tip">Kéo đồ trong khung này để tự chơi thử. Máy sẽ tự xếp từng món để bạn biết level có giải được không. Món buộc dây máy bỏ qua.</p>
+    </section>
+
+    <!-- Cột giữa: dựng -->
+    <section class="center">
+      <div class="card">
+        <div class="card-head"><b>1. Thông tin level</b></div>
+        <div class="row">
+          <div class="field grow2 lv-so"><b id="lvSo">Level 1</b> <code id="lvMa"></code></div>
+          <label class="field">Thời gian <input id="lvTimer" type="number" min="10" max="600" step="5"> giây</label>
+          <label class="field">Thưởng <input id="lvCoin" type="number" min="0" step="5"> coin</label>
+        </div>
+        <div class="row">
+          <div class="field">Chiếc túi <select id="lvSkin" hidden></select>
+            <button type="button" id="lvSkinBtn" class="skin-btn" title="Bấm để chọn túi theo hình"><img id="lvSkinImg" alt=""><span id="lvSkinName">—</span><i>▾</i></button>
+          </div>
+          <label class="field">Bối cảnh <select id="lvBg"></select></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><b>2. Hình dáng túi</b><span class="hint" id="bagHint">Kéo điểm để đổi hình, hoặc chọn mẫu có sẵn</span></div>
+        <div class="row" id="fixedRow" hidden>
+          <label class="field">Cỡ túi <input id="bagScale" type="range" min="50" max="130" step="1"></label>
+          <input id="bagScaleNum" type="number" min="50" max="130" step="1" style="width:4.5em"> %
+          <button id="bagScaleReset" class="ghost" title="Về cỡ mặc định">100%</button>
+          <div class="grow"></div>
+          <button id="fitBagFixed" title="Chọn cỡ túi cho khớp độ đầy mong muốn">Vừa khít <input id="fitDensityFixed" type="number" value="80" min="40" max="98"> %</button>
+        </div>
+        <div class="row" id="itemScaleRow">
+          <label class="field">Cỡ đồ <input id="itemScale" type="range" min="50" max="150" step="1" value="100"></label>
+          <input id="itemScaleNum" type="number" min="50" max="150" step="1" value="100" style="width:4.5em"> %
+          <button id="itemScaleReset" class="ghost" title="Về cỡ gốc của món">100%</button>
+          <span class="hint">Cả loạt món. Cỡ riêng một món: bấm vào món đó ở bước 3.</span>
+        </div>
+        <div class="row" id="freeRow">
+          <div class="seg" id="shapeSeg">
+            <button data-preset="rect">Chữ nhật</button>
+            <button data-preset="rounded">Bo góc</button>
+            <button data-preset="notch">Khuyết góc</button>
+            <button data-preset="L">Chữ L</button>
+            <button data-preset="wide">Rộng ngang</button>
+          </div>
+          <div class="grow"></div>
+          <button id="fitBag" title="Tự co giãn lòng túi cho khớp độ đầy mong muốn">Vừa khít <input id="fitDensity" type="number" value="80" min="40" max="98"> %</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <b>3. Sắp xếp đồ</b>
+          <div class="seg" id="toolSeg">
+            <button data-tool="item" class="on">Đặt đồ</button>
+            <button data-tool="shape">Sửa túi</button>
+            <button data-tool="block">Vật cản</button>
+          </div>
+          <span class="blockopts" id="blockOpts" hidden>
+            <select id="blockKind" title="Hình vật cản"></select>
+            <input id="blockColor" type="color" value="#C99A6E" title="Màu vật cản">
+          </span>
+          <span class="hint" id="toolHint"></span>
+          <div class="grow"></div>
+          <button id="genBtn" class="ghost">🎲 Máy chọn đồ giúp…</button>
+        </div>
+        <div class="canvas-card">
+          <canvas id="edit" width="420" height="760"></canvas>
+          <div class="side">
+            <div class="sel" id="selBox"><em>Chưa chọn món</em></div>
+            <div class="palette-head">Kho đồ
+              <input id="palSearch" type="text" name="kho-do-tim" placeholder="tìm…" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false">
+            </div>
+            <div class="palette" id="palette"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><b>4. Sao chép</b><span class="hint">Chép level này sang chỗ khác, hoặc dán level từ nơi khác vào</span></div>
+        <div class="row">
+          <button id="copyJson" class="ghost">Chép JSON</button>
+          <button id="pasteJson" class="ghost">Dán JSON</button>
+          <div class="grow"></div>
+          <span class="note">Lưu bằng nút <b>Lưu</b> ở thanh trên. Đổi thứ tự level ở <b>Quản lý level</b>.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cột phải: đo đạc -->
+    <aside class="metrics">
+      <div class="panel-title">Kiểm tra</div>
+      <div class="card">
+        <div class="solv" id="solvable">—</div>
+        <div class="bar"><i id="densBar"></i></div>
+        <table class="kv" id="kv"></table>
+      </div>
+      <div class="card">
+        <div class="kvh"><span>Độ khó</span><b id="diffTotal">0 · Easy</b></div>
+        <table class="kv" id="diffRows"></table>
+      </div>
+      <div class="card warn" id="warnCard" hidden></div>
+      <div class="card faq">
+        <details><summary>Mấy con số này nghĩa là gì?</summary>
+          <p><b>Độ đầy</b> = tổng diện tích đồ chia cho diện tích lòng túi thật. Tài liệu đặt mức Easy 75%, Medium 80%, Hard 90%.</p>
+          <p><b>Độ khó</b> cộng điểm theo bảng trong tài liệu. 1–6 Easy · 7–10 Medium · 11–14 Hard · 15–17 Very Hard · 18+ Challenge.</p>
+          <p><b>Xếp được / Chặt tay</b> là ước lượng thận trọng. Máy xếp theo lưới và chỉ xoay vài góc, còn người chơi xoay mọi góc và lắc túi cho đồ lèn khít. Vì vậy "Chặt tay" vẫn chơi qua được, chỉ là không còn dư chỗ.</p>
+        </details>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============ THƯ VIỆN ART ============ -->
+  <main class="layout-lib tab-page" id="tab-library" hidden>
+    <section class="center">
+      <div class="card">
+        <div class="card-head">
+          <b>Danh sách đồ</b>
+          <span class="hint">Bấm Sửa để đổi tên và thuộc tính. Mã số không đổi được vì level đang dùng nó.</span>
+          <div class="grow"></div>
+          <input id="poolSearch" placeholder="tìm theo mã hoặc tên…">
+        </div>
+        <div class="tablewrap"><table id="poolTable"></table></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ Hộp thoại: máy chọn đồ ============ -->
+  <div class="modal" id="genModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><b>🎲 Máy chọn đồ giúp</b><button id="genClose" class="ghost">Đóng</button></div>
+      <p class="note">Máy chọn bộ đồ cho vừa chiếc túi đang có, theo độ đầy và độ khó bạn muốn. Chọn xong bạn vẫn chỉnh tay được.</p>
+      <div class="row">
+        <label class="field">Muốn khó cỡ nào <select id="gTier"><option value="">Bất kỳ</option><option>Easy</option><option selected>Medium</option><option>Hard</option><option>Very Hard</option><option>Challenge</option></select></label>
+        <label class="field">Số món <input id="gCountMin" type="number" value="7"> – <input id="gCountMax" type="number" value="9"></label>
+        <label class="field">Độ đầy <input id="gDenMin" type="number" value="76">% – <input id="gDenMax" type="number" value="84">%</label>
+      </div>
+      <div class="row">
+        <label class="field">Món to <input id="gL" type="number" value="1"></label>
+        <label class="field">Món vừa <input id="gM" type="number" value="3"></label>
+        <label class="field">Cặp buộc dây <input id="gLinked" type="number" value="0"></label>
+        <label class="field">Hộp bí ẩn <input id="gLocked" type="number" value="0"></label>
+        <label class="field">Thời gian <input id="gTimer" type="number" value="90"> giây</label>
+        <label class="field">Mã số <input id="gSeed" type="number" value="1234"></label>
+      </div>
+      <details class="poolbox">
+        <summary>Giới hạn kho đồ máy được dùng</summary>
+        <div class="poolgrid" id="gPool"></div>
+      </details>
+      <div class="row modal-foot">
+        <button id="gRun" class="primary">Chọn đồ</button>
+        <button id="gReroll">Thử bộ khác</button>
+        <span class="hint" id="gInfo"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Hộp thoại: sửa một món ============ -->
+  <div class="modal" id="itemModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><b id="imTitle">Sửa món</b><button id="imClose" class="ghost">Đóng</button></div>
+      <div class="row im-body">
+        <div class="im-art">
+          <canvas id="imCanvas" width="220" height="220"></canvas>
+        </div>
+        <div class="col im-fields">
+          <label class="field">Mã số <input id="imId" type="number" disabled></label>
+          <label class="field">Tên hiển thị <input id="imName"></label>
+          <label class="field">Tên mã <input id="imSlug"></label>
+          <label class="field">Cỡ <select id="imSize"></select></label>
+          <label class="field">Hình dáng <select id="imShape"></select></label>
+          <label class="field">Tính chất <select id="imPhys"></select></label>
+          <label class="field">Điểm khó <input id="imCost" type="number" min="0" max="5"></label>
+          <label class="field" title="Cân nặng đồ thật, gram. Quyết định tốc độ rơi, độ nảy, tiếng và bụi khi chạm, món nào đè được món nào">Cân nặng <input id="imGram" type="number" min="1" max="5000" step="5"> g</label>
+          <div class="scale-row">
+            <span>Cỡ trong game</span>
+            <button id="imMinus" title="Nhỏ đi 10%">−</button>
+            <input id="imScale" type="number" min="25" max="300" step="5" value="100">
+            <span>%</span>
+            <button id="imPlus" title="To thêm 10%">+</button>
+            <span class="hint" id="imSizeTxt"></span>
+          </div>
+          <label class="field"><input id="imLink" type="checkbox"> Buộc dây được</label>
+          <label class="field"><input id="imLock" type="checkbox"> Giấu trong hộp bí ẩn được</label>
+          <span class="hint" id="imInfo"></span>
+        </div>
+      </div>
+      <div class="row modal-foot">
+        <button id="imSave" class="primary">💾 Lưu món</button>
+        <span class="hint" id="imNote">Lưu xong kho đồ cập nhật ngay; Cocos Creator dựng lại prefab của món.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nối GitHub: chỉ dùng khi editor chạy không có máy chủ của project -->
+  <div class="modal" id="ghModal" hidden>
+    <div class="modal-card" style="width:min(560px,100%)">
+      <div class="modal-head"><b>Lưu thẳng lên GitHub</b><button id="ghClose" class="ghost">Đóng</button></div>
+      <p class="tip">Bản editor chạy không có máy chủ của project thì không ghi file được. Dán token vào đây một lần, sau đó bấm <b>Lưu</b> là ghi thẳng <code id="ghPath"></code> lên GitHub.</p>
+      <p class="repo-line">Repo: <b id="ghRepoName">—</b> · nhánh <b id="ghBranchName">—</b></p>
+      <label class="field grow2">Token GitHub
+        <input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off">
+      </label>
+      <p class="tip">Tạo ở <b>GitHub → Settings → Developer settings → Fine-grained tokens</b>, chọn đúng repo trên, cấp <b>Contents: Read and write</b>. Token nằm trong trình duyệt của bạn, chỉ gửi tới GitHub, thu hồi được bất cứ lúc nào.</p>
+      <div class="row">
+        <button id="ghSave" class="primary">Nối</button>
+        <button id="ghForget" class="ghost">Quên token</button>
+        <span id="ghStatus" class="status"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quản lý level -->
+  <div class="modal" id="mgModal" hidden>
+    <div class="modal-card" style="width:min(860px,100%)">
+      <div class="modal-head"><b>Quản lý level</b><button id="mgClose" class="ghost">Đóng</button></div>
+      <p class="tip">Thứ tự ở đây là thứ tự level trong game. Thay đổi ghi vào <code>levels.json</code>.</p>
+      <div class="mg-block">
+        <div class="mg-head"><b id="mgLevelHead">Level</b><span class="grow"></span><span class="hint">kéo ⋮⋮ để đổi thứ tự</span><button id="mgAddLevel" class="primary">+ Level mới</button></div>
+        <table class="mg-table" id="mgLevels"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chọn túi theo hình -->
+  <div id="skinPick" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><b>Chọn túi</b><button type="button" id="skinPickClose">Đóng</button></div>
+      <div id="skinGrid" class="skin-grid"></div>
+    </div>
+  </div>
+
+  <%- include(cocosTemplate, {}) %>
+</body>
+</html>

@@ -3,13 +3,20 @@
   "version": "1.0.0",
   "name": "ef-bridge",
   "title": "EF Bridge",
-  "description": "Local-only control port for external tools (127.0.0.1:7461): call Editor.Message and run scripts in the scene process.",
+  "description": "Local-only control port for external tools (127.0.0.1:7461): call Editor.Message and run scripts in the scene process. Rebuilds an item prefab when its manifest JSON changes.",
   "author": "Everything Fits",
   "editor": ">=3.8.0",
   "main": "./main.js",
   "contributions": {
     "scene": {
       "script": "./scene.js"
+    },
+    "messages": {
+      "asset-db:asset-change": {
+        "methods": [
+          "onAssetChange"
+        ]
+      }
     }
   }
 }

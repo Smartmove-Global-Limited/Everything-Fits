@@ -54,7 +54,7 @@ export const ContentLoader = {
     if (!level) return;
     const ids: number[] = (level.items || []).map((it: any) => it.id);
     const skin: string | undefined = level.container?.skin;
-    await Promise.all([...[...new Set(ids)].map(id => this.itemPrefab(id).catch(() => null)), skin ? this.bagPrefab(skin).catch(() => null) : null,
+    await Promise.all([...Array.from(new Set(ids)).map(id => this.itemPrefab(id).catch(() => null)), skin ? this.bagPrefab(skin).catch(() => null) : null,
       this.background(level.background)]);
   },
 
@@ -84,6 +84,13 @@ export const ContentLoader = {
   async itemIds(): Promise<number[]> {
     const index = await load<JsonAsset>('content/cozy/assets/index', JsonAsset);
     return Object.keys((index.json as any).items || {}).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  },
+
+  /** Any asset of the content bundle by path (dev tools / Level Editor) */
+  asset<T>(path: string, type: any): Promise<T> { return load<T>(path, type); },
+  /** Several assets of the content bundle in one request; failed ones come back null */
+  assets<T>(paths: string[], type: any): Promise<(T | null)[]> {
+    return openBundle().then(b => new Promise(ok => b.load(paths, type, (_e, list: any) => ok((list || paths.map(() => null)) as (T | null)[]))));
   },
 
   spriteFrame(path: string) { return load<SpriteFrame>(`${path}/spriteFrame`, SpriteFrame); },

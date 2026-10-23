@@ -20,6 +20,7 @@ let node: Node | null = null;
 let music: AudioSource = null!, fx: AudioSource = null!;
 const clips = new Map<string, AudioClip | null>();
 let musicWanted = false;
+let muted = false;          // Level Editor preview: silent unless "Bật tiếng khi xem thử" is on
 const volume = { v: 0 };
 
 function ensure() {
@@ -52,7 +53,7 @@ export const Sound = {
   preload() { for (const n of Object.keys(FILE).concat(['pick', 'drop', 'fit', 'nope', 'eject', 'tick', 'unlockLv', 'trash', 'shrink'])) clip(n); },
 
   play(name: SfxName, { gain = 1, delay = 0 } = {}) {
-    if (!prefs.sfx) return;
+    if (!prefs.sfx || muted) return;
     ensure();
     clip(name).then(c => {
       if (!c || !prefs.sfx) return;
@@ -63,7 +64,7 @@ export const Sound = {
 
   async startMusic() {
     musicWanted = true;
-    if (!prefs.music) return;
+    if (!prefs.music || muted) return;
     ensure();
     if (music.playing) return;
     const c = await clip('bgm');
@@ -71,6 +72,8 @@ export const Sound = {
     music.clip = c; volume.v = 0; music.volume = 0; music.play();
     fadeMusic(MUSIC_VOLUME, 1.2);
   },
+  /** Silence everything without touching the player's settings (Level Editor preview) */
+  setMuted(on: boolean) { muted = on; if (on) { if (music) music.stop(); } else if (musicWanted) this.startMusic(); },
   stopMusic() { musicWanted = false; if (music) music.stop(); },
   /** Lower the music under popups (pause, win, lose) */
   duckMusic(on: boolean) { if (music && music.playing) fadeMusic(on ? MUSIC_DUCKED : MUSIC_VOLUME, .3); },

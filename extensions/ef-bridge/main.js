@@ -4,6 +4,9 @@
 //   POST /scene  {"method","args":[...]}           → call a method of scene.js (scene process, has cc)
 //   POST /main   {"code"}                           → run code in the editor main process (Editor available)
 //   GET  /log                                       → recent editor console lines
+// Also: when an item manifest (assets/gamecontent/content/cozy/assets/<chapter>/items/<id>.json)
+// changes — saved by the Level Editor or copied over by hand — the item prefab is rebuilt with
+// tools/editor/item-prefabs.js, so the game uses the new size / physics.
 const http = require('http');
 let server = null;
 const logLines = [];
@@ -34,4 +37,26 @@ exports.load = function () {
   }
 };
 exports.unload = function () { if (server) server.close(); server = null; };
-exports.methods = {};
+// ---- item manifest changed → rebuild its prefab (batched, after the import settles) ----
+const fs = require('fs'), path = require('path');
+const ITEM_JSON = /\/gamecontent\/content\/cozy\/assets\/[^/]+\/items\/(\d+)\.json$/;
+const pending = new Set();
+let timer = null;
+async function rebuildPending() {
+  const ids = [...pending]; pending.clear(); timer = null;
+  if (!ids.length) return;
+  try {
+    const script = fs.readFileSync(path.join(Editor.Project.path, 'tools/editor/item-prefabs.js'), 'utf8');
+    const code = `const args = ${JSON.stringify({ ids })};\n` + script;
+    await Editor.Message.request('scene', 'execute-scene-script', { name: 'ef-bridge', method: 'chay', args: [code] });
+    console.log('[ef-bridge] rebuilt item prefab(s)', ids.join(', '));
+  } catch (e) { console.error('[ef-bridge] item prefab rebuild failed', ids, e); }
+}
+exports.methods = {
+  onAssetChange(uuid, info) {
+    const m = String(info && (info.url || info.source) || '').match(ITEM_JSON);
+    if (!m) return;
+    pending.add(Number(m[1]));
+    clearTimeout(timer); timer = setTimeout(rebuildPending, 800);
+  },
+};

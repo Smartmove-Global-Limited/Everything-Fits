@@ -1,0 +1,25 @@
+{
+  "platform": "web-desktop",
+  "name": "Level Editor",
+  "outputName": "web-editor",
+  "buildPath": "project://build",
+  "debug": true,
+  "md5Cache": false,
+  "sourceMaps": false,
+  "startScene": "7f8d1ab2-3c52-48f4-ae40-6f0697f3d181",
+  "scenes": [
+    {
+      "url": "db://assets/scenes/Editor.scene",
+      "uuid": "7f8d1ab2-3c52-48f4-ae40-6f0697f3d181"
+    }
+  ],
+  "packages": {
+    "web-desktop": {
+      "resolution": {
+        "designWidth": 420,
+        "designHeight": 760
+      }
+    }
+  },
+  "taskName": "web-editor"
+}

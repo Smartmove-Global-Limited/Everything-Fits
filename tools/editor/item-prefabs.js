@@ -104,12 +104,21 @@ for (const id of ids) {
 
   const url = `db://assets/gamecontent/items/${id}.prefab`;
   const existing = await Editor.Message.request('asset-db', 'query-asset-info', url);
-  if (existing) await Editor.Message.request('asset-db', 'delete-asset', url);
-  await Editor.Message.request('scene', 'create-prefab', node.uuid, url);
-  // create-prefab swaps the scene node for a prefab instance (renamed after the file): remove
-  // whatever sits at the scene root now, not only the old reference
-  node.removeFromParent(); node.destroy();
-  for (const n of scene.children.slice()) if (n.name !== 'Canvas' && !n.name.startsWith('Editor Scene')) n.destroy();
+  // root nodes before: create-prefab swaps our node for a prefab instance, which is removed after
+  // (only that one: the open scene may be Editor.scene, whose own root nodes must stay)
+  const before = new Set(scene.children);
+  if (existing) {
+    // keep the prefab's uuid: build it next to the old one, then copy the content over
+    const tmpUrl = `db://assets/gamecontent/items/${id}.__new.prefab`;
+    await Editor.Message.request('scene', 'create-prefab', node.uuid, tmpUrl);
+    const tmp = await Editor.Message.request('asset-db', 'query-asset-info', tmpUrl);
+    await Editor.Message.request('asset-db', 'save-asset', url, fs.readFileSync(tmp.file, 'utf8'));
+    await Editor.Message.request('asset-db', 'delete-asset', tmpUrl);
+  } else {
+    await Editor.Message.request('scene', 'create-prefab', node.uuid, url);
+  }
+  if (node.isValid) { node.removeFromParent(); node.destroy(); }
+  for (const n of scene.children.slice()) if (!before.has(n)) n.destroy();
   report.push(`${id}: ${m.name} · ${polys.length} poly (${vertices} pts) ${circles.length} circle · class ${massClass}`);
 }
 return report;

@@ -19,8 +19,11 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GAME = process.env.GAME || resolve(ROOT, '../snug');
+// Since 2026-10-23 this Cocos project is the source of the game content (levels and item data are
+// edited with its own Level Editor): from the web repo only NEW files are taken (new art), nothing
+// is overwritten or deleted there. Audio and UI art still follow the web repo.
 const PAIRS = [
-  [join(GAME, 'public/content/cozy'), join(ROOT, 'assets/gamecontent/content/cozy')],
+  [join(GAME, 'public/content/cozy'), join(ROOT, 'assets/gamecontent/content/cozy'), { addOnly: true }],
   [join(GAME, 'public/audio'), join(ROOT, 'assets/resources/audio')],
   [join(GAME, 'public/ui'), join(ROOT, 'assets/resources/uiart')],
 ];
@@ -31,17 +34,18 @@ let added = 0, changed = 0, removed = 0;
 const KEEP = new Set(['generated']);
 const same = (a, b) => statSync(a).size === statSync(b).size && readFileSync(a).equals(readFileSync(b));
 
-function copyDir(src, dst) {
+function copyDir(src, dst, opts = {}) {
   mkdirSync(dst, { recursive: true });
   const seen = new Set();
   for (const name of readdirSync(src)) {
     if (name.startsWith('.')) continue;
     const a = join(src, name), b = join(dst, name);
     seen.add(name);
-    if (statSync(a).isDirectory()) { copyDir(a, b); continue; }
+    if (statSync(a).isDirectory()) { copyDir(a, b, opts); continue; }
     if (!existsSync(b)) { copyFileSync(a, b); added++; }
-    else if (!same(a, b)) { copyFileSync(a, b); changed++; }
+    else if (!opts.addOnly && !same(a, b)) { copyFileSync(a, b); changed++; }
   }
+  if (opts.addOnly) return;
   for (const name of readdirSync(dst)) {
     if (name.endsWith('.meta') || seen.has(name)) continue;
     if (KEEP.has(name)) continue;   // made in the Cocos project, not copies of web files
@@ -51,9 +55,9 @@ function copyDir(src, dst) {
   }
 }
 
-for (const [a, b] of PAIRS) {
+for (const [a, b, opts] of PAIRS) {
   if (!existsSync(a)) { console.warn('missing', a); continue; }
-  copyDir(a, b);
+  copyDir(a, b, opts);
 }
 console.log(`sync done: ${added} added, ${changed} changed, ${removed} removed`);
 // bag frames are drawn over the items: drop the print grain inside the bags (tools/clean-bag-frames.py)

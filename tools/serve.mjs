@@ -4,7 +4,7 @@
 //   /api/...    what the Editor saves into the project (see API below)
 // A Cocos web build must be served over http: opening index.html from the disk shows a blank page.
 //   node tools/serve.mjs            http://localhost:8088   (this computer only)
-//   node tools/serve.mjs --lan      also reachable from phones on the same wifi
+//   node tools/serve.mjs --lan      also reachable from phones / computers on the same wifi (read only for them)
 import http from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
@@ -31,6 +31,11 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     if (url.pathname.startsWith('/api/')) {
       if (!api) { res.writeHead(404); return res.end('no editor api'); }
+      // other computers on the wifi (--lan) read the project but never write into it: their
+      // editor keeps edits in its draft and hands them over with "Tải JSON"
+      const local = /^(127\.|::1$|::ffff:127\.)/.test(req.socket.remoteAddress || '');
+      if (!local && req.method !== 'GET') { res.writeHead(403); return res.end('read only from other computers'); }
+      if (!local && url.pathname === '/api/ping') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end('{"ok":true,"write":false}'); }
       return await api(req, res, url);
     }
     const [prefix, dir] = SITES.find(([p]) => url.pathname.startsWith(p));
