@@ -1,0 +1,27 @@
+{
+  "platform": "web-mobile",
+  "name": "Everything Fits",
+  "outputName": "web-mobile",
+  "buildPath": "project://build",
+  "debug": false,
+  "md5Cache": true,
+  "sourceMaps": false,
+  "startScene": "6c3a23ff-6621-4741-811a-212f13d0c56f",
+  "scenes": [
+    {
+      "url": "db://assets/scenes/Main.scene",
+      "uuid": "6c3a23ff-6621-4741-811a-212f13d0c56f"
+    },
+    {
+      "url": "db://assets/scenes/Game.scene",
+      "uuid": "d618e01c-5a5b-43e7-9ed8-e9fced695254"
+    }
+  ],
+  "packages": {
+    "web-mobile": {
+      "orientation": "portrait",
+      "embedWebDebugger": false
+    }
+  },
+  "taskName": "web-mobile"
+}
