@@ -1,6 +1,6 @@
 {
-  "version": 116,
-  "publishedAt": "2026-10-23T08:21:03.000Z",
+  "version": 117,
+  "publishedAt": "2026-10-26T01:53:24.183Z",
   "chapters": [
     {
       "id": "school-day",
@@ -197,7 +197,8 @@
               "y": 414.6,
               "angle": 5.498
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-02",
@@ -498,7 +499,8 @@
               "y": 293.5,
               "angle": 5.89
             }
-          ]
+          ],
+          "playDifficulty": "Hard"
         },
         {
           "id": "sd-03",
@@ -760,7 +762,8 @@
               "y": 153.9,
               "angle": 4.712
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-04",
@@ -1063,7 +1066,8 @@
               "y": 200.9,
               "angle": 0.785
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-13",
@@ -1254,7 +1258,8 @@
               "y": 225.4,
               "angle": 0
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-14",
@@ -1551,7 +1556,8 @@
               "y": 241.7,
               "angle": 2.436
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-15",
@@ -1884,7 +1890,8 @@
               "y": 188.5,
               "angle": 0.785
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-05",
@@ -2172,7 +2179,8 @@
               "y": 404.8,
               "angle": 0
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-06",
@@ -2516,7 +2524,8 @@
               "y": 297.5,
               "angle": 2.276
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-07",
@@ -2762,13 +2771,6 @@
             },
             {
               "id": 28,
-              "x": 31.5,
-              "y": 516.9,
-              "angle": -0.3,
-              "scale": 0.71
-            },
-            {
-              "id": 28,
               "x": 388.7,
               "y": 594,
               "angle": -0.23,
@@ -2843,20 +2845,13 @@
             {
               "i": 7,
               "id": 28,
-              "s": 0.71,
-              "x": 213.3,
-              "y": 332.2,
-              "angle": 0.785
-            },
-            {
-              "i": 8,
-              "id": 28,
               "s": 0.792,
               "x": 136.1,
               "y": 173.4,
               "angle": 5.498
             }
-          ]
+          ],
+          "playDifficulty": "Hard"
         },
         {
           "id": "sd-08",
@@ -3090,7 +3085,8 @@
               "y": 268.6,
               "angle": 3.142
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-09",
@@ -3430,7 +3426,8 @@
               "y": 277.2,
               "angle": 3.927
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-10",
@@ -3744,7 +3741,8 @@
               "y": 160.7,
               "angle": 4.712
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-11",
@@ -3998,7 +3996,8 @@
               "y": 283.9,
               "angle": 3.927
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-16",
@@ -4263,7 +4262,8 @@
               "y": 207.2,
               "angle": 0
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-17",
@@ -4515,7 +4515,8 @@
               "y": 200.6,
               "angle": 2.356
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-18",
@@ -4811,7 +4812,8 @@
               "y": 242,
               "angle": 0.785
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-19",
@@ -5099,7 +5101,8 @@
               "y": 229.1,
               "angle": 5.498
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-20",
@@ -5326,7 +5329,8 @@
               "y": 150.3,
               "angle": 1.571
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-21",
@@ -5954,7 +5958,8 @@
               "y": 329.1,
               "angle": 3.142
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-22",
@@ -6272,7 +6277,8 @@
               "y": 407.7,
               "angle": 2.516
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-23",
@@ -6556,7 +6562,8 @@
               "y": 327.4,
               "angle": 5.418
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-24",
@@ -6847,7 +6854,8 @@
               "y": 301.4,
               "angle": 3.927
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-25",
@@ -7180,7 +7188,8 @@
               "y": 151.5,
               "angle": 5.338
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-26",
@@ -7502,7 +7511,8 @@
               "y": 377.8,
               "angle": 3.927
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-27",
@@ -7812,7 +7822,8 @@
               "y": 399.7,
               "angle": 3.142
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-28",
@@ -8130,7 +8141,8 @@
               "y": 375.3,
               "angle": 0
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-29",
@@ -8421,7 +8433,8 @@
               "y": 378.9,
               "angle": 1.651
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-30",
@@ -8743,7 +8756,8 @@
               "y": 331.9,
               "angle": 0.705
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         },
         {
           "id": "sd-31",
@@ -9038,7 +9052,8 @@
               "y": 193.8,
               "angle": 4.872
             }
-          ]
+          ],
+          "playDifficulty": "Easy"
         }
       ],
       "assets": {

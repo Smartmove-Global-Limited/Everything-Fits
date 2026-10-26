@@ -1,7 +1,7 @@
 // Shared helpers for the screens and popups built from the web UI (tools/editor/build-ui.js):
 // node lookup by name (run once in onLoad, never per frame), web-like press feedback, popup
 // open/close animation, label access.
-import { Node, Label, UIOpacity, Tween, tween, Vec3, Sprite, Color } from 'cc';
+import { Node, Label, UIOpacity, Tween, tween, Vec3, Sprite, Color, UITransform } from 'cc';
 import { RoundRect } from './RoundRect';
 import { Sound, SfxName } from '../audio/Sound';
 
@@ -90,3 +90,34 @@ export function dimSprite(node: Node | null, dim: boolean) {
   const s = node?.getComponent(Sprite); if (!s) return;
   s.color = dim ? new Color(150, 150, 150, 128) : Color.WHITE;
 }
+
+/** A panel's own children, without the smooth background picture RoundRect adds ("__skin") */
+export const contentOf = (n: Node) => n.children.filter(c => c.name !== '__skin');
+
+/**
+ * Gold counter pill (Home / Shop top bar): coin, amount, "+" button. The pill hugs the amount
+ * (no empty run before the "+") and the amount keeps a little room after the coin; the left
+ * edge stays where the layout put it.
+ */
+const pillLeft = new WeakMap<Node, number>();
+export function fitGoldPill(amount: Node) {
+  const pill = amount.parent!, pu = pill.getComponent(UITransform)!;
+  const coin = findNode(pill, 'img'), plus = pill.children.find(c => /AddGold$/.test(c.name));
+  const label = labelIn(amount);
+  if (!coin || !plus || !label) return;
+  if (!pillLeft.has(pill)) pillLeft.set(pill, pill.position.x - pu.width * pu.anchorX);
+  label.updateRenderData(true);
+  const lu = label.node.getComponent(UITransform)!, au = amount.getComponent(UITransform)!;
+  const cw = coin.getComponent(UITransform)!.width, pw = plus.getComponent(UITransform)!.width;
+  const PAD_L = 8, GAP_TEXT = 7, GAP_PLUS = 10, PAD_R = 9;
+  const textW = lu.width, w = PAD_L + cw + GAP_TEXT + textW + GAP_PLUS + pw + PAD_R;
+  pu.width = w;
+  pill.setPosition(pillLeft.get(pill)! + w * pu.anchorX, pill.position.y, 0);
+  const left = -w * pu.anchorX;
+  coin.setPosition(left + PAD_L + cw / 2, coin.position.y, 0);
+  au.width = textW;
+  amount.setPosition(left + PAD_L + cw + GAP_TEXT + textW * au.anchorX, amount.position.y, 0);
+  if (label.node !== amount) label.node.setPosition((lu.anchorX - au.anchorX) * textW, label.node.position.y, 0);
+  plus.setPosition(left + w - PAD_R - pw / 2, plus.position.y, 0);
+}
+

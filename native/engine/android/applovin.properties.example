@@ -5,5 +5,10 @@ sdkKey=
 bannerUnit=
 interUnit=
 rewardedUnit=
-# advertising ids of test phones, comma separated (or register them in MAX > Test Mode)
+# AdMob app id (ca-app-pub-…~…): turns on the AdMob network in MAX mediation
+admobAppId=
+# advertising ids of test phones, comma separated (or register them in MAX > Test Mode). A device or
+# debug build prints this phone's id in logcat: "advertising id (testDevices)"
 testDevices=
+# true = ads switched off for testing (no banner / interstitial, SDK not started)
+adsOff=

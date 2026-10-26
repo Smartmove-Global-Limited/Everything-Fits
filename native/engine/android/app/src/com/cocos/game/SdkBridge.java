@@ -102,4 +102,5 @@ public final class SdkBridge {
     public static void billingFinish(String token, String consumable) { BillingBridge.finish(token, consumable); }
     public static void billingRestore() { BillingBridge.restore(); }
     public static void remoteConfigFetch(String keysJson) { RemoteConfigBridge.fetch(keysJson); }
+    public static void haptic(String kind) { HapticsBridge.play(kind); }
 }

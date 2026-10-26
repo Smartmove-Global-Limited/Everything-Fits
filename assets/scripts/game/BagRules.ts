@@ -29,6 +29,8 @@ const tmp = new Vec2();
 
 export type BagEvents = {
   onPacked?(item: ItemView, count: number): void;
+  /** a packed item left the bag by itself (fell / was pushed out; not picked up by the player) */
+  onUnpacked?(item: ItemView): void;
   onListChanged?(): void;
   onWin?(): void;
   onEjected?(item: ItemView, reason: 'noFit' | 'stuck'): void;
@@ -285,7 +287,7 @@ export function updatePacked(now: number) {
     const ok = was ? it.outsideFrames < OUT_FRAMES : inside && it.insideFrames >= IN_FRAMES && slow;
     if (ok !== was) {
       if (ok) { S.packed.add(it.levelIndex); events.onPacked?.(it, S.packed.size); }
-      else S.packed.delete(it.levelIndex);
+      else { S.packed.delete(it.levelIndex); if (!outOfPlay) events.onUnpacked?.(it); }
       changed = true;
     }
   }

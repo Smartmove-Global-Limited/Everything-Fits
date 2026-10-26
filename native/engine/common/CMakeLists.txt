@@ -49,6 +49,24 @@ endif()
 
 include(${COCOS_X_PATH}/CMakeLists.txt)
 
+# The engine decodes WebP pictures with premultiplied alpha (MODE_rgbA) but sprites blend them as
+# straight alpha: every soft edge is darkened twice, a dark jagged ring around items, bags and
+# icons on Android (the web decodes them right). Build a copy of Image.cpp that decodes straight
+# RGBA instead; the Cocos install stays untouched.
+set(EF_IMAGE_CPP ${CMAKE_BINARY_DIR}/ef-patched/platform/Image.cpp)
+file(READ ${COCOS_X_PATH}/cocos/platform/Image.cpp EF_IMAGE_SRC)
+string(REPLACE "MODE_rgbA : MODE_RGB" "MODE_RGBA : MODE_RGB" EF_IMAGE_SRC "${EF_IMAGE_SRC}")
+string(REPLACE "#include \"Image.h\"" "#include \"platform/Image.h\"" EF_IMAGE_SRC "${EF_IMAGE_SRC}")
+if(EXISTS ${EF_IMAGE_CPP})
+    file(READ ${EF_IMAGE_CPP} EF_IMAGE_OLD)
+endif()
+if(NOT "${EF_IMAGE_SRC}" STREQUAL "${EF_IMAGE_OLD}")
+    file(WRITE ${EF_IMAGE_CPP} "${EF_IMAGE_SRC}")
+endif()
+get_target_property(EF_ENGINE_SOURCES cocos_engine SOURCES)
+list(TRANSFORM EF_ENGINE_SOURCES REPLACE ".*cocos/platform/Image\\.cpp$" ${EF_IMAGE_CPP})
+set_target_properties(cocos_engine PROPERTIES SOURCES "${EF_ENGINE_SOURCES}")
+
 list(APPEND CC_COMMON_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/Classes/Game.h
     ${CMAKE_CURRENT_LIST_DIR}/Classes/Game.cpp

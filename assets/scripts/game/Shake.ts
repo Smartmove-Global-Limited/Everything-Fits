@@ -33,6 +33,7 @@ const DEAD_Y = 1.2, MAX_UP = 4;          // vertical axis: walking / tilting ign
 const GAME_G = 34.375;                   // m/s², game gravity (Project Settings → Physics)
 const JOLT_MIN = 3.5;                    // m/s²: a direction change this strong is a jolt (costs energy)
 const JOLT_GAP = 85;                     // ms: at most one jolt counted per this interval
+const KNOCK_GAP = 220;                   // ms: at most one knocking sound per this interval
 const MAG_SHAKE = 2.5;                   // m/s²: total acceleration this far from its resting value = shaking
 const LIN_SHAKE = 4;                     // m/s²: same with the linear acceleration sensor (gravity removed)
 const SHAKE_WINDOW = 350;                // ms the sensor is obeyed after that
@@ -55,7 +56,7 @@ function readLinear() {
 }
 const sway = { x: 0, v: 0, y: 0, vy: 0 };
 const force = new Vec2();
-let dirX = 0, dirY = 0, joltAt = 0;
+let dirX = 0, dirY = 0, joltAt = 0, knockAt = 0;
 
 function onMotion(e: EventAcceleration) {
   // Cocos reports acceleration including gravity, in g, x / y flipped on Android to match iOS:
@@ -144,8 +145,8 @@ export const Shake = {
       moved = true;
     }
     if (!moved) return;
-    // each hard jolt (the shake changes direction): a short buzz (items knock against the bag
-    // walls) and 2 energy points
+    // each hard jolt (the shake changes direction): a short buzz and a knocking sound (items
+    // against the bag walls) and 2 energy points
     const sx = Math.sign(a), sy = Math.sign(v), strength = Math.hypot(a, v);
     const turned = (sx && dirX && sx !== dirX) || (sy && dirY && sy !== dirY);
     if (sx) dirX = sx; if (sy) dirY = sy;
@@ -153,6 +154,8 @@ export const Shake = {
     if (!turned || strength < JOLT_MIN || now < joltAt) return;
     joltAt = now + JOLT_GAP;
     Sound.vibrate(Math.round(Math.min(48, 12 + strength * 2.4)));
+    // the items knocking about in the bag, louder for a harder jolt
+    if (now >= knockAt) { knockAt = now + KNOCK_GAP; Sound.play('jiggle', { gain: Math.min(1, .45 + strength * .05) }); }
     ShakeEnergy.spend();
     onEnergy(ShakeEnergy.fraction);
     if (ShakeEnergy.empty) onEmpty();

@@ -17,6 +17,8 @@ const URGENT = new Color(0xC9, 0x45, 0x4F, 255);
 const CREAM = new Color(0xFF, 0xF8, 0xE9, 255);
 const GREY = new Color(0xD7, 0xD5, 0xD1, 255), GREY_RING = new Color(0x8C, 0x91, 0x8C, 255);
 const ON_RING = new Color(0x7F, 0xC8, 0xF0, 255);
+/** Figma "EF / Gameplay booster": flat tile, thin shadow (0 2 .5 rgba(46,51,41,.22)), name grey when locked */
+const TILE_SHADOW = new Color(46, 51, 41, 56), LOCKED_NAME = new Color(0x6E, 0x6E, 0x63, 255);
 const BADGE = new Color(0xBD, 0x6D, 0x69, 255), BADGE_EMPTY = new Color(0x9A, 0x96, 0x8E, 255), BADGE_ON = new Color(0x4A, 0x9B, 0xD1, 255);
 const SHAKE_FILL = new Color(0x8C, 0x7A, 0xD0, 255), SHAKE_LOW = new Color(0xC9, 0x65, 0x4F, 255);
 const PRESS_DROP = 3;
@@ -77,6 +79,9 @@ export class GameHud extends Component {
     this.pressable(this.gear, null, () => this.onPause?.());
     this.pressable(this.shakePill, null, () => { if (this.shakeEmpty) this.onShakeEmpty?.(); }, () => this.shakeEmpty);
     this.boosters.forEach((b, i) => {
+      // Figma tile: no raised lip, a thin soft shadow, corners 20
+      const f = b.face;
+      f.lip = 0; f.shadowY = 2; f.shadowBlur = 1; f.shadowColor = TILE_SHADOW; f.radius = 20;
       this.boosterState[i] = BoosterState.READY;
       this.pressable(b.root, b.face, () => this.onBooster?.(i), () => this.boosterState[i] !== BoosterState.LOCKED);
     });
@@ -161,9 +166,10 @@ export class GameHud extends Component {
     b.lock.active = locked;
     b.lockLevel.node.active = locked;
     if (locked) b.lockLevel.string = `Lv. ${unlockLevel}`;
-    // web .efb.locked: name smaller and lower, under the lock and the level
-    b.title.fontSize = locked ? 10 : 11.7;
-    b.title.node.setPosition(0, locked ? -27.5 : -23, 0);
+    // Figma: name 12 under the icon; locked: 10, grey, under the lock and the level
+    b.title.fontSize = locked ? 10 : 12;
+    b.title.color = locked ? LOCKED_NAME : INK;
+    b.title.node.setPosition(0, locked ? -32.5 : -27.5, 0);
     b.badgeText.string = String(count);
     this.fitBadge(b);
     b.badge.getComponent(RoundRect)!.fill = state === BoosterState.EMPTY ? BADGE_EMPTY : state === BoosterState.ON ? BADGE_ON : BADGE;
@@ -178,17 +184,23 @@ export class GameHud extends Component {
   /** Badge text override (Freeze shows the seconds left, "12s") */
   setBoosterBadge(id: BoosterId, text: string) { const b = this.boosters[id]; if (b) { b.badgeText.string = text; this.fitBadge(b); } }
 
-  /** web .badge: min-width 22, padding 0 4 → widens with its text, right edge fixed */
-  private badgeRight = new Map<Node, number>();
+  /**
+   * Count badge like a chat notification: a round pill on the tile's top-right corner, half of it
+   * above the top edge, growing evenly with its text, the number centred in it both ways.
+   */
   private fitBadge(b: BoosterButton) {
-    const ui = b.badge.getComponent(UITransform)!;
-    if (!this.badgeRight.has(b.badge)) this.badgeRight.set(b.badge, b.badge.position.x + ui.width / 2);
-    b.badgeText.updateRenderData(true);
-    const w = Math.max(21, b.badgeText.node.getComponent(UITransform)!.width + 9);
-    if (Math.abs(w - ui.width) < .5) return;
-    ui.width = w;
-    b.badge.setPosition(this.badgeRight.get(b.badge)! - w / 2, b.badge.position.y, 0);
-    b.badgeText.node.setPosition(0, b.badgeText.node.position.y, 0);
+    const ui = b.badge.getComponent(UITransform)!, tile = b.root.getComponent(UITransform)!;
+    const t = b.badgeText;
+    t.horizontalAlign = Label.HorizontalAlign.CENTER; t.verticalAlign = Label.VerticalAlign.CENTER;
+    t.lineHeight = t.fontSize + 2;
+    t.updateRenderData(true);
+    const h = 22, w = Math.max(h, t.node.getComponent(UITransform)!.width + 10);
+    ui.setContentSize(w, h);
+    const rr = b.badge.getComponent(RoundRect); if (rr && rr.radius !== h / 2) rr.radius = h / 2;
+    b.badge.setPosition(tile.width / 2 - 10, tile.height / 2 - 1, 0);   // half of it above the tile's top edge
+    const tu = t.node.getComponent(UITransform)!;
+    tu.setAnchorPoint(.5, .5);
+    t.node.setPosition(0, 1, 0);                  // Baloo sits a little low in its line box
   }
 
   // ---------- toast ----------

@@ -18,6 +18,13 @@ import { wakeAll } from './Settle';
 const { ccclass, property } = _decorator;
 
 const DRAG_START = 7;                       // pointer travel that turns a touch into a drag
+/**
+ * Touch area around every item, for picking only (drag / select / rotate): a finger that lands
+ * this close to an item takes it, so small items are easy to grab. The colliders do not change:
+ * the item touches other items and the bag with its real shape, and once taken the extra area
+ * is gone (it is only looked at when a touch starts).
+ */
+const TOUCH_PAD = 14;
 const LIFT_MAX = 70, FINGER_CLEARANCE = 26; // item is lifted above the finger by up to this much
 const LIFT_MOUSE = 8;                       // with a mouse only a small lift
 const HOLD_AFTER_SPIN = 1000;               // ms an item keeps its new angle inside the bag after rotating
@@ -27,6 +34,12 @@ const HOLD_AFTER_SPIN = 1000;               // ms an item keeps its new angle in
  * (eulerAngles too on the native build).
  */
 export const angleOf = (n: Node) => { const q = n.rotation; return 2 * Math.atan2(q.z, q.w) * 180 / Math.PI; };
+/** Distance from (px, py) to the segment a–b */
+function segmentDistance(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
+  const dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
+  const t = len > 0 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len)) : 0;
+  return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+}
 /** a − b in degrees, folded into −180..180 */
 const turnDiff = (a: number, b: number) => ((a - b) % 360 + 540) % 360 - 180;
 /**
@@ -98,6 +111,24 @@ export class DragController extends Component {
     for (const c of hits) {
       const v = c.node.getComponent(ItemView);   // only on touch, not per frame
       if (v && !v.waiting && (!best || v.node.getSiblingIndex() > best.node.getSiblingIndex())) best = v;
+    }
+    return best || this.nearestAt(this.tmpLocal.x, this.tmpLocal.y);
+  }
+
+  /** No item under the finger: the closest one within TOUCH_PAD of its outline (world = Field space) */
+  private nearestAt(x: number, y: number): ItemView | null {
+    let best: ItemView | null = null, bestD = TOUCH_PAD;
+    for (const it of GameState.items) {
+      if (it.waiting || !it.node.activeInHierarchy || !it.body?.enabled) continue;
+      const polys = it.shapes, b = it.bounds;
+      if (x < b.xMin - bestD || x > b.xMax + bestD || y < b.yMin - bestD || y > b.yMax + bestD) continue;
+      for (const poly of polys) {
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const d = segmentDistance(x, y, poly[j].x, poly[j].y, poly[i].x, poly[i].y);
+          // equally close: the one drawn on top
+          if (d < bestD || (d === bestD && best && it.node.getSiblingIndex() > best.node.getSiblingIndex())) { bestD = d; best = it; }
+        }
+      }
     }
     return best;
   }

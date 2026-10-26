@@ -104,6 +104,8 @@ export interface Level {
   itemScale?: number;
   reward?: { coin: number; [key: string]: unknown };
   emptyText?: string;
+  /** Home Play button colour: Easy | Hard | Super Hard (core/PlayDifficulty) */
+  playDifficulty?: string;
   difficulty?: LevelDifficultyTag;
   solution?: SolutionStep[];
   [key: string]: unknown;

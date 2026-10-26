@@ -10,6 +10,12 @@ def ver = new Properties()
 file('../version.properties').withInputStream { ver.load(it) }
 // output files named after the version, like the web app: EverythingFits-v0.0.2-code6-release.aab
 base { archivesName = "EverythingFits-v${ver['versionName']}-code${ver['versionCode']}" }
+// AppLovin MAX keys from applovin.properties next to this folder (NOT in git). Missing file
+// or empty sdkKey = no ad SDK started, the game shows its simulated "TEST AD" screens.
+def alProps = new Properties()
+def alFile = file('../applovin.properties')
+if (alFile.exists()) alFile.withInputStream { alProps.load(it) }
+def admobAppId = alProps.getProperty('admobAppId', '').trim()
 
 buildDir = "${RES_PATH}/proj/build/${project.name ==~ /^[_a-zA-Z0-9-]+$/ ? project.name : 'CocosGame'}"
 android {
@@ -37,16 +43,15 @@ android {
         def afFile = file('../appsflyer.properties')
         if (afFile.exists()) afFile.withInputStream { afProps.load(it) }
         resValue "string", "af_dev_key", afProps.getProperty('devKey', '')
-        // AppLovin MAX keys from applovin.properties next to this folder (NOT in git). Missing file
-        // or empty sdkKey = no ad SDK started, the game shows its simulated "TEST AD" screens.
-        def alProps = new Properties()
-        def alFile = file('../applovin.properties')
-        if (alFile.exists()) alFile.withInputStream { alProps.load(it) }
         resValue "string", "applovin_sdk_key", alProps.getProperty('sdkKey', '')
         resValue "string", "applovin_banner_unit", alProps.getProperty('bannerUnit', '')
         resValue "string", "applovin_inter_unit", alProps.getProperty('interUnit', '')
         resValue "string", "applovin_rewarded_unit", alProps.getProperty('rewardedUnit', '')
         resValue "string", "applovin_test_devices", alProps.getProperty('testDevices', '')
+        resValue "bool", "ads_off", alProps.getProperty('adsOff', 'false').trim()   // adsOff=true: no banner / interstitial
+        resValue "bool", "log_advertising_id", "false"   // device / debug builds: true (AdsBridge)
+        // AdMob app id for the AdMob network in MAX mediation (the Google SDK stops the app without it)
+        manifestPlaceholders = [admobAppId: admobAppId ?: 'ca-app-pub-3940256099942544~3347511713']
 
         externalNativeBuild {
             cmake {
@@ -146,6 +151,7 @@ android {
             signingConfig signingConfigs.debug
             matchingFallbacks = ['release']
             getIsDefault().set(false)
+            resValue "bool", "log_advertising_id", "true"
         }
 
         debug {
@@ -154,6 +160,7 @@ android {
             debuggable true
             jniDebuggable true
             renderscriptDebuggable true
+            resValue "bool", "log_advertising_id", "true"
             // resValue  "string", "app_name", "${PROP_APP_NAME}-dbg"
             // applicationIdSuffix ".debug"
         }
@@ -173,7 +180,9 @@ dependencies {
     implementation 'com.google.firebase:firebase-config'
     // ---- ads and purchases ----
     implementation 'com.applovin:applovin-sdk:13.6.4'
-    implementation 'com.android.billingclient:billing:8.0.0'
+    // MAX mediation networks: Google AdMob (only with admobAppId in applovin.properties)
+    if (admobAppId) implementation 'com.applovin.mediation:google-adapter:25.5.0.0'
+    implementation 'com.android.billingclient:billing:9.1.0'   // 9.x: blocked Play Store now BILLING_UNAVAILABLE (not ERROR); targetSdk 35+ (we use 36)
     implementation project(':libcocos')
     if (Boolean.parseBoolean(PROP_ENABLE_INPUTSDK)) {
         implementation 'com.google.android.libraries.play.games:inputmapping:1.1.0-beta'

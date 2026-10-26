@@ -1,0 +1,111 @@
+// Sprite with a moving light band (Shop coin art, ShopFx.ts): the builtin sprite shader plus a soft
+// diagonal highlight added on the picture itself, so it only ever lights the visible pixels (no
+// stencil mask: masks inside the Shop scroll view did not clip on Android).
+//   shine.x  band position along the diagonal (0 = top-left corner, 1 = bottom-right; off outside)
+//   shine.y  band half width   shine.z  strength (0 = off); the streak is short (middle of the picture)
+// Based on the Cocos Creator 3.8.2 builtin-sprite.effect (Copyright (c) 2017-2020 Xiamen Yaji Software Co., Ltd.)
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: sprite-vs:vert
+      frag: shine-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        alphaThreshold: { value: 0.5 }
+        shine: { value: [-1, 0.12, 0, 0] }
+}%
+
+CCProgram sprite-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+
+CCProgram shine-fs %{
+  precision highp float;
+  #include <builtin/internal/embedded-alpha>
+  #include <builtin/internal/alpha-test>
+
+  in vec4 color;
+
+  #if USE_TEXTURE
+    in vec2 uv0;
+    #pragma builtin(local)
+    layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+  #endif
+
+  uniform Shine {
+    vec4 shine;
+  };
+
+  vec4 frag () {
+    vec4 o = vec4(1, 1, 1, 1);
+
+    #if USE_TEXTURE
+      o *= CCSampleWithAlphaSeparated(cc_spriteTexture, uv0);
+      #if IS_GRAY
+        float gray  = 0.2126 * o.r + 0.7152 * o.g + 0.0722 * o.b;
+        o.r = o.g = o.b = gray;
+      #endif
+    #endif
+
+    o *= color;
+    #if USE_TEXTURE
+      // soft diagonal band, brightest in its middle, added on the picture's own pixels
+      float d = (uv0.x + uv0.y) * 0.5 - shine.x;
+      float k = 1.0 - smoothstep(0.0, shine.y, abs(d));
+      float core = 1.0 - smoothstep(0.0, shine.y * 0.35, abs(d));
+      // a short streak: fades out along its length, so it stays inside the middle of the icon
+      float len = 1.0 - smoothstep(0.12, 0.3, abs(uv0.x - uv0.y) * 0.5);
+      o.rgb += (vec3(1.0, 0.98, 0.9) * (0.55 * k + 0.45 * core)) * shine.z * len * o.a;
+      o.rgb = min(o.rgb, vec3(1.0));
+    #endif
+    ALPHA_TEST(o);
+    return o;
+  }
+}%

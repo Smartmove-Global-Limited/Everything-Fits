@@ -11,6 +11,7 @@ import { LocalStore } from './LocalStore';
 import { NativeBridge } from './NativeBridge';
 import { Wallet } from './Wallet';
 import { Boosters, BOOSTER_KEYS } from './Boosters';
+import { StartResult, withTimeout } from './RemoteConfig';
 
 export type Product = {
   id: string; option: string; name: string; price: string;
@@ -23,7 +24,7 @@ export type Product = {
 export const PRODUCTS: Product[] = [
   { id: 'fit.remove.ads', option: 'fit-remove-ads', name: 'No Ads', price: '$2.99', lifetime: true, noAds: true },
   { id: 'fit.remove.ads.bundle', option: 'fit-remove-ads-bundle', name: 'No Ads Bundle', price: '$4.49', lifetime: true, noAds: true, boosters: 1 },
-  { id: 'fit.booster.bundle.3', option: 'fit-booster-bundle-3', name: 'Booster Bundle', price: '$1.99', boosters: 3 },
+  { id: 'fit.booster.bundle.3', option: 'fit-booster-bundle-3', name: 'Booster Bundle', price: '$1.99', gold: 500, boosters: 3 },
   { id: 'fit.small.bundle', option: 'fit-small-bundle', name: 'Small Bundle', price: '$3.49', gold: 5000, boosters: 1 },
   { id: 'fit.medium.bundle', option: 'fit-medium-bundle', name: 'Medium Bundle', price: '$6.49', gold: 10000, boosters: 2 },
   { id: 'fit.ultra.bundle', option: 'fit-ultra-bundle', name: 'Ultra Bundle', price: '$12.99', gold: 25000, boosters: 3 },
@@ -45,7 +46,9 @@ let noAds = LocalStore.get(KEY_NO_ADS) === '1';
 const granted: string[] = (() => { try { return JSON.parse(LocalStore.get(KEY_GRANTED) || '[]'); } catch { return []; } })();
 const storePrices: Record<string, string> = {};
 
-let started = false;
+let started: Promise<StartResult> | null = null;
+let onStarted: ((r: StartResult) => void) | null = null;
+const STORE_TIMEOUT_MS = 8000;
 let buying: { id: string; done: (r: BuyResult) => void } | null = null;
 let restoring: ((r: { noAds: boolean; error?: boolean }) => void) | null = null;
 const grantListeners: ((p: Product) => void)[] = [];
@@ -53,9 +56,9 @@ const priceListeners: (() => void)[] = [];
 const noAdsListeners: (() => void)[] = [];
 const off = <T>(list: T[], fn: T) => () => { const i = list.indexOf(fn); if (i >= 0) list.splice(i, 1); };
 
-function setNoAds() {
-  if (noAds) return;
-  noAds = true; LocalStore.set(KEY_NO_ADS, '1');
+function setNoAds(on = true) {
+  if (noAds === on) return;
+  noAds = on; LocalStore.set(KEY_NO_ADS, on ? '1' : '');
   for (const f of noAdsListeners) f();
 }
 
@@ -85,21 +88,36 @@ function onNative(msg: any) {
   } else if (msg.type === 'flowEnd') {
     if (buying?.id === msg.productId) { const b = buying; buying = null; b.done(msg.result === 'owned' ? 'ok' : msg.result); }
   } else if (msg.type === 'owned') {
+    // the lifetime products the store says this account owns (No Ads, Bundle No Ads); gold and
+    // boosters are consumed at purchase, nothing to bring back for them
     const has = (msg.ids as string[] || []).some(id => product(id)?.noAds);
-    if (has) setNoAds();   // reinstall / new phone: No Ads comes back by itself
+    if (!msg.error) {
+      // start: the store is the truth (reinstall / new phone gets No Ads back, a refund takes it away);
+      // Restore only ever gives it back
+      if (!msg.restore) setNoAds(has); else if (has) setNoAds();
+    }
+    if (!msg.restore && onStarted) { onStarted(msg.error ? 'failed' : 'ok'); onStarted = null; }
     if (msg.restore && restoring) { const r = restoring; restoring = null; r({ noAds: has || noAds, error: !!msg.error }); }
+  } else if (msg.type === 'setupFailed') {
+    // could not reach the store: nothing changes (No Ads stays as saved)
+    onStarted?.('failed'); onStarted = null;
   }
 }
 
 export const Purchases = {
   get noAds() { return noAds; },
-  /** Once at launch: connect to the store, fetch prices, finish purchases left over */
-  start() {
-    if (started) return;
-    started = true;
-    if (!NativeBridge.android) return;
+  /**
+   * Once at launch (splash, last step): connect to the store, fetch prices, finish purchases left
+   * over, read what the account owns. Resolves 'ok' when the store answered (No Ads set from it),
+   * 'failed' / 'timeout' otherwise (nothing changed).
+   */
+  start(): Promise<StartResult> {
+    if (started) return started;
+    if (!NativeBridge.android) return (started = Promise.resolve('web'));
+    const answered = new Promise<StartResult>(done => (onStarted = done));
     NativeBridge.on('billing', onNative);
     NativeBridge.call('billingSetup', JSON.stringify(PRODUCTS.map(p => ({ id: p.id, option: p.option }))));
+    return (started = withTimeout(answered, STORE_TIMEOUT_MS, 'timeout'));
   },
   /** Price label: from the store once known, else the design price */
   price(id: string) { return storePrices[id] || product(id)?.price || ''; },

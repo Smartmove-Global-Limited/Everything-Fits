@@ -46,4 +46,6 @@ export const ShakeEnergy = {
 export const FreeGold = {
   get claimedToday() { return LocalStore.get(KEY_FREE_GOLD) === today(); },
   markClaimed() { LocalStore.set(KEY_FREE_GOLD, today()); },
+  /** Seconds until the next one (the phone's local midnight) */
+  secondsLeft() { const d = new Date(), m = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); return Math.max(0, Math.ceil((m.getTime() - d.getTime()) / 1000)); },
 };

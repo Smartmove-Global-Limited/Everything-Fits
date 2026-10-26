@@ -4,15 +4,20 @@
 // (key snug.audio.v2), all ON for a new player.
 import { Node, AudioSource, AudioClip, director, resources, sys, Tween, tween } from 'cc';
 import { LocalStore } from '../services/LocalStore';
+import { NativeBridge } from '../services/NativeBridge';
 
 export type SfxName = 'tap' | 'tapBig' | 'pick' | 'drop' | 'land' | 'fit' | 'nope' | 'eject' | 'jiggle' | 'shrink' | 'trash'
-  | 'unlock' | 'tick' | 'whoosh' | 'star' | 'win' | 'lose' | 'unlockLv' | 'glass' | 'metal' | 'paper' | 'crack' | 'break';
+  | 'unlock' | 'tick' | 'whoosh' | 'star' | 'win' | 'lose' | 'unlockLv' | 'glass' | 'metal' | 'paper' | 'crack' | 'break'
+  | 'winConfirm' | 'ting1' | 'ting2' | 'ting3' | 'fireworks';
 
 /** Sounds made by the sound designer (m4a), everything else is <name>.wav */
 const FILE: Record<string, string> = {
   bgm: 'bgm', tap: 'button_pressed', tapBig: 'button_pressed', star: 'star_get', win: 'level_complete', lose: 'lose',
+  // win celebration (doc §5, made by tools/sfx/make_win_sfx.py)
+  winConfirm: 'win_confirm', ting1: 'star_ting_1', ting2: 'star_ting_2', ting3: 'star_ting_3',
 };
-const MUSIC_VOLUME = .32, MUSIC_DUCKED = .1, SFX_VOLUME = .85;
+// effects at full volume, the music lower under them (on phones the taps were hard to hear)
+const MUSIC_VOLUME = .22, MUSIC_DUCKED = .07, SFX_VOLUME = 1;
 const KEY = 'snug.audio.v2';
 const prefs = LocalStore.json(KEY, { sfx: true, music: true, vib: true });
 
@@ -36,7 +41,10 @@ function ensure() {
 
 function clip(name: string): Promise<AudioClip | null> {
   if (clips.has(name)) return Promise.resolve(clips.get(name)!);
-  return new Promise(ok => resources.load(`audio/${FILE[name] || name}`, AudioClip, (err, c) => { clips.set(name, err ? null : c); ok(err ? null : c); }));
+  return new Promise(ok => resources.load(`audio/${FILE[name] || name}`, AudioClip, (err, c) => {
+    if (err) console.warn('[Sound] cannot load', name, err?.message || err);
+    clips.set(name, err ? null : c); ok(err ? null : c);
+  }));
 }
 
 function fadeMusic(to: number, seconds: number) {
@@ -50,7 +58,7 @@ export const Sound = {
   get vibrationOn() { return prefs.vib !== false; },
 
   /** Preload the short sounds so the first tap is not silent */
-  preload() { for (const n of Object.keys(FILE).concat(['pick', 'drop', 'fit', 'nope', 'eject', 'tick', 'unlockLv', 'trash', 'shrink'])) clip(n); },
+  preload() { for (const n of Object.keys(FILE).concat(['pick', 'drop', 'fit', 'nope', 'eject', 'tick', 'unlockLv', 'trash', 'shrink', 'fireworks'])) clip(n); },
 
   play(name: SfxName, { gain = 1, delay = 0 } = {}) {
     if (!prefs.sfx || muted) return;
@@ -81,6 +89,18 @@ export const Sound = {
   setSfx(on: boolean) { prefs.sfx = on; LocalStore.setJson(KEY, prefs); if (on) this.play('tap'); },
   setMusic(on: boolean) { prefs.music = on; LocalStore.setJson(KEY, prefs); on ? this.startMusic() : this.stopMusic(); musicWanted = on || musicWanted; },
   setVibration(on: boolean) { prefs.vib = on; LocalStore.setJson(KEY, prefs); },
+
+  /**
+   * Light haptic of the device (doc §9): 'light' one short pulse (item placed in the bag),
+   * 'double' two short pulses (item bounced out). Off with the Vibration switch.
+   */
+  haptic(kind: 'light' | 'double') {
+    if (prefs.vib === false) return;
+    try {
+      if (NativeBridge.android) NativeBridge.call('haptic', kind);
+      else (globalThis as any).navigator?.vibrate?.(kind === 'double' ? [25, 90, 25] : 25);
+    } catch { /* not supported */ }
+  },
 
   vibrate(ms = 30) {
     if (prefs.vib === false) return;

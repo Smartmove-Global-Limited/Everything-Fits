@@ -42,8 +42,8 @@ export class EdgePin extends Component {
     const ui = this.getComponent(UITransform); if (!ui) return;
     if (!this.extended) {
       const h = this.baseSize.height;
-      this.extended = [this.node, ...this.node.children.filter(c => Math.abs((c.getComponent(UITransform)?.height ?? 0) - h) < 3)]
-        .map(n => ({ node: n, h: n.getComponent(UITransform)!.height, y: n === this.node ? 0 : n.position.y, kids: n.children.map(k => [k, k.position.y] as [Node, number]) }));
+      this.extended = [this.node, ...this.node.children.filter(c => c.name !== '__skin').filter(c => Math.abs((c.getComponent(UITransform)?.height ?? 0) - h) < 3)]
+        .map(n => ({ node: n, h: n.getComponent(UITransform)!.height, y: n === this.node ? 0 : n.position.y, kids: n.children.filter(c => c.name !== '__skin').map(k => [k, k.position.y] as [Node, number]) }));
     }
     for (const e of this.extended) {
       e.node.getComponent(UITransform)!.height = e.h + d;

@@ -3,6 +3,8 @@
 //   2. SWAY  the whole heap wobbles, each item at its own pace
 //   3. FALL  items drop in a random order through the bottom edge; then the splash fades out
 // A touch skips ahead (falls at once, or closes while falling). No physics: hand-made falling.
+// The heap keeps swaying until `ready` (services/Startup: Remote Config, ads, store) has answered:
+// the game opens only then, whatever the taps.
 // Lives only while it plays, then destroys its node.
 import { _decorator, Component, Node, Sprite, SpriteFrame, UITransform, UIOpacity, Graphics, Color, resources, tween, Layers, view, director, Director, assetManager } from 'cc';
 import { Sound } from '../audio/Sound';
@@ -13,7 +15,6 @@ let H = 760;   // the visible height (tall phones show more than the 760 design)
 const CELL = 72;                 // grid cell: the biggest item side (web 82); ~120 cells on a phone, one per splash image
 const SHOW = 700, POP = 260, SWAY = 1250, SPREAD = 650;
 const G = .0024;                 // fall acceleration, units / ms²
-const TOTAL = SHOW + SWAY + SPREAD + 900;
 const BG = new Color(0xD9, 0xCF, 0xBE, 255);
 
 type Piece = { node: Node; x: number; y: number; scale: number; angle: number; showAt: number; swayPhase: number; swaySpeed: number; swayAmp: number;
@@ -32,12 +33,13 @@ export class SplashView extends Component {
   private lastTick = 0;
   private done: () => void = () => {};
   private frames: SpriteFrame[] = [];
+  private ready = false;
 
   /**
    * Load the splash images and play. Resolves when the splash has faded out. `onShown` runs once
    * the items have been drawn a few frames (the native launch cover can go then, no black frame).
    */
-  static play(parent: Node, onShown?: () => void): Promise<void> {
+  static play(parent: Node, onShown?: () => void, ready: Promise<unknown> = Promise.resolve()): Promise<void> {
     H = Math.max(760, view.getVisibleSize().height);
     // cover the screen in this very frame: nothing behind it (Home) may show before the splash
     const node = new Node('Splash'); node.layer = Layers.Enum.UI_2D; parent.addChild(node);
@@ -45,10 +47,15 @@ export class SplashView extends Component {
     const bg = node.addComponent(Graphics); bg.fillColor = BG; bg.rect(-W, -H, W * 2, H * 2); bg.fill();   // covers letterbox bands too
     const splash = node.addComponent(SplashView);
     splash.enabled = false;                       // no update() until the items are there
+    ready.then(() => {
+      splash.ready = true;
+      // safety net: closes even if the falling never finishes (counted from when it may start)
+      if (splash.isValid) splash.scheduleOnce(() => splash.close(), (Math.max(0, SHOW + SWAY - splash.t) + SPREAD + 900 + 2500) / 1000);
+    });
     return new Promise(res => {
       splash.done = res;
       SplashView.loadFrames().then(frames => {
-        if (!frames.length) { onShown?.(); splash.close(); return; }
+        if (!frames.length) { onShown?.(); ready.then(() => splash.close()); return; }
         splash.build(frames); splash.enabled = true;
         if (onShown) { let n = 0; const after = () => { if (++n >= 2) { director.off(Director.EVENT_AFTER_DRAW, after); onShown(); } }; director.on(Director.EVENT_AFTER_DRAW, after); }
       });
@@ -84,8 +91,7 @@ export class SplashView extends Component {
     // lower rows drawn over upper rows, like a heap
     this.pieces.sort((a, b) => a.y - b.y);
     for (const p of this.pieces) this.node.addChild(p.node);
-    this.node.on(Node.EventType.TOUCH_START, () => (this.falling ? this.close() : this.startFall(true)), this);
-    this.scheduleOnce(() => this.close(), (TOTAL + 2500) / 1000);   // safety net
+    this.node.on(Node.EventType.TOUCH_START, () => { if (!this.ready) return; if (this.falling) this.close(); else this.startFall(true); }, this);
   }
 
   private startFall(fast = false) {
@@ -100,7 +106,7 @@ export class SplashView extends Component {
   }
 
   close() {
-    if (this.closing) return;
+    if (this.closing || !this.ready) return;
     this.closing = true;
     const op = this.node.addComponent(UIOpacity);
     tween(op).to(.38, { opacity: 0 }).call(() => {
@@ -113,7 +119,7 @@ export class SplashView extends Component {
     const ms = Math.min(34, dt * 1000);
     this.t += ms;
     if (this.t < SHOW && this.t - this.lastTick > 70) { this.lastTick = this.t; Sound.play('tap', { gain: .14 }); }
-    if (!this.falling && this.t >= SHOW + SWAY) this.startFall();
+    if (!this.falling && this.ready && this.t >= SHOW + SWAY) this.startFall();
     let onScreen = 0;
     for (const p of this.pieces) {
       const tt = this.t - p.showAt;

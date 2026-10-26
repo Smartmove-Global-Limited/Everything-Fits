@@ -105,12 +105,14 @@ export class GameController extends Component {
       checkItems: (opts?: any) => checkItems(this, opts),
     };
     Overlays.startServices();
+    if (!this.embedded) Ads.hideBanner();   // no banner (nor its reserved place) during play
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
     director.on(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     setBagEvents({
       onPacked: (it, count) => this.onFitted(it, count),
+      onUnpacked: it => this.onFellOut(it),
       onWin: () => this.onWin(),
-      onEjected: it => { wakeAll(); Sound.play('eject'); this.puff(it); this.hud.toastMessage("Doesn't fit! Pushed back out"); },
+      onEjected: it => { wakeAll(); Sound.play('eject'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit! Pushed back out"); },
     });
     setMechanicsEvents({ onBroken: it => this.onLose(`${it.nameEn || it.nameVi} broke!`) });
     this.drag.events = {
@@ -118,7 +120,7 @@ export class GameController extends Component {
       onSelect: it => this.tutorial?.onSelect(it),
       onRotate: (_it, deg) => this.tutorial?.onRotated(deg),
       onDrop: (it, bounced) => {
-        if (bounced) { Sound.play('nope'); this.puff(it); this.hud.toastMessage("Doesn't fit!"); }
+        if (bounced) { Sound.play('nope'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit!"); }
         else Sound.play('drop', { gain: .9 });
       },
     };
@@ -279,9 +281,22 @@ export class GameController extends Component {
     it.fitAt = S.clock;
     this.tutorial?.onPacked();
     Sound.play('fit', { gain: 1 + Math.min(6, count - 1) * 0 });
+    Sound.haptic('light');                   // doc §9: one light pulse, placed
     const p = it.node.position;
     this.fx?.ring(p.x, p.y, { color: '#5FBF9B', r1: 46 });
     this.fx?.sparkle(p.x, p.y, { n: 10, color: '#8FE0C1', life: 520 });
+  }
+  /** A packed item fell / was pushed out of the bag by itself */
+  private onFellOut(it: any) { if (GameState.clock - GameState.startTime >= 1000) this.hapticOut(it); }
+  /**
+   * doc §9: two light pulses when an item bounces out. Once per change of state: an item rocking
+   * on the bag edge does not buzz again within 900 ms.
+   */
+  private hapticOut(it: any) {
+    const S = GameState;
+    if (S.won || S.lost || it.outAt > S.clock - 900) return;
+    it.outAt = S.clock;
+    Sound.haptic('double');
   }
   /** Pink puff where an item vanished / reappeared (web S.puffs) */
   private puff(it: any) {
@@ -364,11 +379,11 @@ export class GameController extends Component {
     S.paused = true; Sound.duckMusic(true);
     const p = await showPopup('SettingsPopup', SettingsPopup);
     p.open({
-      inGame: true, version: ContentLoader.book?.version,
+      // the levels.json version and the level jump buttons are for the Level Editor preview only
+      inGame: true, version: this.embedded ? ContentLoader.book?.version : null, devLevels: this.embedded,
       onClose: () => { S.paused = wasPaused; Sound.duckMusic(false); },
       onHome: () => this.goHome(),
       onRestart: () => { S.paused = false; this.restart(); },
-      // temporary test buttons (SettingsPopup.DEV_LEVEL_BUTTONS)
       onPrevLevel: () => this.jumpLevel(-1),
       onNextLevel: () => this.jumpLevel(1),
     });
@@ -424,8 +439,8 @@ export class GameController extends Component {
     if (first && S.levelIndex + 1 < S.chapter.levels.length) Sound.play('unlockLv', { delay: 1.15, gain: .9 });
     const reward = S.level?.reward?.coin ?? 20;
     if (!this.embedded) Wallet.add(reward);
-    Sound.play('win'); Sound.duckMusic(true);
-    this.fx?.confetti(90);
+    // doc §5: the bag has settled (WIN_FRAMES): a soft "done"; the popup carries the celebration
+    Sound.play('winConfirm'); Sound.duckMusic(true);
     this.fx?.floatText(210, levelToFieldY(300), 'It fits!', { color: '#5FBF9B', size: 26, life: 1200 });
     const score = scoreRound();
     this.scheduleOnce(async () => {
@@ -442,7 +457,7 @@ export class GameController extends Component {
     }, WIN_POPUP_DELAY);
   }
 
-  /** Temporary test buttons: the previous / next level of the chapter (wrapping), behind the veil */
+  /** Level Editor preview buttons: the previous / next level of the chapter (wrapping), behind the veil */
   private async jumpLevel(step: number) {
     const S = GameState, n = S.chapter.levels.length;
     S.paused = false; Sound.duckMusic(false);

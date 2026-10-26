@@ -1,9 +1,10 @@
 // Settings popup (web src/ui/settings.js, Figma "EF · Settings"):
 //   BGM / SFX / Vibration switches, saved and applied at once (all ON for a new player);
-//   Home and Restart only while a round is being played; the levels.json version at the bottom;
+//   Home and Restart only while a round is being played; inside the Level Editor also the levels.json
+//   version at the bottom and « previous / next level » buttons (devLevels);
 //   X or a tap on the dim area closes it.
 import { _decorator, Component, Node, Color, Vec3, Tween, tween, UITransform, EventTouch, Label, instantiate } from 'cc';
-import { findNode, labelIn, tap, openPopup, closePopup } from './UiKit';
+import { findNode, labelIn, tap, openPopup, closePopup, contentOf } from './UiKit';
 import { RoundRect } from './RoundRect';
 import { Sound } from '../audio/Sound';
 const { ccclass } = _decorator;
@@ -11,18 +12,19 @@ const { ccclass } = _decorator;
 const ON_BG = new Color(0x34, 0x74, 0x50, 255), OFF_BG = new Color(0xB9, 0xB4, 0xA8, 255);
 const KNOB_TRAVEL = 23.4;   // web: knob right 4 → right 52 (×0.972)
 const MENU_CARD_HEIGHT = 345.6; // web card height when Home / Restart are hidden
+const MENU_BOTTOM_PAD = 24;     // card edge under the last switch row (menu, no version line)
 const SIDE_BY_SIDE = 56;        // in game: Home left, Restart right of the centre
 /**
- * TEMPORARY test buttons (in game): « previous level / next level », on the row Restart used to
- * take, to go through the levels quickly. Set to false before a release.
+ * Level Editor preview only (open({ devLevels: true })): « previous level / next level » on the row
+ * Restart used to take, to go through the levels quickly. Players never see them.
  */
-export const DEV_LEVEL_BUTTONS = true;
 const DEV_SIDE = 74;
 
 type Toggle = { node: Node; bg: RoundRect; knob: Node; label: Label };
 
 export type SettingsOptions = { inGame?: boolean; version?: number | string | null; onHome?: () => void; onRestart?: () => void; onClose?: () => void;
-  onPrevLevel?: () => void; onNextLevel?: () => void };
+  /** Level Editor preview: show the « previous / next level » buttons */
+  devLevels?: boolean; onPrevLevel?: () => void; onNextLevel?: () => void };
 
 @ccclass('SettingsPopup')
 export class SettingsPopup extends Component {
@@ -46,7 +48,7 @@ export class SettingsPopup extends Component {
     this.restart = findNode(n, 'setRestart')!;
     this.version = labelIn(findNode(n, 'setVer'));
     this.cardHeight = this.card.getComponent(UITransform)!.height;
-    for (const c of this.card.children) this.baseY.set(c, c.position.y);
+    for (const c of contentOf(this.card)) this.baseY.set(c, c.position.y);
 
     tap(this.toggles.bgm.node, () => { Sound.setMusic(!Sound.musicOn); this.redraw(true); }, 'tap', this);
     tap(this.toggles.sfx.node, () => { Sound.setSfx(!Sound.sfxOn); this.redraw(true); }, null, this);
@@ -54,10 +56,8 @@ export class SettingsPopup extends Component {
     tap(findNode(n, 'setX'), () => this.close(), 'tap', this);
     tap(this.home, () => { const cb = this.opts.onHome; this.close(false); cb?.(); }, 'tap', this);
     tap(this.restart, () => { const cb = this.opts.onRestart; this.close(false); cb?.(); }, 'tap', this);
-    if (DEV_LEVEL_BUTTONS) {
-      this.prevLevel = this.devButton('« Level trước', () => this.opts.onPrevLevel);
-      this.nextLevel = this.devButton('Level sau »', () => this.opts.onNextLevel);
-    }
+    this.prevLevel = this.devButton('« Level trước', () => this.opts.onPrevLevel);
+    this.nextLevel = this.devButton('Level sau »', () => this.opts.onNextLevel);
     // a tap on the dim area (not on the card) closes it
     n.on(Node.EventType.TOUCH_END, (e: EventTouch) => {
       const ui = this.card.getComponent(UITransform)!;
@@ -84,10 +84,10 @@ export class SettingsPopup extends Component {
     this.opts = opts;
     this.home.active = !!opts.inGame;
     this.restart.active = !!opts.inGame;
-    const dev = !!opts.inGame && !!this.prevLevel;
+    const dev = !!opts.inGame && !!opts.devLevels && !!this.prevLevel;
     if (this.prevLevel) this.prevLevel.active = dev;
     if (this.nextLevel) this.nextLevel.active = dev;
-    this.layout(!!opts.inGame, dev);
+    this.layout(!!opts.inGame, dev, opts.version != null);
     if (this.version) this.version.string = opts.version != null ? `Levels v${opts.version}` : '';
     this.redraw(false);
     openPopup(this.node, this.card);
@@ -104,7 +104,7 @@ export class SettingsPopup extends Component {
    * sit side by side on one row (shorter card, still centred); from the menu they are hidden and
    * the card collapses around the switches like the web.
    */
-  private layout(inGame: boolean, devRow = false) {
+  private layout(inGame: boolean, devRow = false, versionLine = false) {
     const homeY = this.baseY.get(this.home)!, restartY = this.baseY.get(this.restart)!;
     const rowGap = homeY - restartY;                          // the stacked Restart row
     // the temporary level buttons take the row Restart left: the card keeps its full height
@@ -122,6 +122,18 @@ export class SettingsPopup extends Component {
     if (devRow) {
       this.prevLevel!.setPosition(-DEV_SIDE, restartY + 14, 0);
       this.nextLevel!.setPosition(DEV_SIDE, restartY + 14, 0);
+    }
+    // from the menu without the levels version line (Level Editor only): the card ends
+    // MENU_BOTTOM_PAD under the last switch row instead of keeping the empty line
+    if (!inGame && !versionLine) {
+      const cu = this.card.getComponent(UITransform)!;
+      const rows = contentOf(this.card).filter(c => c.name === 'efset-row');
+      const lowest = Math.min(...rows.map(r => r.position.y - r.getComponent(UITransform)!.height / 2));
+      const trim = lowest - (-cu.height * cu.anchorY) - MENU_BOTTOM_PAD;
+      if (trim > 0) {
+        cu.height -= trim;
+        for (const c of contentOf(this.card)) c.setPosition(c.position.x, c.position.y - trim / 2, 0);
+      }
     }
   }
 

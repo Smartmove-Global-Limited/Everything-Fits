@@ -12,6 +12,7 @@ import { GameController } from '../game/GameController';
 import { ContentLoader } from '../content/ContentLoader';
 import { Sound } from '../audio/Sound';
 import { EditorStore, levelNumber } from './EditorStore';
+import { playDifficultyOf } from '../core/PlayDifficulty';
 import { EditorApi } from './EditorApi';
 import { EditorCatalog } from './EditorCatalog';
 import { EditorAutoPlay } from './EditorAutoPlay';
@@ -76,6 +77,7 @@ export class EditorPage {
     $('lvTimer').value = L.timer || 90;
     this.refreshPickers();
     $('lvCoin').value = L.reward?.coin ?? 20;
+    $('lvPlayDiff').value = playDifficultyOf(L);
     this.paintItemScale();
     this.board?.clearSelection();
   }
@@ -355,6 +357,7 @@ export class EditorPage {
     $('lvBg').addEventListener('change', (e: any) => { this.level.background = Number(e.target.value); this.onChange(); });
     $('lvSkin').addEventListener('change', (e: any) => { this.level.container.skin = e.target.value; this.syncBag(this.level); this.board.syncBagUi(); this.paintSkinButton(); this.onChange(); });
     $('lvCoin').addEventListener('change', (e: any) => { this.level.reward = { ...(this.level.reward || {}), coin: +e.target.value }; this.onChange(); });
+    $('lvPlayDiff').addEventListener('change', (e: any) => { this.level.playDifficulty = e.target.value; this.onChange(); });
     // tabs
     $('tabs').addEventListener('click', (e: any) => {
       const b = e.target.closest('button'); if (!b) return;

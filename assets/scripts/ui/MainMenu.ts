@@ -14,6 +14,7 @@ import { Analytics } from '../services/Analytics';
 import { NativeBridge } from '../services/NativeBridge';
 import { Overlays } from './Overlays';
 import { Ads } from '../services/Ads';
+import { RemoteConfig } from '../services/RemoteConfig';
 
 /** The splash plays once per app launch, not when coming back from a level */
 let splashPlayed = false;
@@ -28,9 +29,14 @@ export class MainMenu extends Component {
   /** no banner over the splash: Home shows it once the splash is gone */
   private splashDone = false;
 
+  /** Remote Config → ads → store, started now; the splash waits for it */
+  private services: Promise<unknown> = Promise.resolve();
+  /** Play was pressed: the banner must not come back for Home while the scene changes */
+  private leaving = false;
+
   onLoad() {
     ScreenFit.apply();
-    Overlays.startServices();
+    this.services = Overlays.startServices();
     director.preloadScene('Game');
   }
 
@@ -58,10 +64,13 @@ export class MainMenu extends Component {
     // wait until it is gone: nothing heavy runs before the first picture or during its animation.
     let shown: () => void = () => {};
     const onScreen = new Promise<void>(res => (shown = res));
-    const splash = splashPlayed ? null : SplashView.play(this.node.parent!, () => { NativeBridge.hideLaunchCover(); shown(); });
+    const splash = splashPlayed ? null : SplashView.play(this.node.parent!, () => { NativeBridge.hideLaunchCover(); shown(); }, this.services);
     splashPlayed = true;
     if (splash) { await onScreen; await new Promise(r => this.scheduleOnce(r, .8)); }   // after the items have popped in
     await this.buildScreens();
+    // the levels may come from Remote Config (levels): wait for this launch's answer first
+    // (the splash covers the wait; it gives up after a few seconds and keeps the saved values)
+    await RemoteConfig.start();
     this.book = await ContentLoader.loadBook();
     Sound.preload();
     Sound.startMusic();
@@ -69,7 +78,7 @@ export class MainMenu extends Component {
     this.openHome();
     if (covered) Overlays.uncover();
     await splash;
-    if (!this.splashDone) { this.splashDone = true; if (this.home.node.active) Ads.showBanner('banner_main_menu', this.playerLevel()); }
+    if (!this.splashDone) { this.splashDone = true; if (this.home.node.active && !this.leaving) Ads.showBanner('banner_main_menu', this.playerLevel()); }
     // while the player looks at Home: the bag and items of the level Play opens, nothing more
     const s = this.spot();
     if (s) ContentLoader.preloadLevel(s.chapter.levels[s.index]);
@@ -85,6 +94,9 @@ export class MainMenu extends Component {
     const s = this.spot();
     if (s) this.home.show(ContentLoader.levelNumber(s.chapter.id, s.index), s.chapter.levels[s.index]);
     if (this.splashDone) Ads.showBanner('banner_main_menu', this.playerLevel());
+    // behind the splash: once the start-up knows No Ads, keep the banner's place, so the bars are
+    // already above it when the splash goes (the ad itself shows after the splash)
+    else this.services.then(() => { if (!this.splashDone && !this.leaving && this.home.node.active) Ads.reserveBanner('banner_main_menu', this.playerLevel()); });
   }
 
   private async openShop(toGold: boolean) {
@@ -97,7 +109,7 @@ export class MainMenu extends Component {
 
   private async openSettings() {
     const p = await showPopup('SettingsPopup', SettingsPopup);
-    p.open({ inGame: false, version: this.book?.version });
+    p.open({ inGame: false });   // the levels.json version shows in the Level Editor only
   }
 
   private play() {
@@ -105,6 +117,7 @@ export class MainMenu extends Component {
     GameState.chapter = s.chapter; GameState.chapterId = s.chapter.id; GameState.levelIndex = s.index;
     GameState.fromMenu = true;
     Analytics.setReason('home');
+    this.leaving = true;
     Ads.hideBanner();                       // no banner in gameplay
     Overlays.cover(true).then(() => director.loadScene('Game'));
   }

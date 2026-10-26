@@ -1,6 +1,8 @@
 package com.cocos.game;
 
 import android.app.Activity;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.android.billingclient.api.AcknowledgePurchaseParams;
@@ -13,6 +15,7 @@ import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.QueryProductDetailsParams;
+import com.android.billingclient.api.UnfetchedProduct;
 import com.android.billingclient.api.QueryPurchasesParams;
 
 import org.json.JSONArray;
@@ -73,8 +76,13 @@ final class BillingBridge {
         if (connected) { afterConnect(); return; }
         client.startConnection(new BillingClientStateListener() {
             @Override public void onBillingSetupFinished(BillingResult r) {
-                if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) { Log.w(TAG, "setup " + r.getDebugMessage()); return; }
+                if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                    Log.w(TAG, "setup " + r.getResponseCode() + " " + r.getDebugMessage());
+                    ScriptEvents.send("billing", ScriptEvents.of("setupFailed", "code", r.getResponseCode()));   // the splash waits for an answer
+                    return;
+                }
                 connected = true;
+                Log.i(TAG, "connected to Google Play Billing");
                 afterConnect();
             }
             @Override public void onBillingServiceDisconnected() { connected = false; }
@@ -87,20 +95,51 @@ final class BillingBridge {
         queryOwned(false);
     }
 
+    private static int detailRetries;
+    /**
+     * Prices and offers of the catalogue. The store can answer right after connecting from a stale
+     * cache made before the products existed ("found 0", PRODUCT_NOT_FOUND) while a fresh query a few
+     * seconds later finds them: missing products are asked again, 3 times, 4 / 12 / 30 s later.
+     */
     private static void queryDetails() {
-        List<QueryProductDetailsParams.Product> list = new ArrayList<>();
-        for (String id : options.keySet()) {
-            list.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
-        }
-        if (list.isEmpty()) return;
-        client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(list).build(), (r, result) -> {
+        List<String> missing = new ArrayList<>();
+        for (String id : options.keySet()) if (!details.containsKey(id)) missing.add(id);
+        if (missing.isEmpty()) return;
+        queryProducts(missing, (found) -> {
             JSONObject prices = new JSONObject();
-            for (ProductDetails d : result.getProductDetailsList()) {
-                details.put(d.getProductId(), d);
+            for (ProductDetails d : details.values()) {
                 ProductDetails.OneTimePurchaseOfferDetails offer = offerFor(d);
                 try { if (offer != null) prices.put(d.getProductId(), offer.getFormattedPrice()); } catch (Exception ignored) {}
             }
             ScriptEvents.send("billing", ScriptEvents.of("prices", "prices", prices));
+            if (details.size() < options.size() && detailRetries < 3) {
+                long delay = new long[] { 4000, 12000, 30000 }[detailRetries++];
+                new Handler(Looper.getMainLooper()).postDelayed(() -> { if (connected) queryDetails(); }, delay);
+            }
+        });
+    }
+
+    /**
+     * Ask the store for these one-time products; found ones go into `details`.
+     * Each product id is sent together with its purchase option id (fit.remove.ads + fit-remove-ads):
+     * measured on a phone 2026-10-26, asking for the product ids alone returned nothing
+     * (PRODUCT_NOT_FOUND for all 12) while the same request with the option ids added found all 12,
+     * under their product ids. The option ids themselves come back as not found.
+     */
+    private static void queryProducts(List<String> ids, java.util.function.Consumer<Integer> done) {
+        List<String> ask = new ArrayList<>(ids);
+        for (String id : ids) { String o = options.get(id); if (o != null && !o.isEmpty() && !ask.contains(o)) ask.add(o); }
+        List<QueryProductDetailsParams.Product> list = new ArrayList<>();
+        for (String id : ask) list.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
+        client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(list).build(), (r, result) -> {
+            // what the store answered, to check the Play Console catalogue from logcat (tag BillingBridge)
+            Log.i(TAG, "products: code " + r.getResponseCode() + " (" + r.getDebugMessage() + "), found " + result.getProductDetailsList().size() + " of " + ids.size());
+            for (UnfetchedProduct u : result.getUnfetchedProductList()) if (options.containsKey(u.getProductId())) Log.w(TAG, "not found: " + u.getProductId() + " status " + u.getStatusCode());
+            List<ProductDetails> got = result.getProductDetailsList();
+            activity.runOnUiThread(() -> {   // `details` is only touched on the UI thread
+                for (ProductDetails d : got) details.put(d.getProductId(), d);
+                done.accept(got.size());
+            });
         });
     }
 
@@ -118,6 +157,12 @@ final class BillingBridge {
     /** Unfinished purchases (any product) and owned non-consumables. restore = player tapped Restore */
     private static void queryOwned(final boolean restore) {
         client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(), (r, purchases) -> {
+            if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                // the store did not answer: TypeScript keeps what it has (error true)
+                Log.w(TAG, "owned " + r.getResponseCode() + " " + r.getDebugMessage());
+                ScriptEvents.send("billing", ScriptEvents.of("owned", "ids", new JSONArray(), "restore", restore, "error", true));
+                return;
+            }
             JSONArray owned = new JSONArray();
             for (Purchase p : purchases) {
                 if (p.getPurchaseState() != Purchase.PurchaseState.PURCHASED) continue;
@@ -138,16 +183,27 @@ final class BillingBridge {
 
     static void buy(final String productId) {
         activity.runOnUiThread(() -> {
-            ProductDetails d = details.get(productId);
-            if (client == null || !connected || d == null) { flowEnd(productId, "unavailable"); return; }
-            ProductDetails.OneTimePurchaseOfferDetails offer = offerFor(d);
-            BillingFlowParams.ProductDetailsParams.Builder pb = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d);
-            if (offer != null && offer.getOfferToken() != null) pb.setOfferToken(offer.getOfferToken());
-            BillingFlowParams params = BillingFlowParams.newBuilder().setProductDetailsParamsList(Collections.singletonList(pb.build())).build();
-            pendingFlow = productId;
-            BillingResult r = client.launchBillingFlow(activity, params);
-            if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) { pendingFlow = null; flowEnd(productId, "error"); }
+            if (client == null || !connected) { flowEnd(productId, "unavailable"); return; }
+            if (details.get(productId) == null) {
+                // not loaded yet (stale store cache at start): ask for this one, then open the sheet
+                queryProducts(Collections.singletonList(productId), found -> launch(productId));
+                return;
+            }
+            launch(productId);
         });
+    }
+
+    /** Open the store's purchase sheet for a product whose details are loaded (on the UI thread) */
+    private static void launch(final String productId) {
+        ProductDetails d = details.get(productId);
+        if (d == null) { flowEnd(productId, "unavailable"); return; }
+        ProductDetails.OneTimePurchaseOfferDetails offer = offerFor(d);
+        BillingFlowParams.ProductDetailsParams.Builder pb = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d);
+        if (offer != null && offer.getOfferToken() != null) pb.setOfferToken(offer.getOfferToken());
+        BillingFlowParams params = BillingFlowParams.newBuilder().setProductDetailsParamsList(Collections.singletonList(pb.build())).build();
+        pendingFlow = productId;
+        BillingResult r = client.launchBillingFlow(activity, params);
+        if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) { pendingFlow = null; flowEnd(productId, "error"); }
     }
 
     private static void onPurchasesUpdated(BillingResult r, List<Purchase> purchases) {

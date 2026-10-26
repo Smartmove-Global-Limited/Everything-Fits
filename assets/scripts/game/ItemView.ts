@@ -50,7 +50,7 @@ export class ItemView extends Component {
   enterAt = 0;
   presetInBag = false;    // placed inside the bag from the start
   locked = false;         // hidden in a mystery box
-  releasedAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0;
+  releasedAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0; outAt = -1e9;
   /** Settle: where the item has been staying lately and for how long (seconds) */
   restX = NaN; restY = 0; restAngle = 0; restTime = 0;
   frozen = false; holdUntil = 0;

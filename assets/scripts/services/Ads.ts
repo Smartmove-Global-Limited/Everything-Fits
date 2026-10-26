@@ -5,14 +5,15 @@
 //
 // Banner      Home / Shop at the bottom edge (banner_main_menu, banner_shop); in the Game scene only
 //             while a result popup covers the field (banner_gameplay), never during play.
-//             active_banner, banner_start_level. Bars pinned to the bottom move up above it.
+//             active_banner, banner_start_level. Bars pinned to the bottom move up above its slot,
+//             kept from the splash on (Home does not jump); a black "AD" strip until the ad loads.
 // Interstitial level_win (Continue after a win), level_lose (Try again after a loss). Checked in
 //             this order: active_inter → max_inter_per_session → min_inter_interval_sec →
 //             min_between_reward_inter_sec → level pacing (inter_pacing_config). A skipped trigger
 //             is not made up later. Never during a tutorial.
 // Rewarded    only when the player chooses it; the reward only when watched to the end.
 // No Ads      bought: no banner, no interstitial; rewarded still offered.
-import { RemoteConfig, InterPacing } from './RemoteConfig';
+import { RemoteConfig, InterPacing, StartResult, withTimeout } from './RemoteConfig';
 import { Purchases } from './Purchases';
 import { NativeBridge } from './NativeBridge';
 
@@ -20,23 +21,36 @@ export type BannerPlacement = 'banner_main_menu' | 'banner_shop' | 'banner_gamep
 export type InterPlacement = 'level_win' | 'level_lose';
 export type RewardedPlacement = 'add_60s' | 'refill_energy' | 'collect_x2' | 'free_gold';
 
-/** The visible part of ads, provided by the UI layer (Overlays): simulated screens and banner strip */
+/** Where the bottom banner goes: its height and the system bar under it, in device pixels */
+export type BannerMetrics = { bannerPx: number; systemPx: number; screenPx: number };
+/** The bottom banner slot: the bars stay above it; a strip shows there until the ad covers it */
+export type BannerSlot = { placement: BannerPlacement; simulated: boolean; metrics: BannerMetrics | null };
+
+/** The visible part of ads, provided by the UI layer (Overlays): simulated screens and banner slot */
 export type AdViews = {
   /** simulated full-screen ad; resolves true when watched to the end */
   simulateFullScreen(kind: 'rewarded' | 'interstitial', placement: string): Promise<boolean>;
-  /** simulated banner strip at the bottom edge (null = hide) */
-  simulateBanner(placement: BannerPlacement | null): void;
-  /** height of the bottom banner in device pixels (0 = none), to lift bottom bars */
-  setBannerInset(px: number, screenPx: number): void;
+  /**
+   * the banner slot at the bottom (null = none): bottom bars move above it; it shows "TEST BANNER"
+   * (simulated) or a black "AD" strip the real banner covers once loaded
+   */
+  bannerSlot(slot: BannerSlot | null): void;
+  /** resolves once no loading screen covers the game (the native banner draws above everything) */
+  whenClear(): Promise<void>;
 };
 
 let views: AdViews | null = null;
-let started = false;
-let mode: 'pending' | 'max' | 'sim' = 'sim';
+let started: Promise<StartResult> | null = null;
+let onReady: ((r: StartResult) => void) | null = null;
+const INIT_TIMEOUT_MS = 6000;
+/** disabled: adsOff in applovin.properties (testing), no banner / interstitial, rewarded simulated */
+let mode: 'pending' | 'max' | 'sim' | 'disabled' = 'sim';
 let rewardedLoaded = false;
 let interLoaded = false;
 let pending: { kind: 'rewarded' | 'inter'; done: (shown: boolean, rewarded: boolean) => void } | null = null;
-let bannerPlacement: BannerPlacement | null = null;
+let bannerPlacement: BannerPlacement | null = null;   // the slot is on screen
+let bannerLive = false;                                 // the native banner is asked to show
+let metrics: BannerMetrics | null = null;
 
 // session counters (a session = one app launch)
 let interShown = 0;
@@ -64,8 +78,11 @@ export function pacingAllows(level: number, cfg: InterPacing) {
 
 function onNative(msg: any) {
   if (msg.type === 'ready') {
-    mode = msg.mode === 'max' ? 'max' : 'sim';
-    if (bannerPlacement) Ads.showBanner(bannerPlacement, Infinity);
+    if (msg.mode === 'pending') return;                  // the SDK is still initialising: it reports again
+    mode = msg.mode === 'max' ? 'max' : msg.mode === 'disabled' ? 'disabled' : 'sim';
+    if (msg.bannerPx > 0 && msg.screenPx > 0) metrics = { bannerPx: msg.bannerPx, systemPx: msg.systemPx | 0, screenPx: msg.screenPx };
+    onReady?.(mode === 'max' ? 'ok' : 'off'); onReady = null;
+    if (bannerPlacement && bannerLive) Ads.showBanner(bannerPlacement, Infinity);
   } else if (msg.type === 'rewarded') {
     if (msg.state === 'loaded') rewardedLoaded = true;
     else if (msg.state === 'closed' || msg.state === 'showFailed') {
@@ -78,48 +95,64 @@ function onNative(msg: any) {
       interLoaded = false;
       if (pending?.kind === 'inter') { const p = pending; pending = null; p.done(msg.state === 'closed', false); }
     }
-  } else if (msg.type === 'banner') {
-    if (msg.state === 'shown') views?.setBannerInset(msg.heightPx | 0, msg.screenPx | 0);   // banner only: the system bar is in the safe-area inset already
-    else if (msg.state === 'hidden') views?.setBannerInset(0, 1);
   }
 }
 
 export const Ads = {
-  /** Once at launch (idempotent); the UI layer gives the simulated views */
-  start(v: AdViews) {
+  /**
+   * Once at launch (splash, alongside Remote Config; idempotent); the UI layer gives the simulated
+   * views. Resolves when the ad SDK is ready ('ok'), has no key ('off': simulated ads) or timed out.
+   */
+  start(v: AdViews): Promise<StartResult> {
     views = v;
-    if (started) return;
-    started = true;
-    RemoteConfig.start();
-    if (NativeBridge.android) {
-      mode = 'pending';
-      NativeBridge.on('ads', onNative);
-      NativeBridge.call('adsHello');
-    }
+    if (started) return started;
+    if (!NativeBridge.android) return (started = Promise.resolve('web'));
+    mode = 'pending';
+    const ready = new Promise<StartResult>(done => (onReady = done));
+    NativeBridge.on('ads', onNative);
+    NativeBridge.call('adsHello');
+    return (started = withTimeout(ready, INIT_TIMEOUT_MS, 'timeout'));
   },
   get simulated() { return mode !== 'max'; },
   /** A tutorial is on screen: no interstitial */
   set tutorial(on: boolean) { tutorial = on; },
 
   // ---------- banner ----------
-  showBanner(placement: BannerPlacement, levelNumber: number) {
+  /** The bottom banner may show on this screen (Remote Config, No Ads, banner_start_level) */
+  bannerAllowed(levelNumber: number) {
     const rc = RemoteConfig.values;
-    if (!rc.active_banner || Purchases.noAds || levelNumber < rc.banner_start_level) { this.hideBanner(); return; }
+    return mode !== 'disabled' && rc.active_banner && !Purchases.noAds && levelNumber >= rc.banner_start_level;
+  },
+  /**
+   * Keep the banner's place only (the bars move above it, a strip shows there), no ad yet: Home
+   * behind the splash, so nothing jumps when the splash goes. Returns false when no banner here.
+   */
+  reserveBanner(placement: BannerPlacement, levelNumber: number) {
+    if (!this.bannerAllowed(levelNumber)) { this.hideBanner(); return false; }
+    if (bannerPlacement !== placement) views?.bannerSlot({ placement, simulated: mode === 'sim', metrics });
     bannerPlacement = placement;
-    if (mode === 'max') NativeBridge.call('adsShowBanner', placement);
-    else if (mode === 'sim') views?.simulateBanner(placement);
+    return true;
+  },
+  showBanner(placement: BannerPlacement, levelNumber: number) {
+    if (!this.reserveBanner(placement, levelNumber)) return;
+    bannerLive = true;
+    // the real banner is a native view above the game: only once the loading screen is gone
+    if (mode === 'max') (views?.whenClear() ?? Promise.resolve()).then(() => {
+      if (bannerLive && bannerPlacement === placement) NativeBridge.call('adsShowBanner', placement);
+    });
   },
   hideBanner() {
-    if (!bannerPlacement) return;
-    bannerPlacement = null;
-    if (mode === 'max') NativeBridge.call('adsHideBanner');
-    else views?.simulateBanner(null);
+    const had = bannerPlacement;
+    bannerPlacement = null; bannerLive = false;
+    views?.bannerSlot(null);                 // always: no reserved place may stay behind
+    if (had && mode === 'max') NativeBridge.call('adsHideBanner');
   },
 
   // ---------- interstitial ----------
   /** Why the trigger shows nothing (null = it may show), in the doc's order */
   interBlock(levelNumber: number): string | null {
     const rc = RemoteConfig.values, t = now();
+    if (mode === 'disabled') return 'ads_off';
     if (Purchases.noAds) return 'no_ads';
     if (tutorial) return 'tutorial';
     if (!rc.active_inter) return 'inactive';
@@ -148,7 +181,7 @@ export const Ads = {
 
   // ---------- rewarded ----------
   /** A rewarded ad can be shown now (the button says "Ad unavailable" otherwise) */
-  rewardedAvailable() { return mode === 'max' ? rewardedLoaded : mode === 'sim'; },
+  rewardedAvailable() { return mode === 'max' ? rewardedLoaded : mode === 'sim' || mode === 'disabled'; },
   /** Player chose to watch: true only when watched to the end (then grant the reward) */
   async rewarded(placement: RewardedPlacement): Promise<boolean> {
     if (pending || !this.rewardedAvailable()) return false;

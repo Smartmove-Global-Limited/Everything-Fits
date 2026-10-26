@@ -2,8 +2,8 @@
 // No Ads · Free Gold (rewarded ad, once a day) · Gold Packs · No Ads Bundle · Booster Bundle and
 // Bundles · Spend Gold · Restore purchases. Prices come from the store. While one purchase runs
 // every buy button is locked; the reward is granted by Purchases only once the store confirms.
-import { _decorator, Component, Node, ScrollView, Vec2, UITransform, Color } from 'cc';
-import { findNode, findAll, setText, labelIn, tap } from './UiKit';
+import { _decorator, Component, Node, ScrollView, Vec2, UITransform, Color, Sprite, Label } from 'cc';
+import { findNode, findAll, setText, labelIn, tap, fitGoldPill } from './UiKit';
 import { RoundRect } from './RoundRect';
 import { Overlays } from './Overlays';
 import { Wallet, formatNumber } from '../services/Wallet';
@@ -12,6 +12,7 @@ import { Boosters, BoosterKey } from '../services/Boosters';
 import { FreeGold, FREE_GOLD } from '../services/Daily';
 import { Ads } from '../services/Ads';
 import { Sound } from '../audio/Sound';
+import { ShopFx } from './ShopFx';
 const { ccclass } = _decorator;
 
 /** Buy buttons in page order: store product ids, the free gold ad, then the Spend Gold cards */
@@ -25,8 +26,8 @@ const BUY_IDS = [
 /** Spend Gold: three of a booster for gold (booster economy table: 150 / 150 / 200 gold each) */
 const SPEND: Record<string, { key: BoosterKey; name: string; price: number }> = {
   spend_freeze: { key: 'freeze', name: 'Freeze ×3', price: 450 },
-  spend_resize: { key: 'resize', name: 'Resize ×3', price: 450 },
-  spend_throw: { key: 'throw', name: 'Throw out ×3', price: 600 },
+  spend_resize: { key: 'resize', name: 'Re:Size ×3', price: 450 },   // names as in the Figma catalogue
+  spend_throw: { key: 'throw', name: 'Remove ×3', price: 600 },
 };
 const PURCHASED_BG = new Color(0x8F, 0xA5, 0x96, 255);
 
@@ -40,6 +41,9 @@ export class ShopScreen extends Component {
   private buys: Buy[] = [];
   private busy = false;
   private offs: (() => void)[] = [];
+  private fx: ShopFx = null!;
+  /** while bought coins fly in, the counter counts up with them instead of jumping */
+  private holdGold = false;
 
   onLoad() {
     const n = this.node;
@@ -62,22 +66,33 @@ export class ShopScreen extends Component {
     tap(findNode(n, 'sSettings'), () => this.actions?.onSettings(), 'tap', this);
     tap(findNode(n, 'sTabShop'), () => this.scroll.scrollToTop(.3), 'tap', this);
     tap(findNode(n, 'sTabHome'), () => this.actions?.onHome(), 'tap', this);
+    tap(findNode(n, 'sTabSoon'), () => Overlays.comingSoon(findNode(n, 'efm-nav')!), 'tap', this);
     this.offs.push(
-      Wallet.onChange(g => setText(this.gold, formatNumber(g))),
+      Wallet.onChange(g => { if (!this.holdGold) this.showGold(formatNumber(g)); }),
       Purchases.onPrices(() => this.drawPrices()),
       Purchases.onNoAds(() => this.drawNoAds()),
     );
     this.drawCatalogue();
+    // effects: gold pack art (500 → 40,000), bundle artwork, flights above everything
+    const grid = findAll(n, 'efs-grid')[0];
+    const goldArts = grid ? grid.children.map(c => findNode(c, 'efs-coins')!).filter(Boolean) : [];
+    const bundleArts = findAll(n, 'efs-bundle-left').map(l => l.children.find(c => c.active && c.getComponent(Sprite))!).filter(Boolean);
+    this.fx = this.node.addComponent(ShopFx);
+    this.fx.setup(goldArts, bundleArts, this.node, [findNode(n, 'efs-noads-ic'), findNode(n, 'efs-gift')].filter(Boolean) as Node[]);
   }
+  /** Amount on the gold pill, the pill hugging it */
+  private showGold(text: string) { setText(this.gold, text); fitGoldPill(this.gold); }
+
   onDestroy() { for (const f of this.offs) f(); }
 
   show(toGold = false) {
     this.node.active = true;
-    setText(this.gold, formatNumber(Wallet.gold));
+    this.showGold(formatNumber(Wallet.gold));
     this.drawPrices();
     this.drawNoAds();
     this.drawFreeGold();
     this.scroll.scrollToTop(0);
+    this.fx.intro();
     if (toGold) this.scheduleOnce(() => this.scrollToGold(), 0);
   }
 
@@ -139,7 +154,25 @@ export class ShopScreen extends Component {
     for (const b of this.buys) {
       if (b.kind !== 'money' || (product(b.id)?.noAds && Purchases.noAds)) continue;
       setText(b.node, Purchases.price(b.id));
+      this.fitButton(b.node);
     }
+  }
+
+  /**
+   * A price button as wide as its text plus padding (store prices differ in length): buttons on
+   * the right of a card keep their right edge, the ones in the middle of a card stay centred.
+   */
+  private buttonBase = new Map<Node, { x: number; w: number }>();
+  private fitButton(btn: Node) {
+    const l = labelIn(btn), u = btn.getComponent(UITransform);
+    if (!l || !u) return;
+    if (!this.buttonBase.has(btn)) this.buttonBase.set(btn, { x: btn.position.x, w: u.width });
+    const base = this.buttonBase.get(btn)!;
+    l.updateRenderData(true);
+    const w = Math.max(76, Math.min(base.w + 20, l.node.getComponent(UITransform)!.width + 36));
+    u.width = w;
+    const right = base.x > 20;                                   // right-aligned on its card
+    btn.setPosition(right ? base.x + base.w / 2 - w / 2 : base.x, btn.position.y, 0);
   }
 
   private drawNoAds() {
@@ -147,20 +180,48 @@ export class ShopScreen extends Component {
     for (const b of this.buys) {
       if (!product(b.id)?.noAds) continue;
       setText(b.node, 'Purchased');
+      this.fitButton(b.node);
       b.node.getComponent(RoundRect)?.setColors(PURCHASED_BG);
       b.enable(false);
     }
   }
 
   /** Free gold: once a day; after that the button waits for tomorrow */
+  private freeLabelX: number | null = null;
+  private freeAnchor: number | null = null;
   private drawFreeGold() {
     const b = this.buys.find(x => x.kind === 'ad'); if (!b) return;
     const done = FreeGold.claimedToday;
     const label = labelIn(b.node);
-    if (label) label.string = done ? 'Tomorrow' : 'Collect';
+    if (label) {
+      this.freeLabelX ??= label.node.position.x;
+      // claimed: a countdown to the next one, centred on the button (no ad icon)
+      label.string = done ? this.countdown(FreeGold.secondsLeft()) : 'Collect';
+      label.horizontalAlign = Label.HorizontalAlign.CENTER;
+      label.updateRenderData(true);
+      // the label box is centred on its own x; done: on the button's centre
+      const lu = label.node.getComponent(UITransform)!;
+      this.freeAnchor ??= lu.anchorX;
+      lu.anchorX = done ? .5 : this.freeAnchor;
+      label.node.setPosition(done ? 0 : this.freeLabelX!, label.node.position.y, 0);
+    }
     const icon = findNode(b.node, 'efs-ad');
     if (icon) icon.active = !done;
     b.enable(!done && !this.busy);
+    this.fx?.attract(b.node, !done);                 // "Collect" bobs and twinkles to be noticed
+    this.unschedule(this.tickFreeGold);
+    if (done) this.schedule(this.tickFreeGold, 1);
+  }
+  /** Countdown, once a second while the Shop is open (back to Collect at midnight) */
+  private tickFreeGold() {
+    if (!this.node.activeInHierarchy) return;
+    if (!FreeGold.claimedToday) { this.drawFreeGold(); return; }
+    const label = labelIn(this.buys.find(x => x.kind === 'ad')?.node ?? null);
+    if (label) label.string = this.countdown(FreeGold.secondsLeft());
+  }
+  private countdown(sec: number) {
+    const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s = sec % 60;
+    return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
   }
 
   /** Lock every buy button while one purchase / ad runs */
@@ -178,6 +239,8 @@ export class ShopScreen extends Component {
     const label = labelIn(b.node)!, before = label.string;
     label.string = '…';
     let r: BuyResult = 'error';
+    const goldBefore = Wallet.gold;
+    this.holdGold = true;
     try { r = await Purchases.buy(b.id); } catch { r = 'error'; }
     label.string = before;
     this.lock(false);
@@ -185,18 +248,53 @@ export class ShopScreen extends Component {
     if (r === 'ok') {
       Sound.play('unlockLv', { gain: .7 });
       if (p.noAds) Ads.hideBanner();
+      this.celebrate(b, goldBefore);
       Overlays.toast(p.noAds && !p.boosters ? 'No Ads activated' : p.gold && !p.boosters ? `+${formatNumber(p.gold)} gold` : `${p.name} added!`);
-    } else Overlays.toast({
+    } else {
+      this.holdGold = false;
+      this.showGold(formatNumber(Wallet.gold));
+    }
+    if (r !== 'ok') Overlays.toast({
       cancelled: 'Purchase cancelled', pending: 'Payment pending. It arrives once confirmed.',
       unavailable: 'Store unavailable. Try again later.', error: 'Purchase failed. Try again later.',
     }[r]);
   }
 
+  /**
+   * Confirmed purchase / free gold: ring from the card, coins to the counter (counting up),
+   * boosters to Home
+   */
+  private async celebrate(b: Buy, goldBefore: number) {
+    const card = b.node.parent!, p = product(b.id);
+    const gained = Wallet.gold - goldBefore;
+    const coins = gained > 0 ? Math.min(10, 4 + Math.round(Math.log10(gained))) : 0;
+    let shown = goldBefore, landed = 0;
+    const coinFrom = findNode(card, 'efs-coins') || findNode(card, 'efs-gift')
+      || findAll(card, 'efs-bundle-left')[0]?.children.find(c => c.active && c.getComponent(Sprite)) || null;
+    await this.fx.purchased(card, {
+      coinFrom, coins, goldTarget: findNode(findNode(this.node, 'efm-gold')!, 'img')!,
+      boosterIcons: p?.boosters ? findAll(card, 'efs-bst').map(x => findNode(x, 'img')!) : [],
+      boosterTarget: findNode(findNode(this.node, 'sTabHome')!, 'img')!,
+      onCoin: () => { landed++; shown = landed >= coins ? Wallet.gold : goldBefore + Math.round(gained * landed / coins); this.showGold(formatNumber(shown)); },
+    });
+    this.holdGold = false;
+    this.showGold(formatNumber(Wallet.gold));
+  }
+
   private async freeGold() {
-    if (FreeGold.claimedToday) return;
+    const b = this.buys.find(x => x.kind === 'ad');
+    if (FreeGold.claimedToday || !b) return;
     this.lock(true);
+    const goldBefore = Wallet.gold;
+    this.holdGold = true;
     const full = await Overlays.rewarded('free_gold');
-    if (full) { FreeGold.markClaimed(); Wallet.add(FREE_GOLD); Sound.play('unlockLv', { gain: .6 }); Overlays.toast(`+${FREE_GOLD} gold`); }
+    if (full) {
+      FreeGold.markClaimed(); Wallet.add(FREE_GOLD); Sound.play('unlockLv', { gain: .6 }); Overlays.toast(`+${FREE_GOLD} gold`);
+      this.lock(false);
+      await this.celebrate(b, goldBefore);         // coins fly up to the counter
+      return;
+    }
+    this.holdGold = false;
     this.lock(false);
   }
 

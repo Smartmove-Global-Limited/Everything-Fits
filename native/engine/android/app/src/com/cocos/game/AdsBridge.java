@@ -1,7 +1,6 @@
 package com.cocos.game;
 
 import android.app.Activity;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -72,7 +71,11 @@ final class AdsBridge {
         bannerUnit = res(a, "applovin_banner_unit");
         interUnit = res(a, "applovin_inter_unit");
         rewardedUnit = res(a, "applovin_rewarded_unit");
+        int offId = a.getResources().getIdentifier("ads_off", "bool", a.getPackageName());
+        if (offId != 0 && a.getResources().getBoolean(offId)) { mode = "disabled"; Log.w(TAG, "adsOff in applovin.properties: no banner / interstitial"); report(); return; }
         if (sdkKey.isEmpty()) { mode = "off"; Log.w(TAG, "no AppLovin SDK key: simulated ads"); report(); return; }
+        int logId = a.getResources().getIdentifier("log_advertising_id", "bool", a.getPackageName());
+        if (logId != 0 && a.getResources().getBoolean(logId)) logAdvertisingId(a);   // device / debug builds
         List<String> testIds = new ArrayList<>();
         for (String s : res(a, "applovin_test_devices").split(",")) if (!s.trim().isEmpty()) testIds.add(s.trim());
         AppLovinSdkInitializationConfiguration cfg = AppLovinSdkInitializationConfiguration.builder(sdkKey)
@@ -88,7 +91,28 @@ final class AdsBridge {
         });
     }
 
-    private static void report() { ScriptEvents.send("ads", ScriptEvents.of("ready", "mode", mode)); }
+    /** Device / debug builds: print this phone's advertising id, for testDevices in applovin.properties */
+    private static void logAdvertisingId(Activity a) {
+        new Thread(() -> {
+            try {   // reflection: Play services ads-identifier comes with the AdMob adapter only
+                Object info = Class.forName("com.google.android.gms.ads.identifier.AdvertisingIdClient")
+                        .getMethod("getAdvertisingIdInfo", android.content.Context.class).invoke(null, a);
+                Log.i(TAG, "advertising id (testDevices): " + info.getClass().getMethod("getId").invoke(info));
+            } catch (Throwable e) { Log.w(TAG, "advertising id unavailable: " + e); }
+        }).start();
+    }
+
+    /**
+     * ready, with where the banner will go (its height and the system bar under it, screen height,
+     * in px), so the game keeps its place before any ad loads
+     */
+    private static void report() {
+        main.post(() -> {
+            View root = activity.getWindow().getDecorView();
+            ScriptEvents.send("ads", ScriptEvents.of("ready", "mode", mode,
+                    "bannerPx", AppLovinSdkUtils.dpToPx(activity, 50), "systemPx", navigationBarInset(), "screenPx", root.getHeight()));
+        });
+    }
 
     /** TypeScript asks again once its listener is attached (the SDK may have been ready before) */
     static void hello() { report(); }
@@ -107,10 +131,9 @@ final class AdsBridge {
             @Override public void onAdCollapsed(MaxAd ad) {}
         });
         bannerHeight = AppLovinSdkUtils.dpToPx(activity, 50);
-        // the box fills from the banner down to the screen edge: no game picture shows under the
-        // banner, around the navigation / gesture bar
+        // just the banner, right above the navigation / gesture bar (nothing over the system bar).
+        // Transparent until an ad loads: the game's black "AD" strip shows through (Overlays.ts)
         bannerBox = new FrameLayout(activity);
-        bannerBox.setBackgroundColor(Color.WHITE);
         bannerBox.setVisibility(View.GONE);
         bannerBox.addView(banner, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, bannerHeight, Gravity.TOP));
         activity.addContentView(bannerBox, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, bannerHeight, Gravity.BOTTOM));
@@ -129,16 +152,13 @@ final class AdsBridge {
         main.post(() -> {
             bannerWanted = true;
             if (banner == null) return;
-            int inset = navigationBarInset();
             FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) bannerBox.getLayoutParams();
-            lp.height = bannerHeight + inset;
+            lp.bottomMargin = navigationBarInset();
             bannerBox.setLayoutParams(lp);
             banner.setPlacement(placement);
             bannerBox.setVisibility(View.VISIBLE);
             banner.startAutoRefresh();
-            View root = activity.getWindow().getDecorView();
-            ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "shown",
-                    "heightPx", bannerHeight, "bottomPx", inset, "screenPx", root.getHeight()));
+            ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "shown"));
         });
     }
 

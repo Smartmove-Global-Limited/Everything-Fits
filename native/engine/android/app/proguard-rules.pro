@@ -52,3 +52,7 @@
 -dontwarn android.hardware.lights.LightsRequest
 -dontwarn android.net.ssl.SSLSockets
 -dontwarn android.os.VibratorManager
+# AppLovin MAX 13.6: its OMID attestation code refers to Amazon's optional Privacy Pass library,
+# which is not in the app. Without this R8 stops the release build ("Missing class
+# com.amazon.privacypass.PrivacyPass").
+-dontwarn com.amazon.privacypass.**
