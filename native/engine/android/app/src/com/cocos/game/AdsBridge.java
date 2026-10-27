@@ -120,6 +120,7 @@ final class AdsBridge {
     // ---------- banner ----------
     private static void createBanner() {
         banner = new MaxAdView(bannerUnit, activity);
+        banner.setRevenueListener(SdkBridge::logAdRevenue);   // each paid impression → AppsFlyer af_ad_revenue
         banner.setListener(new MaxAdViewAdListener() {
             @Override public void onAdLoaded(MaxAd ad) { ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "loaded")); }
             @Override public void onAdLoadFailed(String unit, MaxError e) { Log.w(TAG, "banner failed " + e.getCode()); }
@@ -175,6 +176,7 @@ final class AdsBridge {
     // ---------- interstitial ----------
     private static void createInter() {
         inter = new MaxInterstitialAd(interUnit, activity);
+        inter.setRevenueListener(SdkBridge::logAdRevenue);
         inter.setListener(new MaxAdListener() {
             @Override public void onAdLoaded(MaxAd ad) { interRetry = 0; ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "loaded")); }
             @Override public void onAdLoadFailed(String unit, MaxError e) {
@@ -199,6 +201,7 @@ final class AdsBridge {
     // ---------- rewarded ----------
     private static void createRewarded() {
         rewarded = MaxRewardedAd.getInstance(rewardedUnit, activity);
+        rewarded.setRevenueListener(SdkBridge::logAdRevenue);
         rewarded.setListener(new MaxRewardedAdListener() {
             @Override public void onAdLoaded(MaxAd ad) { rewardedRetry = 0; ScriptEvents.send("ads", ScriptEvents.of("rewarded", "state", "loaded")); }
             @Override public void onAdLoadFailed(String unit, MaxError e) {

@@ -264,7 +264,7 @@ export function checkEject(now: number) {
     if (it.releasedAt > now - WAIT_AFTER_RELEASE) { it.stuckFrames = 0; continue; }
     const z = bagZone(it);
     const v = it.body.linearVelocity;
-    const resting = v.x * v.x + v.y * v.y < REST_SPEED * REST_SPEED && Math.abs(it.body.angularVelocity) < REST_SPIN;
+    const resting = v.x * v.x + v.y * v.y < REST_SPEED * REST_SPEED && Math.abs(it.spin) < REST_SPIN;
     if (z.inZone && !z.fullyInside && resting && overlapsInterior(it)) {
       if (++it.stuckFrames > STUCK_FRAMES) eject(it, 'stuck');
     } else it.stuckFrames = 0;

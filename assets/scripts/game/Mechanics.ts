@@ -14,7 +14,7 @@ import { bagZone, itemAABB } from './BagRules';
 import { Fx } from './Fx';
 import { Sound, SfxName } from '../audio/Sound';
 import { ItemPhysics, ItemView } from './ItemView';
-import { levelToFieldY, DESIGN_H } from '../core/GameConstants';
+import { levelToFieldY, DESIGN_H, PhysicsGroup } from '../core/GameConstants';
 
 const STEP = 60;
 const LIGHT_HIT = 1.6 * STEP;        // below: items just rubbing
@@ -22,6 +22,7 @@ const ITEM_GAP_MS = 130;             // one item does not sound twice in a row
 const MAX_PER_BEAT = 3;              // many items landing together: only a few sounds
 const HARD_HIT_CRACK = 7 * STEP;     // hard item hitting a fragile one this fast cracks it
 const FALL_CRACK = 9 * STEP;         // fragile item falling this fast onto floor / hard item cracks
+const FLOOR_BUZZ = 3 * STEP;        // an item the player let go of landing on the floor this fast: one light buzz
 const NO_CRACK_AT_START = 2500;      // ms: items raining in at the start never crack
 const SOUND: Record<string, SfxName> = { glass: 'glass', ceramic: 'glass', metal: 'metal', paper: 'paper', fabric: 'drop', food: 'drop' };
 const SOFT = new Set(['fabric', 'paper', 'food']);
@@ -51,6 +52,20 @@ export function onItemContact(item: ItemView, self: Collider2D, other: Collider2
   const otherItem = other.node.getComponent(ItemView);   // only on an actual impact, rare
   const intoWall = !otherItem;
   onImpact(item, v, pt, intoWall, otherItem);
+  // landing on the floor, or on an item lying outside the bag (inside the bag: the 'fit' buzz)
+  if (other.group === PhysicsGroup.WALL || (otherItem && !bagZone(item).inZone)) floorBuzz(item, v);
+}
+
+/**
+ * An item the player dropped lands outside the bag (floor, or items lying there): one light buzz,
+ * once per drop (not the items raining in at the start, not a second bounce, not right after the bag
+ * pushed it out: that one has its own).
+ */
+function floorBuzz(b: ItemView, v: number) {
+  const S = GameState;
+  if (v < FLOOR_BUZZ || !b.releasedAt || S.clock - b.releasedAt > 2500 || b.floorBuzzAt >= b.releasedAt || b.outAt > S.clock - 900) return;
+  b.floorBuzzAt = S.clock;
+  Sound.haptic('light');
 }
 
 function onImpact(b: ItemView, v: number, at: Vec2, intoWall: boolean, other: ItemView | null) {
@@ -114,8 +129,8 @@ export function tickPhone(dtMs: number): ItemView | null {
       it.body.applyForceToCenter(tmpForce, true);
       // web ±.06 rad per step; capped: Box2D keeps spin longer than Matter, kicks added up into a
       // phone spinning round and knocking the whole bag about
-      const w = it.body.angularVelocity + (Math.random() - .5) * .12 * STEP;
-      it.body.angularVelocity = Math.max(-PHONE_SPIN_MAX, Math.min(PHONE_SPIN_MAX, w));
+      const w = it.spin + (Math.random() - .5) * .12 * STEP;
+      it.spin = Math.max(-PHONE_SPIN_MAX, Math.min(PHONE_SPIN_MAX, w));
     }
   }
   return buzzing;
@@ -169,7 +184,7 @@ export function tickBalloons() {
     // stay upright: turn back to 0°, damped
     let a = b.node.eulerAngles.z * Math.PI / 180;
     a = Math.atan2(Math.sin(a), Math.cos(a));
-    b.body.angularVelocity = (b.body.angularVelocity / STEP * UPRIGHT_DAMP - a * UPRIGHT) * STEP;
+    b.spin = (b.spin / STEP * UPRIGHT_DAMP - a * UPRIGHT) * STEP;
   }
 }
 

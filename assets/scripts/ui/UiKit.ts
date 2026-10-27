@@ -95,6 +95,38 @@ export function dimSprite(node: Node | null, dim: boolean) {
 export const contentOf = (n: Node) => n.children.filter(c => c.name !== '__skin');
 
 /**
+ * A text box (Figma "b" around a Label) centred on its parent card: the boxes laid out from Figma
+ * keep the width of the design text, so another amount or name came out off-centre.
+ */
+export function centerOnParent(box: Node | null) {
+  const l = labelIn(box), card = box?.parent;
+  if (!box || !l || !card) return;
+  l.horizontalAlign = Label.HorizontalAlign.CENTER;
+  l.updateRenderData(true);
+  const t = l.node.getComponent(UITransform)!, bu = box.getComponent(UITransform)!, cu = card.getComponent(UITransform)!;
+  t.anchorX = .5;
+  if (l.node !== box) { bu.width = t.width; bu.anchorX = .5; l.node.setPosition(0, l.node.position.y, 0); }
+  box.setPosition((.5 - cu.anchorX) * cu.width, box.position.y, 0);
+}
+
+/** Icon + text inside a button (coin + price, ad + Collect): the group centred in the button */
+export function centerContent(btn: Node) {
+  const bu = btn.getComponent(UITransform);
+  if (!bu) return;
+  labelIn(btn)?.updateRenderData(true);
+  const parts = contentOf(btn).filter(c => c.active && c.getComponent(UITransform));
+  if (!parts.length) return;
+  let x0 = Infinity, x1 = -Infinity;
+  for (const c of parts) {
+    const u = c.getComponent(UITransform)!, l = c.position.x - u.width * u.anchorX;
+    x0 = Math.min(x0, l); x1 = Math.max(x1, l + u.width);
+  }
+  const dx = (.5 - bu.anchorX) * bu.width - (x0 + x1) / 2;
+  if (Math.abs(dx) < .25) return;
+  for (const c of parts) c.setPosition(c.position.x + dx, c.position.y, c.position.z);
+}
+
+/**
  * Gold counter pill (Home / Shop top bar): coin, amount, "+" button. The pill hugs the amount
  * (no empty run before the "+") and the amount keeps a little room after the coin; the left
  * edge stays where the layout put it.

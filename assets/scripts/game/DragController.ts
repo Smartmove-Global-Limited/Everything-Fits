@@ -352,12 +352,12 @@ export class DragController extends Component {
     for (const it of GameState.items) {
       if (!it.holdUntil || (this.spin && this.spin.item === it)) continue;
       it.stuckFrames = 0;
-      if (it.holdUntil !== Infinity && now >= it.holdUntil) { it.holdUntil = 0; it.stop(); it.body.wakeUp(); continue; }
+      if (it.holdUntil !== Infinity && now >= it.holdUntil) { it.holdUntil = 0; it.spunAt = now; it.stop(); it.body.wakeUp(); continue; }
       // in the bag: still a moment; on the tray: the angle stays, it may still fall
       this.holdAngle(it, it.holdUntil !== Infinity);
     }
     // a tray item kept still after rotating is released when anything else is picked up
-    if (GameState.drag) for (const it of GameState.items) if (it.holdUntil === Infinity && !isHeld(it)) { it.holdUntil = 0; it.body.wakeUp(); }
+    if (GameState.drag) for (const it of GameState.items) if (it.holdUntil === Infinity && !isHeld(it)) { it.holdUntil = 0; it.spunAt = now; it.body.wakeUp(); }
   }
 
   /**

@@ -5,7 +5,7 @@
 //   bag hint: "Pack your things here!" inside the empty bag
 // Pure view: GameController pushes values in and listens to the callbacks. Nothing per frame here
 // except the tweens Cocos runs itself.
-import { _decorator, Component, Node, Label, Sprite, UITransform, Color, Tween, tween, Vec3, UIOpacity } from 'cc';
+import { _decorator, Component, Node, Label, Sprite, SpriteFrame, UITransform, Color, Tween, tween, Vec3, UIOpacity } from 'cc';
 import { RoundRect } from './RoundRect';
 const { ccclass, property } = _decorator;
 
@@ -22,6 +22,9 @@ const TILE_SHADOW = new Color(46, 51, 41, 56), LOCKED_NAME = new Color(0x6E, 0x6
 const BADGE = new Color(0xBD, 0x6D, 0x69, 255), BADGE_EMPTY = new Color(0x9A, 0x96, 0x8E, 255), BADGE_ON = new Color(0x4A, 0x9B, 0xD1, 255);
 const SHAKE_FILL = new Color(0x8C, 0x7A, 0xD0, 255), SHAKE_LOW = new Color(0xC9, 0x65, 0x4F, 255);
 const PRESS_DROP = 3;
+// frozen clock (Freeze booster): the pill turns to ice, the clock icon becomes the booster's snowflake
+const ICE_FILL = new Color(0xE4, 0xF4, 0xFC, 255), ICE_BORDER = new Color(0x8A, 0xCD, 0xF0, 255);
+const ICE_GLOW = new Color(127, 200, 240, 150), ICE_INK = new Color(0x2E, 0x7D, 0xB5, 255);
 
 @ccclass('BoosterButton')
 export class BoosterButton {
@@ -116,6 +119,41 @@ export class GameHud extends Component {
   // ---------- top row ----------
   setLevel(n: number) { this.levelLabel.string = `Lv. ${n}`; }
 
+  /**
+   * Freeze booster: the clock pill frozen (ice fill, blue rim and glow, blue digits, a slowly turning
+   * snowflake instead of the clock icon), with a little pop when it freezes and when it thaws.
+   */
+  setClockFrozen(on: boolean) {
+    if (on === this.clockFrozen) return;
+    this.clockFrozen = on;
+    const pill = this.timerLabel.node.parent!, rr = pill.getComponent(RoundRect), icon = pill.getChildByName('Icon')?.getComponent(Sprite);
+    if (!this.clockLook && rr) this.clockLook = { fill: rr.fill.clone(), border: rr.borderWidth, borderColor: rr.borderColor.clone(), glow: rr.glow, glowColor: rr.glowColor.clone(), icon: icon?.spriteFrame || null };
+    const look = this.clockLook;
+    if (rr && look) {
+      rr.fill = on ? ICE_FILL : look.fill;
+      rr.borderWidth = on ? 2 : look.border; rr.borderColor = on ? ICE_BORDER : look.borderColor;
+      rr.glow = on ? 7 : look.glow; rr.glowColor = on ? ICE_GLOW : look.glowColor;
+    }
+    if (icon) {
+      Tween.stopAllByTarget(icon.node);
+      icon.node.angle = 0;
+      const flake = this.boosters[BoosterId.FREEZE]?.icon?.spriteFrame;
+      icon.spriteFrame = on && flake ? flake : look?.icon || icon.spriteFrame;
+      if (on) tween(icon.node).by(6, { angle: -360 }).repeatForever().start();
+    }
+    // digits: blue while frozen; back to normal (or red in the last ten seconds) when thawed
+    const n = this.timerLabel.node;
+    Tween.stopAllByTarget(n); n.setScale(1, 1, 1);
+    this.timerLabel.color = on ? ICE_INK : INK;
+    const sec = this.shownSecond; this.shownSecond = -1; this.urgent = false;
+    if (!on && sec >= 0) this.setClock(sec);
+    Tween.stopAllByTarget(pill);
+    pill.setScale(1, 1, 1);
+    tween(pill).to(.12, { scale: new Vec3(1.14, 1.14, 1) }, { easing: 'quadOut' }).to(.22, { scale: Vec3.ONE }, { easing: 'backOut' }).start();
+  }
+  private clockFrozen = false;
+  private clockLook: { fill: Color; border: number; borderColor: Color; glow: number; glowColor: Color; icon: SpriteFrame | null } | null = null;
+
   /** mm:ss, red and pulsing during the last ten seconds */
   setClock(seconds: number) {
     const sec = Math.max(0, Math.ceil(seconds));
@@ -123,6 +161,7 @@ export class GameHud extends Component {
     this.shownSecond = sec;
     const m = Math.floor(sec / 60), s = sec % 60;
     this.timerLabel.string = `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    if (this.clockFrozen) return;   // stays blue while frozen
     const urgent = sec <= 10 && sec > 0;
     if (urgent === this.urgent) return;
     this.urgent = urgent;

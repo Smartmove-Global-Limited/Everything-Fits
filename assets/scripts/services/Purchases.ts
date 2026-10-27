@@ -9,6 +9,7 @@
 // Web / preview / no store: buy() simulates a confirmed purchase after a short wait.
 import { LocalStore } from './LocalStore';
 import { NativeBridge } from './NativeBridge';
+import { Analytics } from './Analytics';
 import { Wallet } from './Wallet';
 import { Boosters, BOOSTER_KEYS } from './Boosters';
 import { StartResult, withTimeout } from './RemoteConfig';
@@ -82,6 +83,10 @@ function onNative(msg: any) {
       if (granted.length > GRANTED_KEEP) granted.splice(0, granted.length - GRANTED_KEEP);
       LocalStore.setJson(KEY_GRANTED, granted);   // saved before the grant: never twice
       grant(p);
+      // once per transaction, with what Play charged (catalogue USD price before Play has answered)
+      const micros = Number(msg.priceMicros) || 0;
+      const value = micros > 0 ? micros / 1e6 : Number(p.price.replace(/[^0-9.]/g, '')) || 0;
+      Analytics.purchase(p, value, micros > 0 && msg.currency ? String(msg.currency) : 'USD', msg.fromFlow ? 'shop' : 'pending');
     }
     NativeBridge.call('billingFinish', token, p.lifetime ? '0' : '1');
     if (buying?.id === p.id) { const b = buying; buying = null; b.done('ok'); }

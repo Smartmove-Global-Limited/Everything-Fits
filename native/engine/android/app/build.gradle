@@ -175,7 +175,7 @@ dependencies {
     // ---- analytics, same SDKs as the web / Capacitor app ----
     implementation platform('com.google.firebase:firebase-bom:34.19.0')
     implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.appsflyer:af-android-sdk:6.17.0'
+    implementation 'com.appsflyer:af-android-sdk:7.0.4'   // SDK 7: start() waits for registerSessionReadyListener (SdkBridge.init)
     implementation 'com.facebook.android:facebook-core:18.3.0'
     implementation 'com.google.firebase:firebase-config'
     // ---- ads and purchases ----

@@ -19,6 +19,7 @@
 //   result       win · lose · quit (app closed mid-round: sent at the next launch, before reopen)
 import { LocalStore } from './LocalStore';
 import { NativeBridge } from './NativeBridge';
+import type { Product } from './Purchases';
 
 const KEY = 'snug.events.v1';
 type Saved = { opened?: boolean; losses: Record<string, number>; playing: null | { level: number; lose_index: number; booster: Record<string, number> } };
@@ -49,7 +50,20 @@ function send(name: string, params: Record<string, string | number>) {
   NativeBridge.logEvent(name, params);
 }
 
+/** What a store product gives, for the purchase event's product / af_content_type */
+const productKind = (p: Product) => p.noAds ? (p.boosters ? 'no_ads_bundle' : 'no_ads')
+  : p.gold && p.boosters ? 'bundle' : p.gold ? 'gold' : 'booster';
+
 export const Analytics = {
+  /**
+   * A store purchase was granted (once per transaction). Firebase gets purchase_success; SdkBridge
+   * sends it to AppsFlyer as af_purchase (af_revenue / af_currency), the only event AppsFlyer
+   * books purchase revenue from. value / currency = what Play charged.
+   */
+  purchase(p: Product, value: number, currency: string, source: string) {
+    send('purchase_success', { product: productKind(p), product_id: p.id, value, currency, source });
+  },
+
   /** Why the next round starts: next / restart / home */
   setReason(r: 'next' | 'restart' | 'home') { nextReason = r; },
 

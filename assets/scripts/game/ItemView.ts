@@ -1,5 +1,6 @@
 import { _decorator, Component, Enum, RigidBody2D, Collider2D, PolygonCollider2D, CircleCollider2D, UITransform, Sprite, ERigidBody2DType, Vec2, Rect, Mat4, Contact2DType, IPhysics2DContact } from 'cc';
 import { PhysicsGroup } from '../core/GameConstants';
+import { setIceCoat } from './IceCoat';
 const { ccclass, property, requireComponent, disallowMultiple } = _decorator;
 
 /** Physics behaviour of an item (meta.physics in the web item data) */
@@ -50,10 +51,14 @@ export class ItemView extends Component {
   enterAt = 0;
   presetInBag = false;    // placed inside the bag from the start
   locked = false;         // hidden in a mystery box
-  releasedAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0; outAt = -1e9;
+  releasedAt = 0; floorBuzzAt = 0; spunAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0; outAt = -1e9;
   /** Settle: where the item has been staying lately and for how long (seconds) */
   restX = NaN; restY = 0; restAngle = 0; restTime = 0;
-  frozen = false; holdUntil = 0;
+  holdUntil = 0;
+  private isFrozen = false;
+  /** held still by the Freeze booster; shows the ice coat (game/IceCoat) */
+  get frozen() { return this.isFrozen; }
+  set frozen(v: boolean) { if (v === this.isFrozen) return; this.isFrozen = v; setIceCoat(this, v); }
   /** angle (degrees) kept while it is turned with the rotate handle and a moment after (DragController) */
   holdAngle = 0;
   cracks = 0; crackedAt = 0; broken = false;
@@ -73,6 +78,10 @@ export class ItemView extends Component {
   private localPolys: Vec2[][] = [];
   /** shape bounding box in node space at scale 1 (web def.box), for the rotate button */
   readonly localBox = new Rect();
+  /** long axis of the shape in node space (radians) and length / thickness along it (Settle: thin items standing on end) */
+  slimAxis = 0; slimness = 1; slimLength = 0;
+  /** which way it is toppling (Settle), kept once chosen */
+  toppleSide = 0;
   /** shape area at scale 1 (units²) */
   private baseArea = 0;
   private worldPolys: Vec2[][] = [];
@@ -99,6 +108,7 @@ export class ItemView extends Component {
       this.worldPolys.push(pts.map(() => new Vec2()));
     }
     this.computeLocalBox();
+    this.computeSlimAxis();
   }
 
   onDestroy() { for (const c of this.colliders) if (c.isValid) c.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this); }
@@ -112,6 +122,22 @@ export class ItemView extends Component {
     for (const poly of this.localPolys) for (const p of poly) { if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; }
     if (x0 === Infinity) { const ui = this.transform2d; x0 = -ui.width / 2; x1 = ui.width / 2; y0 = -ui.height / 2; y1 = ui.height / 2; }
     this.localBox.set(x0, y0, x1 - x0, y1 - y0);
+  }
+
+  /** Thinnest direction of the shape (3° steps): the long axis is across it */
+  private computeSlimAxis() {
+    let best = Infinity;
+    for (let d = 0; d < 180; d += 3) {
+      const t = d * Math.PI / 180, ux = Math.cos(t), uy = Math.sin(t);
+      let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+      for (const poly of this.localPolys) for (const p of poly) {
+        const u = p.x * ux + p.y * uy, v = -p.x * uy + p.y * ux;
+        if (u < u0) u0 = u; if (u > u1) u1 = u; if (v < v0) v0 = v; if (v > v1) v1 = v;
+      }
+      if (u0 === Infinity) return;
+      // v is the thickness across the axis t
+      if (v1 - v0 < best) { best = v1 - v0; this.slimAxis = t; this.slimLength = u1 - u0; this.slimness = (u1 - u0) / Math.max(1e-3, v1 - v0); }
+    }
   }
 
   /** Polygons of the item in world (= Field) space at the current node transform */
@@ -177,6 +203,13 @@ export class ItemView extends Component {
     }
   }
 
+  /**
+   * Spin in rad/s. Use this instead of body.angularVelocity for read-modify-write: Cocos 3.8.2
+   * RigidBody2D.angularVelocity READS in degrees/s but WRITES in radians/s (box2d rigid-body.ts),
+   * so `v = v + x` multiplied the spin by ~57 each time.
+   */
+  get spin(): number { return this.body.angularVelocity * Math.PI / 180; }
+  set spin(w: number) { this.body.angularVelocity = w; }
   stop() { this.body.linearVelocity = this.body.linearVelocity.set(0, 0); this.body.angularVelocity = 0; }
 
   get isStatic() { return this.body.type === ERigidBody2DType.Static; }

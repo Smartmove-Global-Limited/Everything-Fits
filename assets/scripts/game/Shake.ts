@@ -33,7 +33,8 @@ const DEAD_Y = 1.2, MAX_UP = 4;          // vertical axis: walking / tilting ign
 const GAME_G = 34.375;                   // m/s², game gravity (Project Settings → Physics)
 const JOLT_MIN = 3.5;                    // m/s²: a direction change this strong is a jolt (costs energy)
 const JOLT_GAP = 85;                     // ms: at most one jolt counted per this interval
-const KNOCK_GAP = 220;                   // ms: at most one knocking sound per this interval
+const KNOCK_GAP = 400;                   // ms: at most one bag-shake sound per this interval (the clip is 0.84 s)
+const KNOCK_MAX = .22;                   // loudest bag-shake sound (the clips overlap while shaking: full volume was too loud)
 const MAG_SHAKE = 2.5;                   // m/s²: total acceleration this far from its resting value = shaking
 const LIN_SHAKE = 4;                     // m/s²: same with the linear acceleration sensor (gravity removed)
 const SHAKE_WINDOW = 350;                // ms the sensor is obeyed after that
@@ -44,6 +45,7 @@ let ax = 0, ay = 0, gx = 0, gy = 0;      // filtered device acceleration (m/s²)
 let fakeX = 0, fakeY = 0, fakeUntil = 0; // keyboard / scripted shake
 let onEnergy: (e: number) => void = () => {};
 let onEmpty: () => void = () => {};
+let onJolt: () => void = () => {};
 const keys = new Set<KeyCode>();
 let bound = false;
 /** Android linear acceleration read from MotionBridge every frame (no Cocos accelerometer then) */
@@ -87,8 +89,8 @@ export function shakeToward(dx: number, dy: number, k = 1, ms = 180) {
 }
 
 export const Shake = {
-  bind(handlers: { onEnergy: (e: number) => void; onEmpty: () => void }) {
-    onEnergy = handlers.onEnergy; onEmpty = handlers.onEmpty;
+  bind(handlers: { onEnergy: (e: number) => void; onEmpty: () => void; onJolt?: () => void }) {
+    onEnergy = handlers.onEnergy; onEmpty = handlers.onEmpty; onJolt = handlers.onJolt || (() => {});
     if (bound) return;
     bound = true;
     try { linear = NATIVE && sys.os === sys.OS.ANDROID && !!callStatic('available', '()Z'); } catch { linear = false; }
@@ -153,10 +155,11 @@ export const Shake = {
     const now = Date.now();
     if (!turned || strength < JOLT_MIN || now < joltAt) return;
     joltAt = now + JOLT_GAP;
-    Sound.vibrate(Math.round(Math.min(48, 12 + strength * 2.4)));
+    Sound.vibrate(Math.round(Math.min(80, 35 + strength * 3)));   // shorter was not felt on some phones
     // the items knocking about in the bag, louder for a harder jolt
-    if (now >= knockAt) { knockAt = now + KNOCK_GAP; Sound.play('jiggle', { gain: Math.min(1, .45 + strength * .05) }); }
+    if (now >= knockAt) { knockAt = now + KNOCK_GAP; Sound.play('jiggle', { gain: Math.min(KNOCK_MAX, .1 + strength * .012) }); }
     ShakeEnergy.spend();
+    onJolt();
     onEnergy(ShakeEnergy.fraction);
     if (ShakeEnergy.empty) onEmpty();
   },

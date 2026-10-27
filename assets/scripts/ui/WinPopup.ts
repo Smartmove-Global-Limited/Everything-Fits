@@ -3,9 +3,9 @@
 //   Continue / Collect ×2 (rewarded ad collect_x2).
 // Celebration (doc §5, about 1.3 s, the buttons work all along): a soft glow behind the card
 // (it keeps breathing gently while the popup is open),
-// the stars one by one (0.17 s apart) growing in with one small bounce and a "ting" rising per
+// the stars one by one (0.17 s apart) growing in with one small bounce and a sparkle sound per
 // star won (none for the stars not won), then fireworks behind the card (light streaks, twinkling
-// stars) with a soft "pop" and sparkling crackle, then more fireworks and paper confetti all the
+// stars) with the fireworks sound (one clip, once), then more fireworks and paper confetti all the
 // time until the player leaves the popup. Everything is drawn behind the card: it never covers the
 // buttons or the reward.
 // Continue / Collect ×2 (once the ad was watched): a gold counter like Home's shows at the top
@@ -16,13 +16,12 @@ import { ScreenFit } from './ScreenFit';
 import { Wallet, formatNumber } from '../services/Wallet';
 import { RoundRect } from './RoundRect';
 import { Overlays } from './Overlays';
-import { Sound, SfxName } from '../audio/Sound';
+import { Sound } from '../audio/Sound';
 import { Celebration } from './Celebration';
 const { ccclass } = _decorator;
 
 const DONE_BG = new Color(0xDC, 0xE4, 0xD2, 255), DONE_BORDER = new Color(0x9D, 0xB8, 0x9A, 255);
 const STAR_FIRST = .15, STAR_GAP = .17, STAR_POP = .32;   // s: first star after the card pops, gap, grow time
-const TINGS: SfxName[] = ['ting1', 'ting2', 'ting3'];
 
 export type WinOptions = {
   levelNumber: number; seconds: number; reward: number; stars: number; mistake?: string | null;
@@ -205,7 +204,7 @@ export class WinPopup extends Component {
       st.setScale(.3, .3, 1);
       // small to full size with one light bounce; only the stars won ring
       tween(st).delay(STAR_FIRST + i * STAR_GAP)
-        .call(() => { if (won) Sound.play(TINGS[Math.min(i, TINGS.length - 1)], { gain: .8 }); })
+        .call(() => { if (won) Sound.play('starShine', { gain: .8 }); })
         .to(STAR_POP * .6, { scale: big }, { easing: 'quadOut' })
         .to(STAR_POP * .4, { scale: Vec3.ONE }, { easing: 'quadInOut' })
         .call(() => { if (i === last) { this.fireworks(ui.width, ui.height); this.startParty(ui.width, ui.height); } })
@@ -216,14 +215,13 @@ export class WinPopup extends Component {
   /** Fireworks behind the card: five bursts one after another, above it and on its sides */
   private fireworks(w: number, h: number) {
     if (!this.node.activeInHierarchy) return;
-    Sound.play('fireworks', { gain: .8 });
+    Sound.playLong('fireworks', { gain: .28 });       // one clip of ten shots, once (not repeated with the party); half of .55 was asked
     const spots: [number, number, number][] = [
       [-w * .28, h * .5 + 70, 1], [w * .3, h * .5 + 95, 1], [0, h * .5 + 140, .9],
       [-w * .5 + 4, h * .1, .8], [w * .5 - 4, -h * .05, .8],
     ];
     spots.forEach(([x, y, k], i) => this.scheduleOnce(() => {
       this.fx.firework(x, y, { n: Math.round(34 * k), speed: 230 * k, life: 1.05 });
-      if (i === 2) Sound.play('fireworks', { gain: .45 });
     }, i * .13));
   }
 
@@ -237,7 +235,7 @@ export class WinPopup extends Component {
     this.unschedule(this.partyTick);
     this.schedule(this.partyTick, .4);
   }
-  private stopParty() { this.unschedule(this.partyTick); }
+  private stopParty() { this.unschedule(this.partyTick); Sound.stopLong(); }
   private partyTick() {
     if (!this.node.activeInHierarchy || this.finishing) { this.stopParty(); return; }
     const { w, h } = this.cardSize, i = this.partyTicks++;
@@ -250,7 +248,6 @@ export class WinPopup extends Component {
     const k = side ? .75 : .85 + Math.random() * .3;
     this.fx.firework(x, y, { n: Math.round(30 * k), speed: 220 * k, life: 1.05 });
     this.fx.confetti(-vis.width / 2, vis.width / 2, topY, { n: 5 });
-    if (i % 3 === 0) Sound.play('fireworks', { gain: .3 });
   }
 
   private async collectX2() {

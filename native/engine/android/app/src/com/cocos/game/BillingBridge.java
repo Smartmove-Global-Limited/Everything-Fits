@@ -227,8 +227,15 @@ final class BillingBridge {
 
     private static void report(Purchase p, boolean fromFlow) {
         for (String id : p.getProducts()) {
+            // what Play actually charges (e.g. 69000000 micros, "VND"), for af_purchase revenue;
+            // 0 / "" when the details are not loaded yet (TypeScript then falls back to the catalogue price)
+            long micros = 0; String currency = "";
+            ProductDetails d = details.get(id);
+            ProductDetails.OneTimePurchaseOfferDetails offer = d == null ? null : offerFor(d);
+            if (offer != null) { micros = offer.getPriceAmountMicros(); currency = offer.getPriceCurrencyCode(); }
             ScriptEvents.send("billing", ScriptEvents.of("purchase", "productId", id, "token", p.getPurchaseToken(),
-                    "orderId", p.getOrderId() == null ? "" : p.getOrderId(), "fromFlow", fromFlow));
+                    "orderId", p.getOrderId() == null ? "" : p.getOrderId(), "fromFlow", fromFlow,
+                    "priceMicros", micros, "currency", currency));
         }
     }
 

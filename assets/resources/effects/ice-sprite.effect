@@ -1,0 +1,116 @@
+// Ice coat over a frozen item (Freeze booster, game/IceCoat.ts), the web look of render.js: the
+// item's own silhouette filled pale ice blue (rgba(170,222,248,.30)) with a blue rim along its edge
+// (rgba(120,196,240,.9), about 2 units). Drawn as a copy of the item's sprite on top of it, so the
+// edge is anti-aliased like the picture itself (no Graphics, which has no AA on Android).
+//   ice.xy / ice.zw  uv rectangle of the sprite frame (samples outside it count as transparent)
+//   edge.xy          rim width in uv units (x, y)
+// Based on the Cocos Creator 3.8.2 builtin-sprite.effect (Copyright (c) 2017-2020 Xiamen Yaji Software Co., Ltd.)
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: sprite-vs:vert
+      frag: ice-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        ice: { value: [0, 0, 1, 1] }
+        edge: { value: [0.01, 0.01, 0, 0] }
+}%
+CCProgram sprite-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+
+CCProgram ice-fs %{
+  precision highp float;
+  #include <builtin/internal/embedded-alpha>
+
+  in vec4 color;
+
+  #if USE_TEXTURE
+    in vec2 uv0;
+    #pragma builtin(local)
+    layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+  #endif
+
+  uniform Ice {
+    vec4 ice;
+    vec4 edge;
+  };
+
+  float alphaAt (vec2 uv) {
+    #if USE_TEXTURE
+      if (uv.x < ice.x || uv.y < ice.y || uv.x > ice.z || uv.y > ice.w) return 0.0;
+      return CCSampleWithAlphaSeparated(cc_spriteTexture, uv).a;
+    #else
+      return 1.0;
+    #endif
+  }
+
+  vec4 frag () {
+    #if USE_TEXTURE
+      float a = alphaAt(uv0);
+      // rim: the thinnest neighbour within the rim width (8 directions, 2 rings)
+      float m = 1.0;
+      for (int i = 0; i < 8; i++) {
+        float t = float(i) * 0.7853982;
+        vec2 d = vec2(cos(t), sin(t)) * edge.xy;
+        m = min(m, alphaAt(uv0 + d));
+        m = min(m, alphaAt(uv0 + d * 0.5));
+      }
+      float rim = clamp((a - m) * 1.6, 0.0, 1.0);
+    #else
+      float a = 1.0; float rim = 0.0;
+    #endif
+    vec3 fill = vec3(0.667, 0.871, 0.973);
+    vec3 line = vec3(0.471, 0.769, 0.941);
+    vec4 o = vec4(mix(fill, line, rim), a * mix(0.30, 0.9, rim));
+    o.a *= color.a;
+    return o;
+  }
+}%

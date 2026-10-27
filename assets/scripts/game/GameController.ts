@@ -12,6 +12,7 @@ import { DragController } from './DragController';
 import * as BagRules from './BagRules';
 import { checkEject, updatePacked, setBagEvents, applyEjects } from './BagRules';
 import { startFreeze, tickFreeze, freezeLeft, isFreezing, shrinkBiggestOutside, throwOne, FREEZE_MS } from './BoosterEffects';
+import { preloadIceCoat } from './IceCoat';
 import { scoreRound } from './Score';
 import { Fx } from './Fx';
 import { tickPhone, tickBalloons, setMechanicsEvents } from './Mechanics';
@@ -27,6 +28,7 @@ import { SettingsPopup } from '../ui/SettingsPopup';
 import { WinPopup } from '../ui/WinPopup';
 import { LosePopup } from '../ui/LosePopup';
 import { ShakePopup } from '../ui/ShakePopup';
+import { openBoosterShop } from '../ui/BoosterShop';
 import { Overlays } from '../ui/Overlays';
 import { Sound } from '../audio/Sound';
 import { Progress } from '../services/Progress';
@@ -89,6 +91,7 @@ export class GameController extends Component {
   get embedded() { return this.node.scene?.name === 'Editor'; }
 
   onLoad() {
+    preloadIceCoat();
     if (this.embedded) ScreenFit.setEmbedded();
     else {
       ScreenFit.apply();
@@ -127,6 +130,7 @@ export class GameController extends Component {
     Shake.bind({
       onEnergy: e => this.hud.setShakeEnergy(e),
       onEmpty: () => { if (!this.shakePopupShown) { this.shakePopupShown = true; this.openShakePopup(); } },
+      onJolt: () => this.tutorial?.onShaken(),
     });
     this.hud.onPause = () => this.openSettings();
     this.hud.onBooster = id => this.useBooster(id);
@@ -186,6 +190,7 @@ export class GameController extends Component {
     this.hud.setClock(S.timeLeft / 1000);
     this.hud.showBagHint(false);
     this.freezeShown = -1;
+    this.hud.setClockFrozen(false);
     this.shakeHintOnce();
     Analytics.levelStart(this.levelNumber, S.level.id || String(S.levelIndex), S.level.difficulty?.tier);
     ContentLoader.preloadLevel(levels[(S.levelIndex + 1) % levels.length]);   // the next one, while this one is played
@@ -199,7 +204,9 @@ export class GameController extends Component {
   private maybeTutorial() {
     const n = this.levelNumber;
     const booster = BOOSTER_KEYS.findIndex(k => UNLOCK_LEVEL[k] === n && Tutorial.needsBooster(k));
-    if (!Tutorial.needsBasics(n) && booster < 0) return;
+    // the shake step waits for 3 items in the bag (level 1 starts it after the basics)
+    const shakeOnly = !Tutorial.needsBasics(n) && booster < 0 && Tutorial.needsShake() && !Tutorial.needsBasics(1);
+    if (!Tutorial.needsBasics(n) && booster < 0 && !shakeOnly) return;
     const round = GameState.round;
     let waited = 0;
     // after the bag has shown and the items have dropped in (checked a few times a second)
@@ -211,6 +218,7 @@ export class GameController extends Component {
       const t = await this.ensureTutorial();
       if (S.round !== round || t.active) return;
       if (Tutorial.needsBasics(n)) t.startBasics(this.tutorialHost());
+      else if (shakeOnly) t.watchShake(this.tutorialHost());
       else t.startBooster(BOOSTER_KEYS[booster], this.hud.boosters[booster].root, BOOSTER_INTRO[BOOSTER_KEYS[booster]], this.tutorialHost());
     };
     this.scheduleOnce(() => wait(), 1.4);
@@ -232,6 +240,7 @@ export class GameController extends Component {
       solution: () => (S.level?.solution || []).map((s: any) => ({ i: s.i, x: s.x, y: levelToFieldY(s.y - S.bagLift), angle: -s.angle * 180 / Math.PI })),
       itemLayer: this.itemLayer,
       packed: i => S.packed.has(i),
+      packedCount: () => S.packed.size,
       // the clock stops and no interstitial shows while a tutorial runs
       setActive: on => { S.timerOn = !on; Ads.tutorial = on; },
     };
@@ -306,6 +315,8 @@ export class GameController extends Component {
   /** Tell once, on touch devices, that shaking the phone settles the bag (web goiYLacMotLan) */
   private shakeHintOnce() {
     if (!sys.isMobile || LocalStore.get('snug.shakeHint.v1')) return;
+    // the tutorial's shake step teaches it: no toast on top of it
+    if (Tutorial.needsBasics(this.levelNumber) || Tutorial.needsShake()) { LocalStore.set('snug.shakeHint.v1', '1'); return; }
     LocalStore.set('snug.shakeHint.v1', '1');
     this.scheduleOnce(() => this.hud.toastMessage('Shake your phone to settle items in the bag', 3.2), 1.2);
   }
@@ -332,7 +343,7 @@ export class GameController extends Component {
   private tickFreezeBadge() {
     const wasFreezing = !!GameState.freezeUntil;
     const freezing = tickFreeze();
-    if (wasFreezing && !freezing) wakeAll();   // thawed: items settle again
+    if (wasFreezing && !freezing) { wakeAll(); this.hud.setClockFrozen(false); }   // thawed: items settle again
     const sec = freezing ? Math.ceil(freezeLeft() / 1000) : 0;
     if (sec !== this.freezeShown) { this.freezeShown = sec; this.renderBoosters(); }
   }
@@ -340,10 +351,12 @@ export class GameController extends Component {
   private useBooster(id: BoosterId) {
     const S = GameState;
     const key = BOOSTER_KEYS[id];
-    if (S.won || S.lost || S.paused || !Boosters.isUnlocked(key, this.levelNumber) || Boosters.count(key) <= 0) return;
+    if (S.won || S.lost || S.paused || !Boosters.isUnlocked(key, this.levelNumber)) return;
+    if (Boosters.count(key) <= 0) { if (!this.embedded) this.openBoosterShop(); return; }   // none left: buy more
     if (key === 'freeze') {
       if (!startFreeze()) return;
       Boosters.use('freeze');
+      this.hud.setClockFrozen(true);
       Sound.play('shrink');
       const b = S.bag;
       if (b && this.fx) { const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2; this.fx.ring(cx, cy, { color: '#7FC8F0', r1: 150, life: 600 }); this.fx.sparkle(cx, cy, { n: 26, color: '#BFE6FA', speed: 1.6 }); }
@@ -387,6 +400,18 @@ export class GameController extends Component {
       onPrevLevel: () => this.jumpLevel(-1),
       onNextLevel: () => this.jumpLevel(1),
     });
+  }
+
+  /**
+   * A booster with none left was tapped: the clock stops and a short popup offers more (for gold
+   * or a bundle, as in the Shop); the round goes on when it is closed.
+   */
+  private async openBoosterShop() {
+    const S = GameState;
+    if (S.won || S.lost || S.paused) return;
+    S.paused = true;
+    Sound.duckMusic(true);
+    await openBoosterShop(() => { S.paused = false; Sound.duckMusic(false); this.renderBoosters(); });
   }
 
   private async openShakePopup() {

@@ -8,6 +8,12 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.appsflyer.AppsFlyerLib;
+import com.appsflyer.share.AFAdRevenueData;
+import com.appsflyer.share.AFInAppEventParameterName;
+import com.appsflyer.share.AFInAppEventType;
+import com.appsflyer.share.AdRevenueScheme;
+import com.appsflyer.share.MediationNetwork;
+import com.applovin.mediation.MaxAd;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
 import org.json.JSONObject;
@@ -63,10 +69,21 @@ public final class SdkBridge {
         BillingBridge.init(activity);
         AdsBridge.init(activity);
         if (key == null || key.isEmpty()) { Log.w(TAG, "AppsFlyer: no Dev Key, not sending"); return; }
-        AppsFlyerLib af = AppsFlyerLib.getInstance();
-        af.init(key, null, activity.getApplicationContext());
-        af.start(activity.getApplicationContext());
-        appsFlyerOn = true;
+        try {
+            AppsFlyerLib af = AppsFlyerLib.getInstance();
+            af.init(key, null, activity.getApplicationContext());
+            // device / debug builds: AppsFlyer logs its requests and the server answers (logcat AppsFlyer_*).
+            // After init: before it, SDK 7.0.4's logger has no context and logs an NPE.
+            int dbg = activity.getResources().getIdentifier("log_advertising_id", "bool", activity.getPackageName());
+            if (dbg != 0 && activity.getResources().getBoolean(dbg)) af.setDebugLog(true);
+            // SDK 7: init() no longer opens the session; start() has no arguments and must wait for the
+            // session-ready callback. The launcher's referrer extras are read before that first start.
+            af.collectDataFromLauncherActivity(activity);
+            af.registerSessionReadyListener(af::start);
+            appsFlyerOn = true;
+        } catch (Exception e) {
+            Log.e(TAG, "AppsFlyer init failed", e);   // attribution must never stop the game from opening
+        }
     }
 
     /** From TypeScript: native.reflection.callStaticMethod('com/cocos/game/SdkBridge', 'logEvent', ...) */
@@ -84,9 +101,53 @@ public final class SdkBridge {
                 values.put(k, v);
             }
             if (firebase != null) firebase.logEvent(name, bundle);
-            if (appsFlyerOn) AppsFlyerLib.getInstance().logEvent(com.cocos.lib.GlobalObject.getActivity(), name, values);
+            if (appsFlyerOn) {
+                // AppsFlyer books purchase revenue only from its own af_purchase event with af_revenue /
+                // af_currency, so a purchase goes to it under that scheme; Firebase keeps the game's name.
+                if ("purchase_success".equals(name)) {
+                    AppsFlyerLib.getInstance().logEvent(com.cocos.lib.GlobalObject.getActivity(), AFInAppEventType.PURCHASE, afPurchase(json));
+                    Log.i(TAG, "af_purchase " + json.opt("value") + " " + json.optString("currency") + " " + json.optString("product_id"));
+                } else {
+                    AppsFlyerLib.getInstance().logEvent(com.cocos.lib.GlobalObject.getActivity(), name, values);
+                }
+            }
         } catch (Exception e) {
             Log.w(TAG, "logEvent " + name + " failed", e);
+        }
+    }
+
+    /** purchase_success { product, product_id, value, currency, source } in AppsFlyer's purchase scheme */
+    private static Map<String, Object> afPurchase(JSONObject p) {
+        Map<String, Object> m = new HashMap<>();
+        m.put(AFInAppEventParameterName.REVENUE, p.optDouble("value", 0));
+        m.put(AFInAppEventParameterName.CURRENCY, p.optString("currency", "USD"));
+        m.put(AFInAppEventParameterName.CONTENT_ID, p.optString("product_id", ""));
+        m.put(AFInAppEventParameterName.CONTENT_TYPE, p.optString("product", ""));
+        m.put(AFInAppEventParameterName.QUANTITY, 1);
+        m.put("source", p.optString("source", ""));
+        return m;
+    }
+
+    /**
+     * Impression-level ad revenue (AppsFlyer "Impression-level (SDK)" integration): every paid MAX
+     * impression (AdsBridge revenue listeners) goes to logAdRevenue, which the SDK sends as
+     * af_ad_revenue. MAX reports the revenue in USD.
+     */
+    static void logAdRevenue(MaxAd ad) {
+        String placement = ad == null ? "" : ad.getPlacement();   // the placement given to showAd / setPlacement
+        if (!appsFlyerOn || ad == null) return;
+        double revenue = ad.getRevenue();
+        String network = ad.getNetworkName();
+        if (revenue <= 0 || network == null || network.isEmpty()) return;   // MAX had no figure for it
+        try {
+            Map<String, Object> extra = new HashMap<>();
+            extra.put(AdRevenueScheme.AD_UNIT, ad.getAdUnitId());
+            extra.put(AdRevenueScheme.AD_TYPE, ad.getFormat() == null ? "" : ad.getFormat().getLabel());
+            extra.put(AdRevenueScheme.PLACEMENT, placement == null ? "" : placement);
+            AppsFlyerLib.getInstance().logAdRevenue(new AFAdRevenueData(network, MediationNetwork.APPLOVIN_MAX, "USD", revenue), extra);
+            Log.i(TAG, "af_ad_revenue " + revenue + " USD " + network + " " + extra.get(AdRevenueScheme.AD_TYPE) + " " + placement);
+        } catch (Exception e) {
+            Log.w(TAG, "AppsFlyer logAdRevenue failed", e);
         }
     }
 

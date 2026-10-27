@@ -13,6 +13,7 @@ import { ERigidBody2DType, Rect } from 'cc';
 import { GameState, isHeld } from '../core/GameState';
 import { ItemView, ItemPhysics } from './ItemView';
 import { itemAABB } from './BagRules';
+import { PTM } from '../core/GameConstants';
 
 // An item rocking around one spot (wedged deeper: the pushes are bigger) must count as resting
 // too, so the spot is allowed to wander a little; a real slide or fall goes past it at once.
@@ -20,6 +21,23 @@ const MOVE = 2;       // units
 const TURN = 4;       // degrees
 const REST = .8;      // seconds
 const TOUCH = 1.5;    // units between bounding boxes that still count as touching
+// Items that cannot stand on their end in real life (a ruler, a pencil, a toothbrush…): set upright
+// they fall over. A real one stands on an edge a few millimetres wide, so the least tilt and gravity
+// brings it down: slowly at first, then faster (an inverted pendulum). Its collider is much thicker
+// than the drawing (a flat end ~20 units wide) and Box2D has no tiny disturbances, so dropped upright
+// it stood like a block. While one stands on end after being dropped, gravity's toppling about a
+// thin edge is added to its spin each step (no push from outside); leaning on a neighbour it rests
+// there. Boxes, bottles, tubes with a flat cap… stand like any other item (not in this list).
+const FALLS_ON_END = new Set([
+  27, 28, 33,          // ruler, pencil, toothbrush
+  22, 34, 44, 63, 67,  // folded umbrella, toothpaste, sunglasses, keyboard, pasta pack
+  72, 80, 91, 99,      // wristwatch, screwdriver, food thermometer, baguette
+  116, 158, 196,       // tick remover, electrolyte sachet, bottle brush
+]);
+const UPRIGHT_COS = Math.cos(22 * Math.PI / 180);   // long axis within 22° of vertical
+const TOPPLE_MS = 2500;                    // ms after the drop / the turn the toppling is added
+const SLOW = 2;                            // m/s: faster than this it is still falling / flying (no toppling in the air)
+const G_UNITS = 34.375 * PTM;              // game gravity in units/s² (Project Settings → Physics)
 
 function eligible(it: ItemView) {
   return !it.waiting && !it.entering && !isHeld(it) && it.node.activeInHierarchy
@@ -31,6 +49,7 @@ const cluster: ItemView[] = [];
 
 /** After every physics step (GameController.afterPhysics) */
 export function tickSettle(dt: number) {
+  topple(dt);
   const items = GameState.items;
   let candidates = false;
   for (const it of items) {
@@ -67,6 +86,36 @@ export function tickSettle(dt: number) {
     }
     if (!allAtRest) continue;
     for (const it of cluster) { it.stop(); it.body.sleep(); }
+  }
+}
+
+/**
+ * Inverted pendulum about a thin edge: angular acceleration (3g / 2L)·(tilt + 3·thickness / L), the
+ * second term outweighing what the collider's flat end holds up (as if the base were thin). Exactly
+ * upright it picks a side, as a real one would.
+ */
+function topple(dt: number) {
+  const S = GameState;
+  for (const it of S.items) {
+    // after a drop, or after its angle stopped being held (turned with the rotate button)
+    const since = Math.max(it.releasedAt, it.spunAt);
+    if (!FALLS_ON_END.has(it.itemId) || it.holdUntil || !since || S.clock - since > TOPPLE_MS || !eligible(it)) continue;
+    const v = it.body.linearVelocity;
+    if (v.x * v.x + v.y * v.y > SLOW * SLOW) continue;
+    const q = it.node.rotation, a = 2 * Math.atan2(q.z, q.w) + it.slimAxis;   // node angle from the quaternion (see DragController angleOf)
+    let ux = Math.cos(a), uy = Math.sin(a);
+    if (uy < 0) { ux = -ux; uy = -uy; }                                      // axis pointing up
+    if (uy < UPRIGHT_COS) continue;
+    const len = it.slimLength * it.levelScale;
+    if (!it.toppleSide || Math.abs(ux) > .01) it.toppleSide = Math.abs(ux) > .01 ? Math.sign(ux) : (Math.random() < .5 ? -1 : 1);
+    const tilt = Math.asin(Math.min(1, Math.abs(ux)));
+    // the flat end holds up to about (3g / 2L)·(thickness / L) (more once seated: contact friction):
+    // three times that tips it from upright
+    const alpha = 1.5 * G_UNITS / len * (tilt + 3 / it.slimness);
+    // top leaning right (+x) falls clockwise: negative spin
+    it.body.wakeUp();
+    it.spin -= it.toppleSide * alpha * dt;
+    it.restTime = 0; it.restX = NaN;
   }
 }
 

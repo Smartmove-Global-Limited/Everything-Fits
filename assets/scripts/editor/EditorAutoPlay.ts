@@ -75,7 +75,7 @@ export class EditorAutoPlay {
     let still = 0;
     for (let t = 0; t < 1500 && alive(); t += 50) {
       await sleep(50);
-      const v = it.body.linearVelocity, w = it.body.angularVelocity;
+      const v = it.body.linearVelocity, w = it.spin;   // rad/s (ItemView.spin: angularVelocity reads in degrees)
       still = Math.hypot(v.x, v.y) < .3 && Math.abs(w) < .3 ? still + 50 : 0;
       if (still >= 250) return;
     }

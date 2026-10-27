@@ -2,19 +2,24 @@
 // AudioSources: one for the looping music, one for one-shot effects. Clips load once from
 // resources/audio and stay cached. Settings (BGM / SFX / Vibration) are saved like the web
 // (key snug.audio.v2), all ON for a new player.
-import { Node, AudioSource, AudioClip, director, resources, sys, Tween, tween } from 'cc';
+import { Node, AudioSource, AudioClip, director, resources, Tween, tween } from 'cc';
 import { LocalStore } from '../services/LocalStore';
 import { NativeBridge } from '../services/NativeBridge';
 
 export type SfxName = 'tap' | 'tapBig' | 'pick' | 'drop' | 'land' | 'fit' | 'nope' | 'eject' | 'jiggle' | 'shrink' | 'trash'
   | 'unlock' | 'tick' | 'whoosh' | 'star' | 'win' | 'lose' | 'unlockLv' | 'glass' | 'metal' | 'paper' | 'crack' | 'break'
-  | 'winConfirm' | 'ting1' | 'ting2' | 'ting3' | 'fireworks';
+  | 'winConfirm' | 'ting1' | 'ting2' | 'ting3' | 'fireworks' | 'confettiPop' | 'confettiBurst' | 'starShine';
 
 /** Sounds made by the sound designer (m4a), everything else is <name>.wav */
 const FILE: Record<string, string> = {
   bgm: 'bgm', tap: 'button_pressed', tapBig: 'button_pressed', star: 'star_get', win: 'level_complete', lose: 'lose',
   // win celebration (doc §5, made by tools/sfx/make_win_sfx.py)
   winConfirm: 'win_confirm', ting1: 'star_ting_1', ting2: 'star_ting_2', ting3: 'star_ting_3',
+  // recorded sounds the user picked (2026-10-27): confetti cannon (all fireworks), star sparkle, bag shake;
+  // confettiBurst (confetti.m4a) is kept but no longer played
+  confettiPop: 'confetti_pop', confettiBurst: 'confetti_burst', starShine: 'star_shine', jiggle: 'shake_bag',
+  // fireworks on the win popup: one 6 s clip of ten shots, played once (2026-10-27)
+  fireworks: 'fireworks_shoot',
 };
 // effects at full volume, the music lower under them (on phones the taps were hard to hear)
 const MUSIC_VOLUME = .22, MUSIC_DUCKED = .07, SFX_VOLUME = 1;
@@ -22,7 +27,7 @@ const KEY = 'snug.audio.v2';
 const prefs = LocalStore.json(KEY, { sfx: true, music: true, vib: true });
 
 let node: Node | null = null;
-let music: AudioSource = null!, fx: AudioSource = null!;
+let music: AudioSource = null!, fx: AudioSource = null!, long: AudioSource = null!;
 const clips = new Map<string, AudioClip | null>();
 let musicWanted = false;
 let muted = false;          // Level Editor preview: silent unless "Bật tiếng khi xem thử" is on
@@ -37,6 +42,8 @@ function ensure() {
   music.loop = true; music.playOnAwake = false; music.volume = 0;
   fx = node.addComponent(AudioSource);
   fx.playOnAwake = false;
+  long = node.addComponent(AudioSource);   // one longer effect that can be stopped (playLong)
+  long.playOnAwake = false; long.loop = false;
 }
 
 function clip(name: string): Promise<AudioClip | null> {
@@ -58,7 +65,7 @@ export const Sound = {
   get vibrationOn() { return prefs.vib !== false; },
 
   /** Preload the short sounds so the first tap is not silent */
-  preload() { for (const n of Object.keys(FILE).concat(['pick', 'drop', 'fit', 'nope', 'eject', 'tick', 'unlockLv', 'trash', 'shrink', 'fireworks'])) clip(n); },
+  preload() { for (const n of Object.keys(FILE).concat(['pick', 'drop', 'fit', 'nope', 'eject', 'tick', 'unlockLv', 'trash', 'shrink'])) clip(n); },
 
   play(name: SfxName, { gain = 1, delay = 0 } = {}) {
     if (!prefs.sfx || muted) return;
@@ -69,6 +76,17 @@ export const Sound = {
       else fx.playOneShot(c, gain * SFX_VOLUME);
     });
   },
+
+  /** A longer effect played once that the caller may cut short (stopLong), e.g. the win fireworks */
+  playLong(name: SfxName, { gain = 1 } = {}) {
+    if (!prefs.sfx || muted) return;
+    ensure();
+    clip(name).then(c => {
+      if (!c || !prefs.sfx) return;
+      long.stop(); long.clip = c; long.volume = gain * SFX_VOLUME; long.play();
+    });
+  },
+  stopLong() { if (long && long.isValid) long.stop(); },
 
   async startMusic() {
     musicWanted = true;
@@ -105,7 +123,7 @@ export const Sound = {
   vibrate(ms = 30) {
     if (prefs.vib === false) return;
     try {
-      if (sys.isNative) (globalThis as any).jsb?.Device?.vibrate?.(ms / 1000);
+      if (NativeBridge.android) NativeBridge.call('haptic', String(Math.round(ms)));   // HapticsBridge: one pulse of ms
       else (globalThis as any).navigator?.vibrate?.(ms);
     } catch { /* not supported */ }
   },

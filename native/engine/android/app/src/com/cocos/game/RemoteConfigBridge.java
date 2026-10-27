@@ -19,7 +19,8 @@ import java.util.Map;
  */
 final class RemoteConfigBridge {
     private static final String TAG = "RemoteConfigBridge";
-    private static final long FETCH_INTERVAL_SEC = 3600;
+    // every launch asks the console (no cache window); a throttled or failed fetch keeps the last values
+    private static final long FETCH_INTERVAL_SEC = 0;
 
     private RemoteConfigBridge() {}
 

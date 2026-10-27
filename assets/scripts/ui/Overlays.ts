@@ -83,6 +83,25 @@ function releasePieces(box: Node) {
 type PieceSpot = { frame: number; x: number; y: number; k: number; angle: number };
 let coverLayout: PieceSpot[] = [];
 /**
+ * Which item goes in each cell: dealt from shuffled decks of all the items (each one used about as
+ * often as the others, not the same one many times) and never the same as the cell on its left or
+ * above it (picking at random per cell put copies of one item side by side).
+ */
+function dealFrames(rows: number, cols: number, kinds: number): number[] {
+  const out: number[] = [];
+  let deck: number[] = [];
+  const shuffled = () => { const d = Array.from({ length: kinds }, (_, i) => i); for (let i = d.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = d[i]; d[i] = d[j]; d[j] = t; } return d; };
+  for (let i = 0; i < rows * cols; i++) {
+    if (!deck.length) deck = shuffled();
+    const left = i % cols ? out[i - 1] : -1, up = i >= cols ? out[i - cols] : -1;
+    let k = deck.findIndex(f => f !== left && f !== up);
+    if (k < 0) { deck = deck.concat(shuffled()); k = deck.findIndex(f => f !== left && f !== up); }
+    out.push(deck.splice(Math.max(0, k), 1)[0]);
+  }
+  return out;
+}
+
+/**
  * Fill the screen with items on a jittered grid (nodes from the pool); a new random layout, or
  * the one the cover started with (`same`: the scene changed under the veil). Nearest-first.
  */
@@ -94,8 +113,9 @@ function layoutPieces(veil: Node, same = false): { node: Node; dist: number }[] 
   if (!same || !coverLayout.length) {
     const vis = ScreenFit.visible(), cols = Math.ceil(vis.width / CELL), rows = Math.ceil(vis.height / CELL);
     coverLayout = [];
+    const frames = dealFrames(rows, cols, transFrames.length);
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) coverLayout.push({
-      frame: (Math.random() * transFrames.length) | 0, k: .82 + Math.random() * .22, angle: (Math.random() - .5) * 50,
+      frame: frames[r * cols + c], k: .82 + Math.random() * .22, angle: (Math.random() - .5) * 50,
       x: (c + .5) * CELL - vis.width / 2 + (Math.random() - .5) * 18, y: vis.height / 2 - (r + .5) * CELL + (Math.random() - .5) * 18,
     });
   }

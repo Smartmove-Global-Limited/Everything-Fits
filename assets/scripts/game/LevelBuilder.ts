@@ -111,7 +111,7 @@ export class LevelBuilder {
       item.setLevelScale(k);
       item.presetInBag = !!it.inBag;
       item.locked = !!it.locked;
-      item.releasedAt = 0; item.stuckFrames = item.insideFrames = item.outsideFrames = 0; item.fitAt = 0; item.outAt = -1e9;
+      item.releasedAt = item.floorBuzzAt = item.spunAt = item.toppleSide = 0; item.stuckFrames = item.insideFrames = item.outsideFrames = 0; item.fitAt = 0; item.outAt = -1e9;
       item.frozen = false; item.holdUntil = 0; item.cracks = 0; item.broken = false;
       item.body.type = ERigidBody2DType.Dynamic;   // a pooled item may come back frozen (static)
       let x = it.x, y = it.y;

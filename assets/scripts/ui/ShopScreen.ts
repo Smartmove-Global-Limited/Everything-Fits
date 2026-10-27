@@ -2,14 +2,14 @@
 // No Ads · Free Gold (rewarded ad, once a day) · Gold Packs · No Ads Bundle · Booster Bundle and
 // Bundles · Spend Gold · Restore purchases. Prices come from the store. While one purchase runs
 // every buy button is locked; the reward is granted by Purchases only once the store confirms.
-import { _decorator, Component, Node, ScrollView, Vec2, UITransform, Color, Sprite, Label } from 'cc';
-import { findNode, findAll, setText, labelIn, tap, fitGoldPill } from './UiKit';
+import { _decorator, Component, Node, ScrollView, Vec2, UITransform, Color, Sprite, Label, instantiate } from 'cc';
+import { findNode, findAll, setText, labelIn, tap, fitGoldPill, centerOnParent, centerContent } from './UiKit';
 import { RoundRect } from './RoundRect';
 import { Overlays } from './Overlays';
 import { Wallet, formatNumber } from '../services/Wallet';
 import { Purchases, product, BuyResult } from '../services/Purchases';
 import { Boosters, BoosterKey } from '../services/Boosters';
-import { FreeGold, FREE_GOLD } from '../services/Daily';
+import { FreeGold, FREE_GOLD, FREE_GOLD_PER_DAY } from '../services/Daily';
 import { Ads } from '../services/Ads';
 import { Sound } from '../audio/Sound';
 import { ShopFx } from './ShopFx';
@@ -24,7 +24,7 @@ const BUY_IDS = [
   'spend_freeze', 'spend_resize', 'spend_throw',
 ];
 /** Spend Gold: three of a booster for gold (booster economy table: 150 / 150 / 200 gold each) */
-const SPEND: Record<string, { key: BoosterKey; name: string; price: number }> = {
+export const SPEND: Record<string, { key: BoosterKey; name: string; price: number }> = {
   spend_freeze: { key: 'freeze', name: 'Freeze ×3', price: 450 },
   spend_resize: { key: 'resize', name: 'Re:Size ×3', price: 450 },   // names as in the Figma catalogue
   spend_throw: { key: 'throw', name: 'Remove ×3', price: 600 },
@@ -79,6 +79,7 @@ export class ShopScreen extends Component {
     const bundleArts = findAll(n, 'efs-bundle-left').map(l => l.children.find(c => c.active && c.getComponent(Sprite))!).filter(Boolean);
     this.fx = this.node.addComponent(ShopFx);
     this.fx.setup(goldArts, bundleArts, this.node, [findNode(n, 'efs-noads-ic'), findNode(n, 'efs-gift')].filter(Boolean) as Node[]);
+    this.makeFreeTag();
   }
   /** Amount on the gold pill, the pill hugging it */
   private showGold(text: string) { setText(this.gold, text); fitGoldPill(this.gold); }
@@ -110,14 +111,14 @@ export class ShopScreen extends Component {
     for (const b of this.buys) {
       const card = b.node.parent!;
       const p = product(b.id);
-      if (p && !p.boosters && p.gold) setText(findNode(card, 'b'), formatNumber(p.gold));   // gold pack
+      if (p && !p.boosters && p.gold) { setText(findNode(card, 'b'), formatNumber(p.gold)); centerOnParent(findNode(card, 'b')); }   // gold pack
       if (p?.boosters) {
         const left = findNode(card, 'efs-bundle-left');
         if (left && p.gold) setText(findNode(left, 'b'), formatNumber(p.gold));
         for (const bst of findAll(card, 'efs-bst')) setText(findNode(bst, 'small'), `×${p.boosters}`);
       }
       const spend = SPEND[b.id];
-      if (spend) { setText(findNode(card, 'b'), spend.name); setText(b.node, formatNumber(spend.price)); }
+      if (spend) { setText(findNode(card, 'b'), spend.name); centerOnParent(findNode(card, 'b')); setText(b.node, formatNumber(spend.price)); centerContent(b.node); }
     }
     const free = this.buys.find(b => b.kind === 'ad');
     if (free) {
@@ -186,12 +187,46 @@ export class ShopScreen extends Component {
     }
   }
 
-  /** Free gold: once a day; after that the button waits for tomorrow */
+  /**
+   * "3/5 LEFT" on the Free Gold card: a copy of the No Ads card's "POPULAR" tag, at the same place
+   * from the card's top-right corner
+   */
+  private freeTag: Node | null = null;
+  private freeTagRight = 0;
+  private freeTagPad = 0;
+  private makeFreeTag() {
+    const src = findNode(this.node, 'efs-tag'), free = this.buys.find(b => b.kind === 'ad');
+    const srcCard = src?.parent, card = free?.node.parent;
+    if (!src || !srcCard || !card) return;
+    const t = instantiate(src);
+    card.addChild(t);
+    const su = src.getComponent(UITransform)!, sc = srcCard.getComponent(UITransform)!, cu = card.getComponent(UITransform)!;
+    const fromTop = sc.height * (1 - sc.anchorY) - src.position.y;
+    t.setPosition(src.position.x, cu.height * (1 - cu.anchorY) - fromTop, 0);
+    this.freeTagRight = src.position.x + su.width * (1 - su.anchorX);
+    const l = labelIn(src)!; l.updateRenderData(true);
+    this.freeTagPad = (su.width - l.node.getComponent(UITransform)!.width) / 2;
+    this.freeTag = t;
+  }
+  /** Claims left today on the tag, the tag hugging its text and keeping its right edge */
+  private drawFreeTag() {
+    const t = this.freeTag; if (!t) return;
+    const l = labelIn(t)!;
+    l.string = `${FreeGold.left}/${FREE_GOLD_PER_DAY} LEFT`;
+    l.updateRenderData(true);
+    const u = t.getComponent(UITransform)!, w = l.node.getComponent(UITransform)!.width + this.freeTagPad * 2;
+    u.width = w;
+    t.setPosition(this.freeTagRight - w * (1 - u.anchorX), t.position.y, 0);
+    centerContent(t);
+  }
+
+  /** Free gold: up to FREE_GOLD_PER_DAY times a day; after that the button waits for tomorrow */
   private freeLabelX: number | null = null;
   private freeAnchor: number | null = null;
   private drawFreeGold() {
     const b = this.buys.find(x => x.kind === 'ad'); if (!b) return;
-    const done = FreeGold.claimedToday;
+    const done = FreeGold.doneToday;
+    this.drawFreeTag();
     const label = labelIn(b.node);
     if (label) {
       this.freeLabelX ??= label.node.position.x;
@@ -207,6 +242,7 @@ export class ShopScreen extends Component {
     }
     const icon = findNode(b.node, 'efs-ad');
     if (icon) icon.active = !done;
+    if (!done) centerContent(b.node);           // ad icon + "Collect" centred in the button
     b.enable(!done && !this.busy);
     this.fx?.attract(b.node, !done);                 // "Collect" bobs and twinkles to be noticed
     this.unschedule(this.tickFreeGold);
@@ -215,7 +251,7 @@ export class ShopScreen extends Component {
   /** Countdown, once a second while the Shop is open (back to Collect at midnight) */
   private tickFreeGold() {
     if (!this.node.activeInHierarchy) return;
-    if (!FreeGold.claimedToday) { this.drawFreeGold(); return; }
+    if (!FreeGold.doneToday) { this.drawFreeGold(); return; }
     const label = labelIn(this.buys.find(x => x.kind === 'ad')?.node ?? null);
     if (label) label.string = this.countdown(FreeGold.secondsLeft());
   }
@@ -283,7 +319,7 @@ export class ShopScreen extends Component {
 
   private async freeGold() {
     const b = this.buys.find(x => x.kind === 'ad');
-    if (FreeGold.claimedToday || !b) return;
+    if (FreeGold.doneToday || !b) return;
     this.lock(true);
     const goldBefore = Wallet.gold;
     this.holdGold = true;

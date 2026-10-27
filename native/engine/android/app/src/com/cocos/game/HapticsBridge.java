@@ -12,6 +12,7 @@ import android.os.VibratorManager;
  * (the phone's predefined "click" effects were too faint to feel on some phones).
  *   light   one light, short pulse (item placed in the bag)
  *   double  two light, short pulses (item bounced out of the bag)
+ *   <ms>    one pulse of that many milliseconds (shaking the bag: one per jolt, harder = longer)
  * The Vibration switch in Settings is checked on the TypeScript side.
  */
 final class HapticsBridge {
@@ -31,9 +32,16 @@ final class HapticsBridge {
         Vibrator v = vibrator(a);
         if (v == null || !v.hasVibrator()) return;
         boolean twice = "double".equals(kind);
+        long ms = 40;
+        try { if (kind != null && !kind.isEmpty() && Character.isDigit(kind.charAt(0))) ms = Math.max(5, Math.min(120, Long.parseLong(kind))); }
+        catch (NumberFormatException ignored) { /* light */ }
         // a clearly felt but short buzz (the phone's own "click" effects were too faint to feel on
         // some phones): 40 ms, or two 35 ms pulses 90 ms apart
-        long[] timing = twice ? new long[] { 0, 35, 90, 35 } : new long[] { 0, 40 };
+        // a motor without amplitude control (e.g. TECNO) barely spins up in less than ~45 ms
+        boolean ampControl = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && v.hasAmplitudeControl();
+        long pulse = ampControl ? 35 : 45;
+        if (!ampControl) ms = Math.max(ms, 45);
+        long[] timing = twice ? new long[] { 0, pulse, 90, pulse } : new long[] { 0, ms };
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (v.hasAmplitudeControl()) {
