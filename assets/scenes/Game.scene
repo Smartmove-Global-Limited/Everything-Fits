@@ -4679,7 +4679,8 @@
     "mode": 1,
     "safeArea": true,
     "extendToEdge": false,
-    "_id": "67XuSImFdG9KdMvP4z6qEX"
+    "_id": "67XuSImFdG9KdMvP4z6qEX",
+    "aboveSystemBar": true
   },
   {
     "__type__": "cc.Node",
@@ -5672,7 +5673,8 @@
     "mode": 1,
     "safeArea": true,
     "extendToEdge": false,
-    "_id": "ce/7akcRNIS7/rtih/wG9a"
+    "_id": "ce/7akcRNIS7/rtih/wG9a",
+    "aboveSystemBar": true
   },
   {
     "__type__": "cc.Node",
@@ -6665,7 +6667,8 @@
     "mode": 1,
     "safeArea": true,
     "extendToEdge": false,
-    "_id": "16zO5BjcRDUYV26XNKBn/c"
+    "_id": "16zO5BjcRDUYV26XNKBn/c",
+    "aboveSystemBar": true
   },
   {
     "__type__": "cc.Node",

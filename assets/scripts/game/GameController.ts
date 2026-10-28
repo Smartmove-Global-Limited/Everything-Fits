@@ -67,6 +67,7 @@ export class GameController extends Component {
   private tutorial: Tutorial | null = null;
 
   private offCamera: (() => void) | null = null;
+  private offInsets: (() => void) | null = null;
 
   /**
    * Tall screens: the HUD row and the booster dock follow the screen edges (EdgePin) while the
@@ -74,7 +75,7 @@ export class GameController extends Component {
    * up, and the tray floor drops to halve its gap to the dock.
    */
   private fitToScreen() {
-    const vis = ScreenFit.visible(), ins = ScreenFit.insets();
+    const vis = ScreenFit.visible(), ins = ScreenFit.insets(undefined, true);   // the dock stays above the system bar (EdgePin.aboveSystemBar)
     const extra = Math.max(0, vis.height - DESIGN_H) / 2;
     GameState.ceilGain = Math.max(0, extra - ins.top);
     const dockDrop = extra - ins.bottom;                       // how far EdgePin moved the dock down
@@ -100,6 +101,9 @@ export class GameController extends Component {
     }
     this.fitToScreen();
     view.on('canvas-resize', this.fitToScreen, this);   // the bag follows at the next level build
+    // the banner under the dock came or went: the dock moved, the tray floor follows it (it was
+    // left where the banner of Home had put it: far above the dock on some levels)
+    this.offInsets = ScreenFit.onInsetsChange(() => this.fitToScreen());
     // dev builds only: hooks for automated play-testing from the browser console
     if (DEV) (globalThis as any).__ef = {
       GameState, BagRules, Sound, Analytics, physics: PhysicsSystem2D.instance, game: this,
@@ -108,14 +112,13 @@ export class GameController extends Component {
       checkItems: (opts?: any) => checkItems(this, opts),
     };
     Overlays.startServices();
-    if (!this.embedded) Ads.hideBanner();   // no banner (nor its reserved place) during play
     this.builder = new LevelBuilder(this.bagLayer, this.itemLayer, this.frontLayer);
     director.on(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     setBagEvents({
       onPacked: (it, count) => this.onFitted(it, count),
       onUnpacked: it => this.onFellOut(it),
       onWin: () => this.onWin(),
-      onEjected: it => { wakeAll(); Sound.play('eject'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit! Pushed back out"); },
+      onEjected: it => { wakeAll(); Sound.play('misplace'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit! Pushed back out"); },
     });
     setMechanicsEvents({ onBroken: it => this.onLose(`${it.nameEn || it.nameVi} broke!`) });
     this.drag.events = {
@@ -123,7 +126,7 @@ export class GameController extends Component {
       onSelect: it => this.tutorial?.onSelect(it),
       onRotate: (_it, deg) => this.tutorial?.onRotated(deg),
       onDrop: (it, bounced) => {
-        if (bounced) { Sound.play('nope'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit!"); }
+        if (bounced) { Sound.play('misplace'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit!"); }
         else Sound.play('drop', { gain: .9 });
       },
     };
@@ -142,6 +145,7 @@ export class GameController extends Component {
     director.off(Director.EVENT_AFTER_PHYSICS, this.afterPhysics, this);
     this.offBoosters?.();
     this.offCamera?.();
+    this.offInsets?.();
     view.off('canvas-resize', this.fitToScreen, this);
     Shake.unbind(); Shake.reset();
     this.builder.dispose();
@@ -175,6 +179,10 @@ export class GameController extends Component {
     const levels = S.chapter.levels;
     S.levelIndex = Math.max(0, Math.min(index, levels.length - 1));
     S.level = levels[S.levelIndex];
+    // the banner under the booster dock during play (from Remote Config banner_start_level, not
+    // with No Ads): placed before the level is built, so the dock and the tray floor do not move
+    // under resting items; kept from level to level
+    if (!this.embedded) Ads.showBanner('banner_gameplay', ContentLoader.levelNumber(S.chapterId, S.levelIndex));
     this.tutorial?.stop();
     this.drag.reset();
     S.timeLeft = (S.level.timer || 90) * 1000;
@@ -357,7 +365,7 @@ export class GameController extends Component {
       if (!startFreeze()) return;
       Boosters.use('freeze');
       this.hud.setClockFrozen(true);
-      Sound.play('shrink');
+      Sound.play('booster');
       const b = S.bag;
       if (b && this.fx) { const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2; this.fx.ring(cx, cy, { color: '#7FC8F0', r1: 150, life: 600 }); this.fx.sparkle(cx, cy, { n: 26, color: '#BFE6FA', speed: 1.6 }); }
       this.hud.toastMessage(`Frozen for ${FREEZE_MS / 1000}s: the clock stops, items stay where you drop them`);
@@ -366,7 +374,7 @@ export class GameController extends Component {
       if (!it) { Sound.play('nope'); this.hud.toastMessage('Nothing left outside the bag'); return; }
       Boosters.use('resize');
       wakeAll();
-      Sound.play('shrink');
+      Sound.play('booster');
       const p = it.node.position;
       this.puff(it); this.fx?.ring(p.x, p.y, { color: '#3D8BFF', r1: 40, life: 420 }); this.fx?.floatText(p.x, p.y + 18, '−20%', { color: '#2A66C8' });
       this.hud.toastMessage(`Shrunk ${it.nameEn || it.nameVi} by 20%`);
@@ -375,7 +383,7 @@ export class GameController extends Component {
       if (!it) { Sound.play('nope'); this.hud.toastMessage('Nothing can be thrown out'); return; }
       Boosters.use('throw');
       wakeAll();
-      Sound.play('trash');
+      Sound.play('booster');
       const p = it.node.position;
       this.puff(it); this.fx?.sparkle(p.x, p.y, { n: 16, color: '#E8434F', speed: 1.3 }); this.fx?.floatText(p.x, p.y + 16, 'Bye!', { color: '#E8434F' });
       this.hud.toastMessage(`Threw out ${it.nameEn || it.nameVi}`);
@@ -450,7 +458,7 @@ export class GameController extends Component {
     const before = Math.ceil(S.timeLeft / 1000);
     S.timeLeft = Math.max(0, S.timeLeft - ms);
     const sec = Math.ceil(S.timeLeft / 1000);
-    if (sec !== before && sec <= 10 && sec > 0) Sound.play('tick', { gain: .55 });   // last ten seconds tick
+    if (sec !== before && sec <= 10 && sec > 0) Sound.play('clockTick', { gain: .55 });   // last ten seconds tick
     this.hud.setClock(S.timeLeft / 1000);
     if (S.timeLeft <= 0) this.onLose(null);
   }
@@ -465,7 +473,7 @@ export class GameController extends Component {
     const reward = S.level?.reward?.coin ?? 20;
     if (!this.embedded) Wallet.add(reward);
     // doc §5: the bag has settled (WIN_FRAMES): a soft "done"; the popup carries the celebration
-    Sound.play('winConfirm'); Sound.duckMusic(true);
+    Sound.play('win'); Sound.duckMusic(true);
     this.fx?.floatText(210, levelToFieldY(300), 'It fits!', { color: '#5FBF9B', size: 26, life: 1200 });
     const score = scoreRound();
     this.scheduleOnce(async () => {
@@ -492,10 +500,7 @@ export class GameController extends Component {
     await Overlays.uncover();
   }
 
-  /**
-   * Result popups (win / lose) cover the field: the in-game banner shows at the bottom while one is
-   * open, never during play (it would cover the bag and the dragging).
-   */
+  /** Result popups (win / lose): the gameplay banner stays (it is already there from openLevel) */
   private showResultBanner() { if (!this.embedded) Ads.showBanner('banner_gameplay', this.levelNumber); }
 
   /**
@@ -505,7 +510,6 @@ export class GameController extends Component {
   private async nextLevel(fromWin = false) {
     Analytics.setReason('next');
     const S = GameState;
-    Ads.hideBanner();
     if (fromWin && !this.embedded) await Ads.interstitial('level_win', this.levelNumber);
     await Overlays.cover();
     await this.openLevel((S.levelIndex + 1) % S.chapter.levels.length);
@@ -527,12 +531,10 @@ export class GameController extends Component {
       itemsLeft: Math.max(0, S.itemsToPack - S.packed.size), reason,
       // Try again: interstitial trigger level_lose, then the same level from the start
       onRetry: async () => {
-        Ads.hideBanner();
         if (!this.embedded) await Ads.interstitial('level_lose', this.levelNumber);
         this.restart();
       },
       onExtraTime: () => {
-        Ads.hideBanner();
         S.timeLeft = 60000; S.lost = false;
         Analytics.extraTime();
         this.hud.resetClock(); this.hud.setClock(60);

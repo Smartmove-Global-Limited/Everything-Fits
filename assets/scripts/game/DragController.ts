@@ -1,6 +1,8 @@
 // Touch control (ported from the web game, src/game/input.js):
 //   - tap an item (no drag)    = select it; a rotate handle appears at its top-right corner
 //   - drag the handle          = rotate the item around itself; it holds its angle for a moment
+//   - while one is selected    = a press anywhere else (empty space or another item) also turns it;
+//                                a tap on another item selects that one, a tap on empty space unselects
 //   - touch-and-drag an item   = pick it up: it leaves the physics world and follows
 //                                the finger, lifted above it so the player sees the whole item, drawn
 //                                above the bag rim; a thin outline shows green (fits) or red ("ghost":
@@ -25,6 +27,7 @@ const DRAG_START = 7;                       // pointer travel that turns a touch
  * is gone (it is only looked at when a touch starts).
  */
 const TOUCH_PAD = 14;
+const HANDLE_EDGE = 3, HANDLE_PAD = 12;     // rotate button: always hit within its radius + EDGE, + PAD where no other item is
 const LIFT_MAX = 70, FINGER_CLEARANCE = 26; // item is lifted above the finger by up to this much
 const LIFT_MOUSE = 8;                       // with a mouse only a small lift
 const HOLD_AFTER_SPIN = 1000;               // ms an item keeps its new angle inside the bag after rotating
@@ -72,7 +75,7 @@ export class DragController extends Component {
   private transform: UITransform = null!;
   private camera: Camera = null!;
   private pending: { item: ItemView; x: number; y: number; id: number } | null = null;
-  private spin: { item: ItemView; id: number; startAngle: number; startPointer: number; x0: number; moved: boolean } | null = null;
+  private spin: { item: ItemView; id: number; startAngle: number; startPointer: number; x0: number; moved: boolean; sx: number; sy: number; tapped: ItemView | null } | null = null;
   private readonly tmpWorld = new Vec3();
   private readonly tmpLocal = new Vec3();
   private readonly tmpV2 = new Vec2();
@@ -86,9 +89,32 @@ export class DragController extends Component {
     this.node.on(Node.EventType.TOUCH_MOVE, this.onMove, this);
     this.node.on(Node.EventType.TOUCH_END, this.onEnd, this);
     this.node.on(Node.EventType.TOUCH_CANCEL, this.onEnd, this);
+    this.raiseHandle();
   }
 
-  onDestroy() { this.node.targetOff(this); }
+  onDestroy() { this.node.targetOff(this); this.handleHit?.targetOff(this); }
+
+  /**
+   * The rotate handle goes on top of everything (items, bag rim, the booster bar), like the
+   * highest sorting order: its layer moves to the end of the Canvas, and a touch area that follows
+   * the button takes the touches on it before the booster buttons under it. Popups opened later
+   * are added after it, so they still cover it.
+   */
+  private handleHit: Node | null = null;
+  private raiseHandle() {
+    const g = this.handle, canvas = this.node.parent;
+    if (!g || !canvas) return;
+    g.node.setParent(canvas, true);
+    const hit = this.handleHit = new Node('HandleHit');
+    hit.layer = g.node.layer;
+    hit.addComponent(UITransform);
+    canvas.addChild(hit);
+    hit.active = false;
+    hit.on(Node.EventType.TOUCH_START, this.onStart, this);
+    hit.on(Node.EventType.TOUCH_MOVE, this.onMove, this);
+    hit.on(Node.EventType.TOUCH_END, this.onEnd, this);
+    hit.on(Node.EventType.TOUCH_CANCEL, this.onEnd, this);
+  }
 
   /** Pointer position in Field space (origin bottom-left of the design area) */
   private local(e: EventTouch) {
@@ -102,6 +128,10 @@ export class DragController extends Component {
   }
 
   private pickAt(x: number, y: number): ItemView | null {
+    return this.itemUnder(x, y) || this.nearestAt(this.tmpLocal.x, this.tmpLocal.y);
+  }
+  /** The item whose shape is right under the finger (no margin around it), the one drawn on top */
+  private itemUnder(x: number, y: number): ItemView | null {
     this.tmpWorld.set(x, y, 0);
     this.transform.convertToWorldSpaceAR(this.tmpWorld, this.tmpLocal);
     this.tmpV2.set(this.tmpLocal.x, this.tmpLocal.y);
@@ -112,7 +142,7 @@ export class DragController extends Component {
       const v = c.node.getComponent(ItemView);   // only on touch, not per frame
       if (v && !v.waiting && (!best || v.node.getSiblingIndex() > best.node.getSiblingIndex())) best = v;
     }
-    return best || this.nearestAt(this.tmpLocal.x, this.tmpLocal.y);
+    return best;
   }
 
   /** No item under the finger: the closest one within TOUCH_PAD of its outline (world = Field space) */
@@ -134,10 +164,9 @@ export class DragController extends Component {
   }
 
   // ---------- rotate handle (web input.js rotateButtonPos / rotButtonR) ----------
-  /** Top-right corner of the item's shape box, following the item's rotation */
+  /** The item's rotate spot (its edge at the top-right, ItemView.handleSpot), following the item's rotation */
   private handlePos(item: ItemView, out: Vec3): Vec3 {
-    const box = item.localBox;
-    this.tmpV2.set(box.xMax, box.yMax);
+    this.tmpV2.set(item.handleSpot);
     Vec2.transformMat4(this.tmpV2, this.tmpV2, item.node.worldMatrix);
     return out.set(this.tmpV2.x, this.tmpV2.y, 0);
   }
@@ -145,26 +174,42 @@ export class DragController extends Component {
     const box = item.localBox;
     return Math.max(9, Math.min(14, Math.min(box.width, box.height) * item.levelScale * .3));
   }
+  /**
+   * On the selected item's rotate button. The button itself always wins; the margin around it
+   * (easier to hit) only where no other item is right under the finger, else the margin of a
+   * button resting next to another item swallowed the taps on that item.
+   */
   private hitHandle(x: number, y: number): boolean {
     const sel = GameState.selected; if (!sel) return false;
     const p = this.node.inverseTransformPoint(this.tmpWorld, this.handlePos(sel, this.tmpWorld));   // Field space, like x / y
-    return Math.hypot(x - p.x, y - p.y) <= this.handleRadius(sel) + 12;
+    const d = Math.hypot(x - p.x, y - p.y), R = this.handleRadius(sel);
+    if (d <= R + HANDLE_EDGE) return true;
+    if (d > R + HANDLE_PAD) return false;
+    const under = this.itemUnder(x, y);
+    return !under || under === sel;
   }
 
   // ---------- touch ----------
   private onStart(e: EventTouch) {
     const S = GameState;
     if (S.won || S.lost || S.paused || S.drag) return;
-    const p = this.local(e), id = e.getID();
+    const p = this.local(e).clone(), id = e.getID();   // a copy: the hit tests below reuse the scratch vector
     if (this.hitHandle(p.x, p.y)) { this.beginSpin(S.selected!, p.x, p.y, id); return; }
     const item = this.pickAt(p.x, p.y);
-    if (!item) { if (S.selected) this.beginSpin(S.selected, p.x, p.y, id); return; }
+    // an item is selected (rotate mode): a press anywhere but on it turns it, even on another
+    // item; only a tap (no move) on another item selects that one, a tap on empty space unselects
+    if (S.selected && item !== S.selected) { this.beginSpin(S.selected, p.x, p.y, id, item); return; }
+    if (!item) return;
     this.pending = { item, x: p.x, y: p.y, id };
   }
 
   private onMove(e: EventTouch) {
     const p = this.local(e), id = e.getID();
-    if (this.spin && id === this.spin.id) { this.moveSpin(p.x, p.y); return; }
+    if (this.spin && id === this.spin.id) {
+      // a tap that wobbles a little is still a tap, not a turn
+      if (this.spin.moved || Math.hypot(p.x - this.spin.sx, p.y - this.spin.sy) > DRAG_START) this.moveSpin(p.x, p.y);
+      return;
+    }
     const pd = this.pending;
     if (pd && id === pd.id) {
       if (Math.hypot(p.x - pd.x, p.y - pd.y) > DRAG_START) {
@@ -182,7 +227,9 @@ export class DragController extends Component {
     const id = e.getID();
     if (this.spin && id === this.spin.id) {
       const sp = this.spin; this.spin = null;
-      if (sp.moved) { this.holdAfterSpin(sp.item); this.events.onRotate?.(sp.item, angleOf(sp.item.node) - sp.startAngle); }
+      // turned into a neighbour: wake everything so the overlap is pushed apart, not left asleep
+      if (sp.moved) { this.holdAfterSpin(sp.item); wakeAll(); this.events.onRotate?.(sp.item, angleOf(sp.item.node) - sp.startAngle); }
+      else if (sp.tapped) this.select(sp.tapped);
       else { const p = this.local(e); if (!this.hitHandle(p.x, p.y)) this.select(null); }
       return;
     }
@@ -196,6 +243,10 @@ export class DragController extends Component {
   }
 
   private select(item: ItemView | null) {
+    // the item just turned on the tray keeps its angle only while selected: let go of it, so an
+    // item turned into another one is pushed apart instead of staying stuck on it
+    const prev = GameState.selected;
+    if (prev && prev !== item && prev.holdUntil === Infinity) { prev.holdUntil = 0; prev.spunAt = GameState.clock; wakeAll(); }
     GameState.selected = item;
     this.events.onSelect?.(item);
   }
@@ -208,6 +259,7 @@ export class DragController extends Component {
     this.pending = null; this.spin = null;
     this.outline.clear();
     this.handle?.clear(); this.drawnKey = '';
+    if (this.handleHit) this.handleHit.active = false;
   }
 
   // ---------- pick / move / drop ----------
@@ -234,7 +286,7 @@ export class DragController extends Component {
   /** Called every frame by the game loop */
   tick(_dt: number) {
     const S = GameState, d = S.drag;
-    if (this.spin) this.holdSpinPosition();
+    if (this.spin?.moved) this.holdSpinPosition();
     this.releaseSpinHolds();
     this.drawHandle();
     if (!d) return;
@@ -317,17 +369,21 @@ export class DragController extends Component {
   // (web input.js tickRotation / giuGocSauXoay): only its angle is locked and its sliding damped.
   // Turned into a neighbour, both push each other apart; a kinematic body would shove the
   // neighbour forever, and one squeezed against a wall shakes non-stop.
-  private beginSpin(item: ItemView, x: number, y: number, id: number) {
+  /** `tapped`: the other item under the finger, selected instead if the press ends without moving */
+  private beginSpin(item: ItemView, x: number, y: number, id: number, tapped: ItemView | null = null) {
     const p = item.node.position;
-    this.spin = { item, id, moved: false, startAngle: angleOf(item.node), startPointer: Math.atan2(y - p.y, x - p.x), x0: p.x };
-    item.holdUntil = 0;
-    item.holdAngle = angleOf(item.node);
-    item.body.type = ERigidBody2DType.Dynamic;
-    item.stop();
+    // nothing is done to the item until the finger really turns it: a tap only (un)selects
+    this.spin = { item, id, moved: false, startAngle: angleOf(item.node), startPointer: Math.atan2(y - p.y, x - p.x), x0: p.x, sx: x, sy: y, tapped };
   }
   private moveSpin(x: number, y: number) {
     const sp = this.spin!, it = sp.item, p = it.node.position;
-    sp.moved = true;
+    if (!sp.moved) {
+      sp.moved = true;
+      it.holdUntil = 0;
+      it.holdAngle = angleOf(it.node);
+      it.body.type = ERigidBody2DType.Dynamic;
+      it.stop();
+    }
     it.holdAngle = sp.startAngle + (Math.atan2(y - p.y, x - p.x) - sp.startPointer) * 180 / Math.PI;
     setAngle(it, it.holdAngle);
   }
@@ -350,7 +406,7 @@ export class DragController extends Component {
   private releaseSpinHolds() {
     const now = GameState.clock;
     for (const it of GameState.items) {
-      if (!it.holdUntil || (this.spin && this.spin.item === it)) continue;
+      if (!it.holdUntil || (this.spin?.moved && this.spin.item === it)) continue;
       it.stuckFrames = 0;
       if (it.holdUntil !== Infinity && now >= it.holdUntil) { it.holdUntil = 0; it.spunAt = now; it.stop(); it.body.wakeUp(); continue; }
       // in the bag: still a moment; on the tray: the angle stays, it may still fall
@@ -374,6 +430,7 @@ export class DragController extends Component {
     if (key === this.drawnKey) return;
     this.drawnKey = key;
     g.clear();
+    if (this.handleHit) this.handleHit.active = show;
     if (!show) return;
     const it = sel!;
     // dashed outline, pushed 3 units out from the centre of the shape
@@ -386,7 +443,12 @@ export class DragController extends Component {
     const polys: Vec2[][] = src ? src.map(pts => pts.map(p => local(Vec2.transformMat4(new Vec2(), p, m)))) : it.shapes.map(poly => poly.map(local));
     for (const poly of polys) dashedOutline(g, poly, 3, 5, 4);
     // button
-    const c = gn.inverseTransformPoint(this.tmpWorld, this.handlePos(it, this.tmpWorld)), R = this.handleRadius(it);
+    const R = this.handleRadius(it), hit = this.handleHit;
+    if (hit) {   // the touch area: the button plus the same margin as hitHandle
+      hit.setPosition(hit.parent!.inverseTransformPoint(this.tmpLocal, this.handlePos(it, this.tmpWorld)));
+      hit.getComponent(UITransform)!.setContentSize((R + HANDLE_PAD) * 2, (R + HANDLE_PAD) * 2);
+    }
+    const c = gn.inverseTransformPoint(this.tmpWorld, this.handlePos(it, this.tmpWorld));
     g.fillColor = BUTTON_SHADOW; g.circle(c.x, c.y - R * .18, R); g.fill();
     g.fillColor = SELECT_INK; g.circle(c.x, c.y, R); g.fill();
     g.strokeColor = Color.WHITE; g.lineWidth = Math.max(1.6, R * .18); g.circle(c.x, c.y, R); g.stroke();

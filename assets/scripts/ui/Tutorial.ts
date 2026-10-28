@@ -325,10 +325,9 @@ export class Tutorial extends Component {
     tween(ring).delay(delay).to(.5, { scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' }).start();
   }
 
-  /** Rotate handle of an item: top-right corner of its shape box, following its rotation */
+  /** Rotate handle of an item (ItemView.handleSpot, as DragController draws it), following its rotation */
   private handleOf(it: ItemView, out: Vec3) {
-    const box = it.localBox;
-    this.tmp2.set(box.xMax, box.yMax);
+    this.tmp2.set(it.handleSpot);
     Vec2.transformMat4(this.tmp2, this.tmp2, it.node.worldMatrix);
     return this.toLocal(out.set(this.tmp2.x, this.tmp2.y, 0), out);
   }

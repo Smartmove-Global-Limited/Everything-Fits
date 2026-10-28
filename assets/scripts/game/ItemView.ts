@@ -78,6 +78,8 @@ export class ItemView extends Component {
   private localPolys: Vec2[][] = [];
   /** shape bounding box in node space at scale 1 (web def.box), for the rotate button */
   readonly localBox = new Rect();
+  /** where the rotate button sits, in node space at scale 1: on the edge, at the top-right */
+  readonly handleSpot = new Vec2();
   /** long axis of the shape in node space (radians) and length / thickness along it (Settle: thin items standing on end) */
   slimAxis = 0; slimness = 1; slimLength = 0;
   /** which way it is toppling (Settle), kept once chosen */
@@ -122,6 +124,15 @@ export class ItemView extends Component {
     for (const poly of this.localPolys) for (const p of poly) { if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; }
     if (x0 === Infinity) { const ui = this.transform2d; x0 = -ui.width / 2; x1 = ui.width / 2; y0 = -ui.height / 2; y1 = ui.height / 2; }
     this.localBox.set(x0, y0, x1 - x0, y1 - y0);
+    // the rotate button: the point of the shape's edge closest to the box's top-right corner. The
+    // corner itself can be far from the item (a triangle, a phone drawn slanted in its picture)
+    const edge = this.outline.length >= 3 ? [this.outline] : this.localPolys;
+    let best = Infinity;
+    this.handleSpot.set(x1, y1);
+    for (const poly of edge) for (const p of poly) {
+      const d = (p.x - x1) * (p.x - x1) + (p.y - y1) * (p.y - y1);
+      if (d < best) { best = d; this.handleSpot.set(p.x, p.y); }
+    }
   }
 
   /** Thinnest direction of the shape (3° steps): the long axis is across it */

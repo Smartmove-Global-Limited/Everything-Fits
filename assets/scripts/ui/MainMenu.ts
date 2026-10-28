@@ -118,7 +118,7 @@ export class MainMenu extends Component {
     GameState.fromMenu = true;
     Analytics.setReason('home');
     this.leaving = true;
-    Ads.hideBanner();                       // no banner in gameplay
+    Ads.hideBanner();                       // gone while the game loads; the game shows its own (openLevel)
     Overlays.cover(true).then(() => director.loadScene('Game'));
   }
 }

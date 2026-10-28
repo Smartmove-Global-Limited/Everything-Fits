@@ -16,6 +16,7 @@ export enum PinMode { TOP = 0, BOTTOM = 1, STRETCH = 2, COVER = 3, GROW = 4 }
 export class EdgePin extends Component {
   @property({ type: Enum(PinMode) }) mode = PinMode.TOP;
   @property({ tooltip: 'Keep clear of the notch / status bar / gesture bar' }) safeArea = true;
+  @property({ tooltip: 'Bottom: stay above the navigation / gesture bar area even while it is hidden (full screen), e.g. the booster dock' }) aboveSystemBar = false;
   @property({ tooltip: 'Bottom bars: the background reaches the screen edge behind the navigation bar (Android edge-to-edge); full-height children (tabs) extend too, their content stays clear' }) extendToEdge = false;
 
   private base = new Vec3();
@@ -57,7 +58,7 @@ export class EdgePin extends Component {
   apply() {
     const vis = ScreenFit.visible();
     const extraY = Math.max(0, vis.height - DESIGN_H) / 2;
-    const ins = this.safeArea ? ScreenFit.insets(this.insets) : this.insets;
+    const ins = this.safeArea ? ScreenFit.insets(this.insets, this.aboveSystemBar) : this.insets;
     if (!this.safeArea) { ins.top = 0; ins.bottom = 0; }
     const ui = this.getComponent(UITransform);
     const b = this.base;

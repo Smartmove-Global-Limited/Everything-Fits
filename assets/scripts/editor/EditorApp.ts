@@ -2,7 +2,7 @@
 // (build-templates/web-desktop: the old web editor's page and style); EditorPage runs it. This
 // component only sets up the game for the preview box: the Cocos canvas sits inside that box, the
 // game sees its 420×760 design area, and the page tells it which level to play.
-import { _decorator, Component, view, ResolutionPolicy, Camera, director, profiler } from 'cc';
+import { _decorator, Component, view, screen, game, Size, ResolutionPolicy, Camera, director, profiler } from 'cc';
 import { ScreenFit, DESIGN_W, DESIGN_H } from '../ui/ScreenFit';
 import { GameController } from '../game/GameController';
 import { EditorPage } from './EditorPage';
@@ -22,6 +22,25 @@ export class EditorApp extends Component {
     // the canvas is the preview box: show the whole design area, letterboxed if needed
     view.setDesignResolutionSize(DESIGN_W, DESIGN_H, ResolutionPolicy.SHOW_ALL);
     view.resizeWithBrowserSize(true);
+    this.followPreviewBox();
+  }
+
+  /**
+   * The preview box changes size with the page layout (a narrower window, another column layout)
+   * without the engine noticing: the picture was stretched and touches landed off to the right
+   * and below (a tap on one item picked its neighbour). Keep the game's size the box's size.
+   */
+  private followPreviewBox() {
+    const box = document.getElementById('GameDiv');
+    if (!box || typeof ResizeObserver === 'undefined') return;
+    new ResizeObserver(() => {
+      const dpr = window.devicePixelRatio || 1, r = box.getBoundingClientRect();
+      const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+      if (!w || !h) return;
+      // compare with the canvas itself: screen.windowSize already reads the new box size
+      const c = game.canvas;
+      if (c && (c.width !== w || c.height !== h)) screen.windowSize = new Size(w, h);
+    }).observe(box);
   }
 
   start() {
