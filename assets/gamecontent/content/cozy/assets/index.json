@@ -1,5 +1,6 @@
 {
   "items": {
+    "0": "assets/00-tools/items/key.json",
     "1": "assets/01-school-day/items/1.json",
     "2": "assets/01-school-day/items/2.json",
     "3": "assets/01-school-day/items/3.json",
@@ -209,7 +210,8 @@
     "207": "assets/06-everyday/items/207.json",
     "208": "assets/06-everyday/items/208.json",
     "209": "assets/06-everyday/items/209.json",
-    "210": "assets/06-everyday/items/210.json"
+    "210": "assets/06-everyday/items/210.json",
+    "-1": "assets/00-tools/items/mystery.json"
   },
   "backgrounds": {
     "1": "assets/01-school-day/backgrounds/1.json",

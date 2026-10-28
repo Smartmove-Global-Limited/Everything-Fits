@@ -4,12 +4,15 @@
 //                   2. the hand taps an item that must turn, then drags the ↻ handle around
 //                      ("Tap an item, then drag ↻ to rotate it") until the player turns one;
 //                   3. "Great! Pack everything before time runs out", then normal play.
-//   Shake, once:    when 3 items are in the bag (level 1 after the basics, or a later level if it
-//                   did not happen there), the hand shakes over the bag ("Shake your phone to
+//   Shake, once:    when 3 items are in the bag on level 1 (after the basics, or when level 1 is
+//                   played again), the hand shakes over the bag ("Shake your phone to
 //                   settle the items") until the player shakes (or taps, where shaking cannot be
 //                   done), then "Nice! Shaking settles the items".
 //   Level 3 / 6 / 9, once each: the hand points at the booster that just opened, with one line
 //                   about it, until the player touches the screen.
+//   Mystery box, once: on the first level with a mystery box, the hand drags the box from the tray
+//                   to just above the key in the bag and lets go there ("Drop the box on the key
+//                   to open it") until the box opens, then "It's open!".
 // The clock stays stopped and no interstitial shows while a tutorial runs. The overlay never
 // blocks touches: the player plays the real level under it. Animations are tweens restarted at
 // each loop (every ~2 s), nothing runs per frame.
@@ -23,6 +26,8 @@ const { ccclass, property } = _decorator;
 const KEY_BASICS = 'ef.tutorial.basics.v1';
 const KEY_BOOSTER = 'ef.tutorial.booster.v1.';
 const KEY_SHAKE = 'ef.tutorial.shake.v1';
+const KEY_MYSTERY = 'ef.tutorial.mystery.v1';
+const MYSTERY_DROP_ABOVE = 70;               // the hand lets go of the box this far above the key
 const SHAKE_AFTER_PACKED = 3;                // items in the bag before the shake step shows
 const DONE_SECONDS = 2.6;
 const MIN_TURN = 20;                         // degrees: a real rotation, not a slip of the finger
@@ -55,7 +60,7 @@ export class Tutorial extends Component {
 
   private host: TutorialHost | null = null;
   // waitShake: nothing on screen, waiting for enough items in the bag to show the shake step
-  private step: 'off' | 'drag' | 'rotate' | 'done' | 'waitShake' | 'shake' | 'shaken' | 'booster' = 'off';
+  private step: 'off' | 'drag' | 'rotate' | 'done' | 'waitShake' | 'shake' | 'shaken' | 'booster' | 'mystery' | 'opened' = 'off';
   private target: ItemView | null = null;
   private targetPlace = new Vec3();
   private boosterKey = '';
@@ -65,6 +70,7 @@ export class Tutorial extends Component {
   static needsBasics(levelNumber: number) { return levelNumber === 1 && !LocalStore.get(KEY_BASICS); }
   static needsBooster(key: string) { return !LocalStore.get(KEY_BOOSTER + key); }
   static needsShake() { return !LocalStore.get(KEY_SHAKE); }
+  static needsMystery() { return !LocalStore.get(KEY_MYSTERY); }
   /** something is on screen (waiting for the shake step is not) */
   get active() { return this.step !== 'off' && this.step !== 'waitShake'; }
 
@@ -93,7 +99,7 @@ export class Tutorial extends Component {
     else if (this.step === 'waitShake' && this.host && this.host.packedCount() >= SHAKE_AFTER_PACKED) this.startShake();
   }
 
-  /** Later levels: the shake step was not shown yet (level 1 ended before 3 items were in) */
+  /** Level 1 played again: the shake step was not shown yet (it ended before 3 items were in) */
   watchShake(host: TutorialHost) {
     this.host = host;
     this.step = 'waitShake';
@@ -206,6 +212,29 @@ export class Tutorial extends Component {
   }
   private hidePhone() { if (this.phone) { Tween.stopAllByTarget(this.phone); this.phone.active = false; } }
 
+  // ---------- mystery box (first level with one) ----------
+  startMystery(host: TutorialHost) {
+    this.host = host;
+    const box = host.items().find(it => it.locked && it.node.activeInHierarchy);
+    if (!box || !this.keyOf(host)) { this.host = null; return; }
+    this.begin();
+    host.setActive(true);
+    this.step = 'mystery';
+    this.target = box;
+    this.say('Drop the box on the key to open it');
+    this.loop();
+  }
+  /** A mystery box opened (the key touched it) */
+  onBoxOpened() {
+    if (this.step !== 'mystery') return;
+    this.step = 'opened';
+    this.stopLoop();
+    this.hand.active = false; this.ring.active = false;
+    this.say("It's open!");
+    this.scheduleOnce(() => this.finish(), DONE_SECONDS);
+  }
+  private keyOf(host: TutorialHost) { return host.items().find(it => it.itemId === 0 && it.node.activeInHierarchy) || null; }
+
   // ---------- booster intros (level 3 / 6 / 9) ----------
   startBooster(key: string, button: Node, line: string, host: TutorialHost) {
     this.host = host;
@@ -235,6 +264,7 @@ export class Tutorial extends Component {
   private finish() {
     if (this.step === 'booster') LocalStore.set(KEY_BOOSTER + this.boosterKey, '1');
     else if (this.step === 'shake' || this.step === 'shaken') LocalStore.set(KEY_SHAKE, '1');
+    else if (this.step === 'mystery' || this.step === 'opened') LocalStore.set(KEY_MYSTERY, '1');
     else LocalStore.set(KEY_BASICS, '1');
     this.step = 'off';
     this.node.off(Node.EventType.TOUCH_START, this.onTouch, this);
@@ -291,6 +321,15 @@ export class Tutorial extends Component {
       this.hand.setPosition(from);
       this.tapRing(from, .25);
       tween(this.hand).delay(.35).to(1.1, { position: to }, { easing: 'sineInOut' }).delay(.35).call(() => { op.opacity = 0; }).start();
+    } else if (this.step === 'mystery') {
+      // carry the box to just above the key, let go (a ring where the finger lifts), the box drops
+      const key = this.keyOf(this.host!);
+      if (!key) return;
+      const world = key.node.worldPosition;
+      const to = this.toLocal(this.tmp.set(world.x, world.y + MYSTERY_DROP_ABOVE, 0), new Vec3());
+      this.hand.setPosition(from);
+      this.tapRing(from, .25);
+      tween(this.hand).delay(.35).to(1.1, { position: to }, { easing: 'sineInOut' }).call(() => this.tapRing(to, 0)).delay(.4).call(() => { op.opacity = 0; }).start();
     } else if (this.step === 'rotate') {
       // tap the item, then go round its handle (top-right corner of the item's box)
       const handle = this.handleOf(it, new Vec3());

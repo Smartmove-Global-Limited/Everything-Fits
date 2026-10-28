@@ -59,10 +59,37 @@ function pointInsideBag(x: number, y: number): boolean {
 }
 
 /** Every vertex of the item lies inside the bag interior (with tolerance) */
+/** Is the centre of the item's shape inside the bag (also when it pokes out a little)? */
+export function centreInBag(item: ItemView): boolean {
+  if (!GameState.bag || !GameState.bagReady) return false;
+  const r = itemAABB(item);
+  return pointInsideBag(r.x + r.width / 2, r.y + r.height / 2);
+}
+
 function allVerticesInside(item: ItemView): boolean {
   const polys = item.shapes;
   for (let i = 0; i < polys.length; i++) for (const p of polys[i]) if (!pointInsideBag(p.x, p.y)) return false;
   return true;
+}
+
+/**
+ * An item that appears inside the bag (a mystery box opening into a bigger item) may poke through a
+ * wall, and Box2D then pushes it out through the wall. Move it the least distance (up, or sideways)
+ * so that its whole shape lies in the interior; other items it overlaps are left to the physics,
+ * which pushes them aside. Returns false (item not moved) when no such place is near.
+ */
+export function moveInsideBag(item: ItemView): boolean {
+  if (!GameState.bag || allVerticesInside(item)) return true;
+  const p = item.node.position, x0 = p.x, y0 = p.y;
+  for (let r = 4; r <= 160; r += 4) {
+    // up first (the bag is open upwards), then up and to the sides
+    for (const [dx, dy] of [[0, r], [-r / 2, r], [r / 2, r], [-r, r / 2], [r, r / 2], [-r, 0], [r, 0]]) {
+      item.node.setPosition(x0 + dx, y0 + dy, 0);
+      if (allVerticesInside(item)) return true;
+    }
+  }
+  item.node.setPosition(x0, y0, 0);
+  return false;
 }
 
 /** inZone: touching the area around the bag. fullyInside: lying fully inside the interior. */
@@ -230,9 +257,6 @@ export function eject(item: ItemView, reason: 'noFit' | 'stuck') {
   item.stuckFrames = 0;
   for (const e of pendingEjects) if (e.item === item) return;
   pendingEjects.push({ item, reason });
-  // a tied pair goes out together (web rules.js eject), else the string keeps tugging at the one left inside
-  const pt = item.partner;
-  if (pt && !pt.waiting && pt.node.active && !pendingEjects.some(e => e.item === pt)) { pt.stuckFrames = 0; pendingEjects.push({ item: pt, reason }); }
 }
 
 /** Called from update(), before the physics step */

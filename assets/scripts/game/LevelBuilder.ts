@@ -8,11 +8,12 @@ import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { DESIGN_H, BAG_FLOOR, BAG_CEIL, PhysicsGroup, PTM, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
 import { ItemView } from './ItemView';
-import { overlapsBagArea, findFreeSpot, clearEjects, beginSpotBatch } from './BagRules';
+import { overlapsBagArea, findFreeSpot, clearEjects, beginSpotBatch, moveInsideBag } from './BagRules';
 import { Sound } from '../audio/Sound';
 import { Fx } from './Fx';
 import { BagView } from './BagView';
-import { buildTethers, clearTethers, resetTetherDrawing } from './Tethers';
+import { buildTethers, clearTethers, resetTetherDrawing, retie, setTetherLayers } from './Tethers';
+import { KEY_ID, MYSTERY_ID } from './MysteryBox';
 
 const DROP_INTERVAL = 110;     // ms between two items dropping in
 const FIRST_DROP = 150;        // pause before the first one
@@ -25,11 +26,13 @@ export class LevelBuilder {
   private itemPool = new Map<number, ItemView[]>();
   private bagPool = new Map<string, BagView>();
   private lastDropAt = 0;
+  /** mystery boxes of this round and the prefab of the item each one hides */
+  private hidden = new Map<ItemView, Prefab>();
   /** Node in the front layer that mirrors the bag transform; the bag's front image lives under it */
   private frontHolder: Node;
   /** soft shadow under the bag (web bags.js drawBagShadow), drawn once per level */
   private shadow: Graphics;
-  /** strings of the tied pairs (game/Tethers): over the items, under the bag rim */
+  /** strings of the tied pairs (game/Tethers): in front of the bag rim, under dangling items */
   readonly strings: Graphics;
 
   constructor(private bagLayer: Node, private itemLayer: Node, private frontLayer: Node) {
@@ -46,8 +49,9 @@ export class LevelBuilder {
     const st = new Node('Strings');
     st.layer = frontLayer.layer;
     st.addComponent(UITransform);
-    frontLayer.insertChild(st, 0);
+    frontLayer.addChild(st);
     this.strings = st.addComponent(Graphics);
+    setTetherLayers(itemLayer, frontLayer);
   }
 
   /**
@@ -79,9 +83,13 @@ export class LevelBuilder {
     const c = level.container || {};
     // bag and items load together, before anything is placed: an empty item list while the bag is
     // already there would let tick() reveal the bag (and its walls) before the items fall in
-    const [bagPrefab, prefabs] = await Promise.all([
+    // a mystery box needs the key in the level: without it a hidden item could never be packed
+    const hasKey = (level.items || []).some((it: any) => it && Number(it.id) === KEY_ID);
+    const anyLocked = hasKey && (level.items || []).some((it: any) => it?.locked);
+    const [bagPrefab, prefabs, boxPrefab] = await Promise.all([
       ContentLoader.bagPrefab(c.skin).catch(() => ContentLoader.bagPrefab('backpack')),
       Promise.all((level.items || []).map((it: any) => (it && it.id != null ? ContentLoader.itemPrefab(it.id).catch(() => null) : Promise.resolve(null)))),
+      anyLocked ? ContentLoader.itemPrefab(MYSTERY_ID).catch(() => null) : Promise.resolve(null),
     ]);
     if (round !== S.round) return;
     const bag = this.takeBag(c.skin, bagPrefab);
@@ -113,17 +121,15 @@ export class LevelBuilder {
       // not counted in the items to pack
       if (!prefab) return;
       if (!it.inBag && !(Number.isFinite(Number(it.x)) && Number.isFinite(Number(it.y)))) return;
-      const item = this.takeItem(it.id, prefab);
+      // hidden in a mystery box (web level.js): the box stands in for the item until the key opens it
+      const locked = !!it.locked && !!boxPrefab && Number(it.id) !== KEY_ID;
+      const item = this.takeItem(locked ? MYSTERY_ID : it.id, locked ? boxPrefab! : prefab);
       const k = (Number(it.scale) || 1) * (Number(level.itemScale) || 1);
-      item.levelIndex = i;
-      item.setLevelScale(k);
+      this.resetItem(item, i, k);
       item.presetInBag = !!it.inBag;
-      // the mystery box needs a box and a key picture this art set does not have yet: a hidden
-      // item would never count as packed, so the level could not be won. Shown as itself instead.
-      item.locked = false;
-      item.releasedAt = item.floorBuzzAt = item.spunAt = item.toppleSide = 0; item.stuckFrames = item.insideFrames = item.outsideFrames = 0; item.fitAt = 0; item.outAt = -1e9;
-      item.frozen = false; item.holdUntil = 0; item.cracks = 0; item.broken = false;
-      item.body.type = ERigidBody2DType.Dynamic;   // a pooled item may come back frozen (static)
+      item.locked = locked;
+      item.realId = Number(it.id);
+      if (locked) this.hidden.set(item, prefab);
       let x = it.x, y = it.y;
       if (it.inBag) { x = (c.cx ?? 210) + (it.x ?? 0); y = bottomLevel + (it.y ?? -30); }
       item.node.setPosition(x, levelToFieldY(y), 0);
@@ -136,12 +142,15 @@ export class LevelBuilder {
     this.scheduleEntrance();
   }
 
-  /** Items placed in the bag from the start appear at once; the rest fall in one by one */
+  /**
+   * The rest fall in one by one; items placed in the bag from the start (the key…) appear with the
+   * bag: until then it has no walls and they fell straight through it onto the tray
+   */
   private scheduleEntrance() {
     const S = GameState;
     const falling = S.items.filter(i => !i.presetInBag).sort((a, b) => a.node.position.y - b.node.position.y);
     const t0 = S.clock + FIRST_DROP;
-    for (const it of S.items) if (it.presetInBag) this.activate(it, PhysicsGroup.ITEM);
+    for (const it of S.items) if (it.presetInBag) { it.waiting = true; it.enterAt = Infinity; }
     falling.forEach((it, i) => {
       it.waiting = true; it.enterAt = t0 + i * DROP_INTERVAL;
       if (S.preview) return;                          // editor preview: items stay where the designer put them
@@ -152,6 +161,60 @@ export class LevelBuilder {
       it.node.setPosition(x, DESIGN_H + DROP_HEIGHT + Math.random() * 40, 0);
     });
     this.lastDropAt = t0 + Math.max(0, falling.length - 1) * DROP_INTERVAL;
+  }
+
+  /** Per-round state of an item taken from the pool (level index, size, nothing held / frozen / cracked) */
+  private resetItem(item: ItemView, levelIndex: number, scale: number) {
+    item.levelIndex = levelIndex;
+    item.setLevelScale(scale);
+    item.locked = false; item.realId = item.itemId; item.waiting = item.entering = false;
+    item.held = false; item.body.enabled = true;   // a box taken off while held kept its body off
+    item.releasedAt = item.floorBuzzAt = item.spunAt = item.toppleSide = 0; item.stuckFrames = item.insideFrames = item.outsideFrames = 0; item.fitAt = 0; item.outAt = -1e9;
+    item.frozen = false; item.holdUntil = 0; item.cracks = 0; item.broken = false;
+    // times on the game clock, which starts again at 0 each round
+    item.crackedAt = 0; item.lastImpactAt = -1e9;
+    item.body.type = ERigidBody2DType.Dynamic;   // a pooled item may come back frozen (static)
+  }
+
+  /**
+   * A released mystery box touched the key (game/MysteryBox): the key leaves the field and the box
+   * becomes the item it hid, at the same place and angle, in the same slot of the item list, as a
+   * normal body: Box2D pushes apart whatever it overlaps. Returns the item, or null.
+   */
+  openBox(box: ItemView, key: ItemView): ItemView | null {
+    const S = GameState, prefab = this.hidden.get(box);
+    if (!prefab) return null;
+    this.hidden.delete(box);
+    this.takeOff(key);
+    const item = this.takeItem(box.realId, prefab);
+    this.resetItem(item, box.levelIndex, box.levelScale);
+    item.presetInBag = box.presetInBag;
+    item.node.setParent(box.node.parent, false);
+    item.node.setPosition(box.node.position);
+    item.node.setRotation(box.node.rotation);   // before activate(): the body is created at this transform
+    // the key lies in the bag, so the box touching it is in the bag: the item grows out of it
+    // there, like an item that was in the bag all along (never pushed out through a wall)
+    moveInsideBag(item);
+    S.items[S.items.indexOf(box)] = item;
+    retie(box, item);
+    if (S.selected === box) S.selected = null;
+    this.takeOff(box);
+    this.activate(item, PhysicsGroup.ITEM);
+    // a pooled body switched back on keeps the place it had last round (on the tray): move it to
+    // the node, now that it is in the world
+    const impl = (item.body as any).impl;
+    impl?.syncPositionToPhysics?.(true); impl?.syncRotationToPhysics?.(true);
+    item.stop();
+    item.releasedAt = S.clock;                    // like a drop: no eject check right away
+    return item;
+  }
+
+  /** An item leaves the field for the rest of the round (back to the pool on the next build) */
+  private takeOff(it: ItemView) {
+    const S = GameState, i = S.items.indexOf(it);
+    if (i >= 0) S.items.splice(i, 1);
+    S.thrown.push(it);
+    it.node.active = false;
   }
 
   private activate(it: ItemView, group: number) {
@@ -185,6 +248,7 @@ export class LevelBuilder {
     const S = GameState;
     let busy = false;
     for (const it of S.items) {
+      if (it.presetInBag) continue;
       if (it.waiting || it.entering) { busy = true; break; }
       const v = it.body.linearVelocity;
       if (v.x * v.x + v.y * v.y > SETTLED_SPEED * SETTLED_SPEED) { busy = true; break; }
@@ -203,6 +267,10 @@ export class LevelBuilder {
     }
     if (bag.walls) bag.walls.active = true;
     bag.refreshWorldShape();
+    for (const it of S.items) if (it.presetInBag && it.waiting) {
+      this.activate(it, PhysicsGroup.ITEM);
+      if (it.itemId === KEY_ID) { it.stop(); it.body.type = ERigidBody2DType.Static; }   // fixed in the bag
+    }
     S.bagReady = true; S.bagShownAt = S.clock;
     this.setBagVisible(bag, true);
     // web tickTuiHien: whoosh, then a thud with dust when the bag lands at the end of its pop
@@ -279,6 +347,7 @@ export class LevelBuilder {
       list.push(it); this.itemPool.set(it.itemId, list);
     }
     S.items = [];
+    this.hidden.clear();
     clearTethers(); resetTetherDrawing(this.strings);
     for (const it of S.thrown) {
       it.node.active = false;

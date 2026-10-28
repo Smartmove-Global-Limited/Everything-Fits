@@ -1,36 +1,42 @@
 // Tied pairs (levels.json item.link, set with "Buộc dây…" in the Level Editor; web mechanics.js
-// createTethers / drawStrings): two items joined by a string. The pair is picked up and moved as one
-// (DragController), pushed out of the bag together (BagRules.eject) and never thrown out by a booster.
+// createTethers / drawStrings): two items joined by a string. The string is only a link the player
+// sees (asked): it never pulls the two items together and never pushes anything else. It acts in one
+// case: an item "dangles" from its partner (the anchor) while the anchor is in the hand or lies in
+// the bag and the item itself is outside the bag (its centre). A dangling item swings on the string under
+// the anchor, collides like any item, and is drawn in front of the bag rim; it stays outside the bag
+// until the player drags it in. A packed item never dangles; when neither rule holds the string
+// just hangs between the two items.
 //
-// The string is slack up to its length and only pulls when stretched: a velocity correction along
-// the string once per frame, before the physics step, instead of a Box2D joint (a joint dies with
-// the body every time an item is picked up, and its lifecycle differs on the native build).
-// The string never pulls an item lying in the bag (the bag holds it: a pair packed far apart would
-// tug at the whole packed cluster for ever), nor wakes a resting item for a small stretch, and gives
-// up while the pulled item is blocked (pressed against the bag), so packed clusters can still sleep
-// (Settle) and nothing shakes.
-import { Graphics, Color, Vec3 } from 'cc';
+// The string only pulls when stretched: a velocity correction on the dangling item along the string
+// once per frame, before the physics step (no Box2D joint: a joint dies with the body every time an
+// item is picked up, and its lifecycle differs on the native build). Gravity makes it swing.
+import { Graphics, Color, Vec3, Node } from 'cc';
 import { PTM } from '../core/GameConstants';
-import { bagZone } from './BagRules';
+import { bagZone, centreInBag } from './BagRules';
 import type { ItemView } from './ItemView';
 
 type Tether = {
   a: ItemView; b: ItemView; length: number;
-  /** distance last frame, frames the pull did not bring them closer, distance at which it gave up */
-  lastD: number; blocked: number; restD: number;
+  /** pulling without coming closer (blocked by the bag wall): frames, and where the anchor / the
+   *  distance were then. Blocked, the string only holds it (no further away, no pull) until the
+   *  anchor moves or the string stretches further */
+  lastD: number; blocked: number; stuckX: number; stuckY: number; stuckD: number;
 };
 
 const SLACK = 24;           // string length beyond the two half sizes (units)
 const MIN_LENGTH = 64;      // web Constraint length
-const PULL_RATE = 8;        // 1/s: a stretched string closes its stretch in about 1/8 s
-const MAX_PULL = 6;         // m/s: fastest pull
-const TOLERANCE = 2;        // units of stretch ignored (resting pairs stay still)
-const WAKE_STRETCH = 20;    // a sleeping item is only pulled (and woken) beyond this stretch
-const BLOCKED_FRAMES = 30;  // frames of pulling without getting closer: blocked, stop pulling
+const TOLERANCE = 2;        // units of stretch ignored
+const PULL_RATE = 14;       // 1/s: a stretched string closes its stretch in about 1/14 s
+const MAX_PULL = 16;        // m/s: fastest pull (keeps up with a finger)
+const BLOCKED_FRAMES = 12;  // pulling this long without coming closer: blocked, stop pulling
+const UNSTICK_MOVE = 6;     // units the anchor must move (or the string stretch further) to pull again
 const SAG = .7, MIN_SAG = 6;
 const INK = new Color(0x3B, 0x2A, 0x4A, 255), STRING = new Color(0xE2, 0x63, 0x7F, 255);   // web theme.ink, #E2637F
 
 const tethers: Tether[] = [];
+/** where dangling items are drawn (in front of the bag rim) and where they go back */
+let itemLayer: Node | null = null, frontLayer: Node | null = null;
+export function setTetherLayers(items: Node, front: Node) { itemLayer = items; frontLayer = front; }
 
 /** Half the longest side of the item at its level scale */
 const halfSize = (it: ItemView) => Math.max(it.localBox.width, it.localBox.height) * it.levelScale / 2;
@@ -48,47 +54,79 @@ export function buildTethers(items: readonly ItemView[], level: any) {
     const b = items.find(o => o !== a && !o.partner && o.itemId === Number(link));
     if (!b) continue;
     a.partner = b; b.partner = a;
-    tethers.push({ a, b, length: Math.max(MIN_LENGTH, halfSize(a) + halfSize(b) + SLACK), lastD: 0, blocked: 0, restD: NaN });
+    tethers.push({ a, b, length: Math.max(MIN_LENGTH, halfSize(a) + halfSize(b) + SLACK), lastD: 0, blocked: 0, stuckX: NaN, stuckY: 0, stuckD: 0 });
   }
 }
 
 export function clearTethers() {
-  for (const t of tethers) t.a.partner = t.b.partner = null;
+  for (const t of tethers) { t.a.partner = t.b.partner = null; dangle(t.a, false); dangle(t.b, false); }
   tethers.length = 0;
+}
+
+/** A mystery box became its item: the string moves to the item */
+export function retie(from: ItemView, to: ItemView) {
+  for (const t of tethers) {
+    if (t.a === from) t.a = to; else if (t.b === from) t.b = to; else continue;
+    to.partner = from.partner; if (from.partner) from.partner.partner = to;
+    from.partner = null;
+    dangle(from, false);
+  }
 }
 
 const inWorld = (it: ItemView) => !it.waiting && !it.held && it.body.enabled && it.node.activeInHierarchy;
 
-/** Can the string move this item? Not when frozen or in the bag; a sleeping one only for a real pull */
-function movable(it: ItemView, stretch: number) {
-  if (it.isStatic || bagZone(it).inZone) return false;
-  return it.body.isAwake() || stretch > WAKE_STRETCH;
+/** Start / stop dangling: drawn in front of the bag rim while it hangs */
+function dangle(it: ItemView, on: boolean) {
+  it.dangling = on;
+  // also after a drop: the hand puts every item back in the item layer
+  const to = on ? frontLayer : itemLayer;
+  if (to && it.node.parent !== to && !it.held && it.node.isValid) it.node.setParent(to, true);
 }
 
-/** Every frame, before the physics step: stretched strings pull their two items together */
+/** The item of the pair that dangles from the other one now, or null */
+function danglerOf(t: Tether): ItemView | null {
+  const a = t.a, b = t.b;
+  if (a.held && b.held) return null;
+  // an item with its centre in the bag never dangles (one that pokes out a little would otherwise be
+  // pulled across the packed items)
+  const anchored = (anchor: ItemView, it: ItemView) => inWorld(it) && !it.isStatic
+    && (anchor.held || (inWorld(anchor) && bagZone(anchor).fullyInside)) && !centreInBag(it);
+  if (anchored(a, b)) return b;
+  if (anchored(b, a)) return a;
+  return null;
+}
+
+/** Every frame, before the physics step: a dangling item hangs on the string under its anchor */
 export function tickTethers() {
   for (const t of tethers) {
-    const a = t.a, b = t.b;
-    if (!inWorld(a) || !inWorld(b)) continue;
-    const pa = a.node.position, pb = b.node.position;
+    const it = danglerOf(t), anchor = it === t.a ? t.b : t.a;
+    dangle(t.a, it === t.a); dangle(t.b, it === t.b);
+    if (!it) continue;
+    // world positions: a held anchor lives in the held layer, the dangling item in the front layer
+    const pa = anchor.node.worldPosition, pb = it.node.worldPosition;
     const dx = pb.x - pa.x, dy = pb.y - pa.y, d = Math.hypot(dx, dy);
     const stretch = d - t.length;
-    if (stretch <= TOLERANCE || d < 1e-3) { t.blocked = 0; t.restD = NaN; continue; }
-    if (Math.abs(d - t.restD) < WAKE_STRETCH) continue;              // gave up here: wait for a clear change
-    const ia = movable(a, stretch) ? 1 / Math.max(1e-3, a.body.getMass()) : 0;
-    const ib = movable(b, stretch) ? 1 / Math.max(1e-3, b.body.getMass()) : 0;
-    if (ia + ib === 0) continue;
-    if (d > t.lastD - .3) { if (++t.blocked > BLOCKED_FRAMES) { t.restD = d; t.blocked = 0; } }
-    else t.blocked = 0;
-    t.lastD = d;
+    if (stretch <= TOLERANCE || d < 1e-3) { t.blocked = 0; t.stuckX = NaN; continue; }
+    // blocked against the bag: the string just holds it there (it kept knocking on the wall) until
+    // the anchor moves or the string is stretched further
+    let held = false;
+    if (!Number.isNaN(t.stuckX)) {
+      if (Math.hypot(pa.x - t.stuckX, pa.y - t.stuckY) < UNSTICK_MOVE && d < t.stuckD + UNSTICK_MOVE) held = true;
+      else { t.stuckX = NaN; t.blocked = 0; }
+    }
+    if (!held) {
+      if (d > t.lastD - .3) { if (++t.blocked > BLOCKED_FRAMES) { t.stuckX = pa.x; t.stuckY = pa.y; t.stuckD = d; held = true; } }
+      else t.blocked = 0;
+      t.lastD = d;
+    }
     const nx = dx / d, ny = dy / d;
-    const va = a.body.linearVelocity, vb = b.body.linearVelocity;
-    const rel = (vb.x - va.x) * nx + (vb.y - va.y) * ny;            // m/s, > 0: moving apart
-    const want = -Math.min(MAX_PULL, stretch / PTM * PULL_RATE);
-    if (rel <= want) continue;                                       // already closing fast enough
-    const j = (want - rel) / (ia + ib);                              // < 0
-    if (ia) a.body.linearVelocity = va.set(va.x - nx * j * ia, va.y - ny * j * ia);
-    if (ib) b.body.linearVelocity = vb.set(vb.x + nx * j * ib, vb.y + ny * j * ib);
+    const v = it.body.linearVelocity;
+    // the anchor does not move with the string: only the dangling item's speed along it counts
+    const rel = v.x * nx + v.y * ny;                                   // m/s, > 0: moving away
+    const want = held ? 0 : -Math.min(MAX_PULL, stretch / PTM * PULL_RATE);
+    if (rel <= want) continue;                                         // already coming back fast enough
+    const dv = want - rel;                                             // < 0
+    it.body.linearVelocity = v.set(v.x + nx * dv, v.y + ny * dv);
   }
 }
 

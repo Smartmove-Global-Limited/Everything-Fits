@@ -1,6 +1,6 @@
 {
-  "version": 120,
-  "publishedAt": "2026-10-28T02:12:41.217Z",
+  "version": 121,
+  "publishedAt": "2026-10-28T09:51:28.846Z",
   "chapters": [
     {
       "id": "school-day",
@@ -7418,7 +7418,8 @@
               "x": 143.2,
               "y": 555.4,
               "angle": 0.29,
-              "scale": 1.365
+              "scale": 1.365,
+              "link": 160
             },
             {
               "id": 151,
@@ -7453,7 +7454,15 @@
               "x": 308.9,
               "y": 500.2,
               "angle": -0.19,
-              "scale": 0.812
+              "scale": 0.812,
+              "locked": true
+            },
+            {
+              "id": 0,
+              "inBag": true,
+              "x": -60,
+              "y": -45,
+              "angle": 0
             }
           ],
           "reward": {

@@ -50,9 +50,12 @@ export class ItemView extends Component {
   entering = false;       // dropping in from above the screen (group FALLING)
   enterAt = 0;
   presetInBag = false;    // placed inside the bag from the start
-  locked = false;         // hidden in a mystery box
-  /** the other item of a tied pair (levels.json link, game/Tethers), moved and ejected together */
+  locked = false;         // a mystery box hiding the item realId (game/MysteryBox)
+  realId = 0;
+  /** the other item of a tied pair (levels.json link, game/Tethers) */
   partner: ItemView | null = null;
+  /** hanging from its tied partner on the string (game/Tethers), drawn in front of the bag rim */
+  dangling = false;
   releasedAt = 0; floorBuzzAt = 0; spunAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0; outAt = -1e9;
   /** Settle: where the item has been staying lately and for how long (seconds) */
   restX = NaN; restY = 0; restAngle = 0; restTime = 0;

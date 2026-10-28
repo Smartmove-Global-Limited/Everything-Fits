@@ -89,6 +89,7 @@ export const ContentLoader = {
   async preloadLevel(level: any) {
     if (!level) return;
     const ids: number[] = (level.items || []).map((it: any) => it?.id).filter((id: any) => id != null);
+    if ((level.items || []).some((it: any) => it?.locked)) ids.push(-1);   // the mystery box
     const skin: string | undefined = level.container?.skin;
     await Promise.all([...Array.from(new Set(ids)).map(id => this.itemPrefab(id).catch(() => null)), skin ? this.bagPrefab(skin).catch(() => null) : null,
       this.background(level.background)]);

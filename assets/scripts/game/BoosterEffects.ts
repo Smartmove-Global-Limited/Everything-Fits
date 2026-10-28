@@ -29,7 +29,7 @@ export function startFreeze(): boolean {
   const S = GameState;
   if (isFreezing()) return false;
   S.freezeUntil = S.clock + FREEZE_MS;
-  for (const it of S.items) if (!it.waiting && !isHeld(it) && !it.holdUntil && bagZone(it).fullyInside) freezeItem(it);
+  for (const it of S.items) if (!it.waiting && !isHeld(it) && !it.holdUntil && !it.isStatic && bagZone(it).fullyInside) freezeItem(it);
   return true;
 }
 

@@ -12,8 +12,6 @@ export interface DragState {
   ghost: boolean;
   lastValid: { x: number; y: number; angle: number } | null;
   touchId: number;
-  /** the tied partner, carried along: its offset (x, y) and angle in the held item's own axes */
-  partner: ItemView | null; partnerX: number; partnerY: number; partnerAngle: number;
 }
 
 export const GameState = {
@@ -62,5 +60,5 @@ export const GameState = {
   bagSnapshot: null as null | { dropped: ItemView; list: { item: ItemView; x: number; y: number; angle: number }[] },
 };
 
-export const isHeld = (it: ItemView) => !!GameState.drag && (GameState.drag.item === it || GameState.drag.partner === it);
+export const isHeld = (it: ItemView) => !!GameState.drag && GameState.drag.item === it;
 export const isOnField = (it: ItemView) => !it.waiting;

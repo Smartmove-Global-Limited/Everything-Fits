@@ -2,8 +2,10 @@
 // float.js):
 //   impacts   landing sound by material, louder for heavier / faster items; dust; a short screen
 //             shake when something heavy hits the floor
-//   fragile   hit fast by a hard item, or dropped hard onto the floor / a hard item → cracks;
-//             the second crack breaks it and the round is lost (soft items never break anything)
+//   fragile   hit fast by a hard item, or dropped onto the floor / a hard item (a soft one only from
+//             high up) → cracks (lines drawn on the item); the second crack spreads them and breaks
+//             it: the game shatters it into shards, then the round is lost (soft items never break
+//             anything)
 //   phone     (physics "vibrating") buzzes inside the bag: 0.9 s every 5.2 s, jittering
 //   balloon   (physics "float") rises inside the bag; outside it floats up to just under the HUD,
 //             sways, stays upright, rests when something lies on top of it
@@ -20,8 +22,12 @@ const STEP = 60;
 const LIGHT_HIT = 1.6 * STEP;        // below: items just rubbing
 const ITEM_GAP_MS = 130;             // one item does not sound twice in a row
 const MAX_PER_BEAT = 3;              // many items landing together: only a few sounds
-const HARD_HIT_CRACK = 7 * STEP;     // hard item hitting a fragile one this fast cracks it
+// cracking thresholds (asked: first lowered from the web's 7 and 9 per step, it broke too easily
+// then, so ×1.5)
+const HARD_HIT_CRACK = 7.5 * STEP;   // hard item hitting a fragile one this fast cracks it
 const FALL_CRACK = 9 * STEP;         // fragile item falling this fast onto floor / hard item cracks
+const SOFT_FALL_CRACK = 13.5 * STEP; // ... onto a soft item (fabric, paper, food): only a hard fall
+const IMPACT_GAIN = .6;              // all landing sounds a little quieter (asked)
 const FLOOR_BUZZ = 3 * STEP;        // an item the player let go of landing on the floor this fast: one light buzz
 const NO_CRACK_AT_START = 2500;      // ms: items raining in at the start never crack
 const SOUND: Record<string, SfxName> = { glass: 'glass', ceramic: 'glass', metal: 'metal', paper: 'paper' };   // anything else: the item fall sound
@@ -31,7 +37,7 @@ export type MechanicsEvents = { onBroken?(item: ItemView): void };
 let events: MechanicsEvents = {};
 export function setMechanicsEvents(e: MechanicsEvents) { events = e; }
 
-let beatAt = 0, beatCount = 0;
+let beatAt = -1e9, beatCount = 0;
 const vA = new Vec2(), vB = new Vec2(), pt = new Vec2();
 const isSoft = (it: ItemView | null) => !!it && SOFT.has(it.material);
 
@@ -39,6 +45,9 @@ const isSoft = (it: ItemView | null) => !!it && SOFT.has(it.material);
 export function onItemContact(item: ItemView, self: Collider2D, other: Collider2D, contact: IPhysics2DContact | null) {
   const S = GameState;
   if (!contact || item.waiting || isHeld(item) || !S.level || S.won || S.lost) return;
+  // hanging on the string (Tethers) it rests against the bag wall: the contact flickers every step,
+  // no knocking sound, no crack (it is held there by the string, not dropped)
+  if (item.dangling) return;
   const m = contact.getWorldManifold();
   if (!m.points.length) return;
   const p = m.points[0];
@@ -72,8 +81,12 @@ function onImpact(b: ItemView, v: number, at: Vec2, intoWall: boolean, other: It
   const S = GameState;
   // fragile: hit by a hard item fast / falling hard onto the floor or a hard item
   if (other && !other.isStatic && other.fragile && !isHeld(other) && !isSoft(b) && v >= HARD_HIT_CRACK) crack(other, at);
-  if (b.fragile && ((intoWall && v >= FALL_CRACK) || (other && !other.isStatic && !isSoft(other) && v >= FALL_CRACK))) crack(b, at);
+  if (b.fragile && ((intoWall && v >= FALL_CRACK) || (other && !other.isStatic && v >= (isSoft(other) ? SOFT_FALL_CRACK : FALL_CRACK)))) crack(b, at);
   const now = S.clock;
+  // the game clock starts again at 0 each round: times kept from the last round (pooled items, the
+  // beat) would silence every landing of the new one, the items raining in first of all
+  if (b.lastImpactAt > now) b.lastImpactAt = -1e9;
+  if (beatAt > now) beatAt = -1e9;
   if (b.lastImpactAt > now - ITEM_GAP_MS) return;
   b.lastImpactAt = now;
   if (now - beatAt > 90) { beatAt = now; beatCount = 0; }
@@ -83,7 +96,7 @@ function onImpact(b: ItemView, v: number, at: Vec2, intoWall: boolean, other: It
   const energy = grams * k * k * web * web / 1000;
   const strength = Math.min(1, Math.max(0, Math.log10(energy + 1) / 2));
   const soft = isSoft(b);
-  Sound.play(SOUND[b.material] || 'fall', { gain: (soft ? .12 : .18) + strength * .6 });
+  Sound.play(SOUND[b.material] || 'fall', { gain: ((soft ? .12 : .18) + strength * .6) * IMPACT_GAIN });
   const fx = Fx.instance;
   if (fx) {
     const d = soft ? .35 : 1;
@@ -96,17 +109,17 @@ function onImpact(b: ItemView, v: number, at: Vec2, intoWall: boolean, other: It
 function crack(b: ItemView, at: Vec2) {
   const S = GameState, now = S.clock;
   if (b.broken || S.won || S.lost || (b.crackedAt && now - b.crackedAt < 600)) return;
+  // hanging on the string (Tethers): it is dragged into things by the string, not dropped by the player
+  if (b.dangling) return;
   if (!S.bagReady || now - S.startTime < NO_CRACK_AT_START) return;
   b.crackedAt = now; b.cracks++;
   const fx = Fx.instance;
-  if (b.cracks < 2) {
-    Sound.play('crack', { gain: .85 });
-    fx?.shake(130); fx?.dust(at.x, at.y, { n: 5, strength: .6 }); fx?.floatText(at.x, at.y + 20, 'Crack!', { color: '#E5484D' });
-    return;
-  }
+  Sound.play('crack', { gain: .5 });
+  fx?.crack(b.node, at, b.localBox, b.cracks < 2 ? 3 : 6);
+  fx?.shake(130); fx?.dust(at.x, at.y, { n: 5, strength: .6 });
+  if (b.cracks < 2) return;
+  // second crack: it breaks; the game shows it shatter (outside the physics step), then the loss
   b.broken = true;
-  Sound.play('break', { gain: .95 });
-  fx?.shake(420); fx?.dust(at.x, at.y, { n: 14, strength: 1 }); fx?.sparkle(at.x, at.y, { n: 14 });
   events.onBroken?.(b);
 }
 

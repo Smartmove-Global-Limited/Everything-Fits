@@ -204,7 +204,7 @@ export class WinPopup extends Component {
       st.setScale(.3, .3, 1);
       // small to full size with one light bounce; only the stars won ring
       tween(st).delay(STAR_FIRST + i * STAR_GAP)
-        .call(() => { if (won) Sound.play('starShine', { gain: .8 }); })
+        .call(() => { if (won) Sound.play('starShine', { gain: .15 }); })   // was .8, then .35: still too sharp
         .to(STAR_POP * .6, { scale: big }, { easing: 'quadOut' })
         .to(STAR_POP * .4, { scale: Vec3.ONE }, { easing: 'quadInOut' })
         .call(() => { if (i === last) { this.fireworks(ui.width, ui.height); this.startParty(ui.width, ui.height); } })
@@ -215,7 +215,7 @@ export class WinPopup extends Component {
   /** Fireworks behind the card: five bursts one after another, above it and on its sides */
   private fireworks(w: number, h: number) {
     if (!this.node.activeInHierarchy) return;
-    Sound.playLong('fireworks', { gain: .28 });       // one clip of ten shots, once (not repeated with the party); half of .55 was asked
+    Sound.playLong('fireworks', { gain: .14 });       // one clip of ten shots, once (not repeated with the party); halved again (.28 was too loud)
     const spots: [number, number, number][] = [
       [-w * .28, h * .5 + 70, 1], [w * .3, h * .5 + 95, 1], [0, h * .5 + 140, .9],
       [-w * .5 + 4, h * .1, .8], [w * .5 - 4, -h * .05, .8],

@@ -3,7 +3,7 @@
 // update(). Bag rules run right after the physics step (Director.EVENT_AFTER_PHYSICS).
 // Round flow like the web game (src/main.js, rules.js, hud.js): settings pause the round, a win
 // saves progress + gold and shows the reward popup, running out of time shows the lose popup.
-import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view, Sprite, instantiate } from 'cc';
+import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view, Sprite, instantiate, Vec2 } from 'cc';
 import { levelToFieldY, FLOOR_Y, DOCK_TOP_Y, DESIGN_H } from '../core/GameConstants';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
@@ -19,6 +19,8 @@ import { tickPhone, tickBalloons, setMechanicsEvents } from './Mechanics';
 import { Shake } from './Shake';
 import { tickSettle, wakeAll } from './Settle';
 import { tickTethers, drawTethers } from './Tethers';
+import type { ItemView } from './ItemView';
+import { tickMystery, setMysteryEvents, resetMystery } from './MysteryBox';
 import { checkLevels, checkItems } from './LevelCheck';
 import { LocalStore } from '../services/LocalStore';
 import { Analytics } from '../services/Analytics';
@@ -43,6 +45,8 @@ import { BackgroundBleed } from '../ui/BackgroundBleed';
 const { ccclass, property } = _decorator;
 
 const WIN_POPUP_DELAY = .7;   // let the player see the celebration before the popup covers it
+const SHATTER_AT = .35;     // s: a broken item's cracks spread this long before it shatters
+const SHARDS_FALL = 1.2;    // s: the shards fly and fall before the lose popup
 /** One line for each booster's first level (Tutorial booster intro) */
 const BOOSTER_INTRO: Record<string, string> = {
   freeze: 'New booster! Freeze stops the clock for a few seconds',
@@ -125,7 +129,11 @@ export class GameController extends Component {
       onWin: () => this.onWin(),
       onEjected: it => { wakeAll(); Sound.play('misplace'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit! Pushed back out"); },
     });
-    setMechanicsEvents({ onBroken: it => this.onLose(`${it.nameEn || it.nameVi} broke!`) });
+    setMechanicsEvents({ onBroken: it => this.onBroken(it) });
+    setMysteryEvents({
+      onHint: () => { if (!this.tutorial?.active) this.hud.toastMessage('Drop the box on the key to open it', 2.2); },
+      open: (box, key) => this.openBox(box, key),
+    });
     this.drag.events = {
       onPick: () => Sound.play('pick'),
       onSelect: it => this.tutorial?.onSelect(it),
@@ -193,7 +201,7 @@ export class GameController extends Component {
     S.timeLeft = (S.level.timer || 90) * 1000;
     S.clock = 0; S.startTime = 0;
     PhysicsSystem2D.instance.enable = true;
-    Shake.reset(); this.fx?.clear();
+    Shake.reset(); this.fx?.clear(); resetMystery();
     await Promise.all([this.builder.build(S.level), this.showBackground(S.level.background)]);
     Shake.showEnergy(); this.shakePopupShown = false;
     this.levelNumber = ContentLoader.levelNumber(S.chapterId, S.levelIndex);
@@ -217,9 +225,12 @@ export class GameController extends Component {
   private maybeTutorial() {
     const n = this.levelNumber;
     const booster = BOOSTER_KEYS.findIndex(k => UNLOCK_LEVEL[k] === n && Tutorial.needsBooster(k));
-    // the shake step waits for 3 items in the bag (level 1 starts it after the basics)
-    const shakeOnly = !Tutorial.needsBasics(n) && booster < 0 && Tutorial.needsShake() && !Tutorial.needsBasics(1);
-    if (!Tutorial.needsBasics(n) && booster < 0 && !shakeOnly) return;
+    // the shake step waits for 3 items in the bag, on level 1 only (asked): after the basics, or
+    // when level 1 is played again with the basics done but no shake shown yet
+    // the first level with a mystery box shows how to open it (once)
+    const mystery = !Tutorial.needsBasics(n) && booster < 0 && Tutorial.needsMystery() && GameState.items.some(it => it.locked);
+    const shakeOnly = n === 1 && !Tutorial.needsBasics(n) && booster < 0 && !mystery && Tutorial.needsShake();
+    if (!Tutorial.needsBasics(n) && booster < 0 && !shakeOnly && !mystery) return;
     const round = GameState.round;
     let waited = 0;
     // after the bag has shown and the items have dropped in (checked a few times a second)
@@ -231,6 +242,7 @@ export class GameController extends Component {
       const t = await this.ensureTutorial();
       if (S.round !== round || t.active) return;
       if (Tutorial.needsBasics(n)) t.startBasics(this.tutorialHost());
+      else if (mystery) t.startMystery(this.tutorialHost());
       else if (shakeOnly) t.watchShake(this.tutorialHost());
       else t.startBooster(BOOSTER_KEYS[booster], this.hud.boosters[booster].root, BOOSTER_INTRO[BOOSTER_KEYS[booster]], this.tutorialHost());
     };
@@ -297,13 +309,13 @@ export class GameController extends Component {
   }
 
   // ---------- feedback ----------
-  private onFitted(it: any, count: number) {
+  private onFitted(it: any, _count: number) {
     const S = GameState;
     // no chime while items are still raining in / preset items settle (web LANG_DAU_MAN)
     if (S.clock - S.startTime < 1000 || it.fitAt > S.clock - 900) return;
     it.fitAt = S.clock;
     this.tutorial?.onPacked();
-    Sound.play('fit', { gain: 1 + Math.min(6, count - 1) * 0 });
+    // no chime (asked): the pick and drop sounds are enough; the light pulse and the ring stay
     Sound.haptic('light');                   // doc §9: one light pulse, placed
     const p = it.node.position;
     this.fx?.ring(p.x, p.y, { color: '#5FBF9B', r1: 46 });
@@ -340,7 +352,26 @@ export class GameController extends Component {
     checkEject(GameState.clock);
     updatePacked(GameState.clock);
     tickSettle(director.getDeltaTime());   // packed clusters that only twitch go to sleep
+    tickMystery();
     drawTethers(this.builder.strings);
+  }
+
+  /**
+   * A released mystery box touched the key (web mechanics.js checkUnlock): puffs where both were,
+   * the box becomes its item right there (a bigger item pushes its neighbours aside), a gold ring
+   * and sparkles
+   */
+  private openBox(box: any, key: any) {
+    const fx = this.fx, bp = box.node.position.clone(), kp = key.node.position;
+    fx?.puff(bp.x, bp.y); fx?.puff(kp.x, kp.y);
+    const item = this.builder.openBox(box, key);
+    if (!item) return;
+    this.tutorial?.onBoxOpened();
+    wakeAll();
+    Sound.play('unlockLv');
+    fx?.ring(bp.x, bp.y, { color: '#E2B04A', r1: 64, life: 620, width: 5 });
+    fx?.sparkle(bp.x, bp.y, { n: 18, color: '#FFD98A', speed: 1.4, life: 780 });
+    this.hud.toastMessage(`Unlocked: ${item.nameEn || item.nameVi}!`, 1.6);
   }
 
   // ---------- boosters (web boosters.js) ----------
@@ -524,12 +555,40 @@ export class GameController extends Component {
   }
 
   /** Time is up (no reason) or an item broke (reason, no extra time) */
-  private async onLose(reason: string | null = null) {
+  /**
+   * A fragile item broke: play stops, the cracks spread a moment, the item shatters into shards
+   * that fly and fall, and only then the lose popup (the player sees what happened)
+   */
+  private onBroken(it: ItemView) {
+    const S = GameState;
+    if (S.lost || S.won) return;
+    const round = S.round;
+    this.onLose(`${it.nameEn || it.nameVi} broke!`, SHATTER_AT + SHARDS_FALL);
+    this.scheduleOnce(() => {
+      if (S.round !== round || !it.node.isValid) return;
+      // its outline in Field space (the shapes already are)
+      const fx = this.fx, m = it.node.worldMatrix;
+      const pts = it.outline.length >= 3 ? it.outline.map(p => Vec2.transformMat4(new Vec2(), p, m)) : it.shapes[0].map(p => p.clone());
+      const r = it.bounds;
+      Sound.play('break', { gain: .55 });   // was .95: too loud
+      fx?.shake(420);
+      fx?.dropCracks(it.node);
+      fx?.shatter(pts, r.x + r.width / 2, r.y + r.height / 2, it.material);
+      it.node.active = false;
+    }, SHATTER_AT);
+  }
+
+  private async onLose(reason: string | null = null, delay = 0) {
     const S = GameState;
     if (S.lost || S.won) return;
     S.lost = true;
     this.tutorial?.stop();
     Analytics.levelEnd('lose');
+    if (delay) {
+      const round = S.round;
+      await new Promise<void>(done => this.scheduleOnce(() => done(), delay));
+      if (S.round !== round) return;
+    }
     Sound.play('lose'); Sound.duckMusic(true);
     this.fx?.shake(420);
     const p = await showPopup('LosePopup', LosePopup);
