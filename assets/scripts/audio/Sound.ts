@@ -8,7 +8,7 @@ import { NativeBridge } from '../services/NativeBridge';
 
 export type SfxName = 'tap' | 'tapBig' | 'pick' | 'drop' | 'fall' | 'fit' | 'nope' | 'misplace' | 'booster' | 'jiggle'
   | 'tick' | 'clockTick' | 'whoosh' | 'win' | 'lose' | 'unlockLv' | 'purchase' | 'menuOpen' | 'menuClose'
-  | 'glass' | 'paper' | 'crack' | 'break' | 'fireworks' | 'starShine';
+  | 'glass' | 'metal' | 'paper' | 'crack' | 'break' | 'fireworks' | 'starShine';
 
 /** File in resources/audio for each sound (the name itself when not listed) */
 const FILE: Record<string, string> = {
