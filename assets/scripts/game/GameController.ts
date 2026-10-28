@@ -283,7 +283,9 @@ export class GameController extends Component {
 
   restart() { Analytics.setReason('restart'); return this.openLevel(GameState.levelIndex); }
 
-  get running() { const S = GameState; return !!S.level && !S.won && !S.lost && !S.paused; }
+  /** the round runs (clock, physics, items raining in) only once no loading veil covers it: they
+   *  fell and sounded behind the veil before */
+  get running() { const S = GameState; return !!S.level && !S.won && !S.lost && !S.paused && !Overlays.covered; }
 
   update(dt: number) {
     const S = GameState;

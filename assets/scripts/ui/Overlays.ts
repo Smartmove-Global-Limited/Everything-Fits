@@ -250,6 +250,8 @@ export const Overlays = {
       done();
     }).start());
   },
+  /** A loading veil covers the screen now (from cover() / a covered start until uncover() has finished) */
+  get covered() { return veilCleared !== null; },
   /** Called by a scene controller in onLoad: start covered if the previous scene asked for it */
   startCoveredIfPending() {
     if (!veilPending) return false;
