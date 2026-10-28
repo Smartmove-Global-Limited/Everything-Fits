@@ -24,7 +24,10 @@ THE SOFTWARE.
 ****************************************************************************/
 package com.cocos.game;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.view.WindowManager;
 import android.content.Intent;
 import android.content.res.Configuration;
 
@@ -41,7 +44,33 @@ public class AppActivity extends CocosActivity {
         SdkBridge.init(this);   // Firebase Analytics + AppsFlyer (assets/scripts/services/NativeBridge.ts)
         SdkBridge.showLaunchCover(this);
         MotionBridge.init(this);   // shaking: linear acceleration (assets/scripts/game/Shake.ts)
+        hideSystemBars();
 
+    }
+
+    /**
+     * Full screen like a game: status and navigation bars hidden, a swipe from the edge shows them
+     * for a moment (sticky immersive), laid out under the display cutout. CocosActivity sets this
+     * once in onCreate; a full-screen ad, a dialog or the purchase sheet brings the bars back, so it
+     * is set again whenever the window regains focus.
+     */
+    private void hideSystemBars() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.layoutInDisplayCutoutMode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                ? WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                : WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(lp);
+        }
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) hideSystemBars();
     }
 
     @Override

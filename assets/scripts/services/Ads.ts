@@ -83,6 +83,13 @@ function onNative(msg: any) {
     if (msg.bannerPx > 0 && msg.screenPx > 0) metrics = { bannerPx: msg.bannerPx, systemPx: msg.systemPx | 0, screenPx: msg.screenPx };
     onReady?.(mode === 'max' ? 'ok' : 'off'); onReady = null;
     if (bannerPlacement && bannerLive) Ads.showBanner(bannerPlacement, Infinity);
+  } else if (msg.type === 'banner' && msg.state === 'shown') {
+    // the native banner sits on the system bar as it is now: the reserved strip follows it
+    const sys = msg.systemPx | 0;
+    if (metrics && sys !== metrics.systemPx) {
+      metrics = { ...metrics, systemPx: sys };
+      if (bannerPlacement) views?.bannerSlot({ placement: bannerPlacement, simulated: mode === 'sim', metrics });
+    }
   } else if (msg.type === 'rewarded') {
     if (msg.state === 'loaded') rewardedLoaded = true;
     else if (msg.state === 'closed' || msg.state === 'showFailed') {

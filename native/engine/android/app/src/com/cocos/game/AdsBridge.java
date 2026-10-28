@@ -12,6 +12,8 @@ import android.view.WindowInsets;
 import android.widget.FrameLayout;
 
 import com.applovin.mediation.MaxAd;
+import com.applovin.mediation.MaxAdFormat;
+import com.applovin.mediation.MaxAdViewConfiguration;
 import com.applovin.mediation.MaxAdListener;
 import com.applovin.mediation.MaxAdViewAdListener;
 import com.applovin.mediation.MaxError;
@@ -110,7 +112,7 @@ final class AdsBridge {
         main.post(() -> {
             View root = activity.getWindow().getDecorView();
             ScriptEvents.send("ads", ScriptEvents.of("ready", "mode", mode,
-                    "bannerPx", AppLovinSdkUtils.dpToPx(activity, 50), "systemPx", navigationBarInset(), "screenPx", root.getHeight()));
+                    "bannerPx", bannerHeight > 0 ? bannerHeight : adaptiveBannerPx(), "systemPx", navigationBarInset(), "screenPx", root.getHeight()));
         });
     }
 
@@ -119,7 +121,10 @@ final class AdsBridge {
 
     // ---------- banner ----------
     private static void createBanner() {
-        banner = new MaxAdView(bannerUnit, activity);
+        // anchored adaptive banner (fills the width, pays better than the fixed 320x50), set the way
+        // SDK 13 wants it: MaxAdViewConfiguration (the old "adaptive_banner" extra parameter is refused)
+        banner = new MaxAdView(bannerUnit, MaxAdFormat.BANNER, MaxAdViewConfiguration.builder()
+                .setAdaptiveType(MaxAdViewConfiguration.AdaptiveType.ANCHORED).build());
         banner.setRevenueListener(SdkBridge::logAdRevenue);   // each paid impression → AppsFlyer af_ad_revenue
         banner.setListener(new MaxAdViewAdListener() {
             @Override public void onAdLoaded(MaxAd ad) { ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "loaded")); }
@@ -131,7 +136,9 @@ final class AdsBridge {
             @Override public void onAdExpanded(MaxAd ad) {}
             @Override public void onAdCollapsed(MaxAd ad) {}
         });
-        bannerHeight = AppLovinSdkUtils.dpToPx(activity, 50);
+        // as tall as the SDK says for this screen's width (about 56-62 dp on a phone instead of a
+        // fixed 50); the game's black "AD" strip takes the same height ("ready": bannerPx)
+        bannerHeight = adaptiveBannerPx();
         // just the banner, right above the navigation / gesture bar (nothing over the system bar).
         // Transparent until an ad loads: the game's black "AD" strip shows through (Overlays.ts)
         bannerBox = new FrameLayout(activity);
@@ -142,11 +149,30 @@ final class AdsBridge {
         banner.loadAd();
     }
 
-    /** Edge-to-edge: the banner sits above the gesture / navigation bar */
-    private static int navigationBarInset() {
+    /**
+     * The navigation bar the banner must sit above: 0 while it is hidden (the game runs full screen,
+     * AppActivity.hideSystemBars). getSystemWindowInsetBottom() still reported the hidden bar's
+     * height (the immersive flags include LAYOUT_STABLE), which left a blank strip under the banner.
+     */
+    static int navigationBarInset() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return 0;
-        WindowInsets ins = activity.getWindow().getDecorView().getRootWindowInsets();
-        return ins != null ? ins.getSystemWindowInsetBottom() : 0;
+        View decor = activity.getWindow().getDecorView();
+        // hidden by the game (AppActivity.hideSystemBars, set before the ads start): nothing under the
+        // banner. Asked this way, not through the insets, which still reported the bar for a moment.
+        if ((decor.getSystemUiVisibility() & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) != 0) return 0;
+        WindowInsets ins = decor.getRootWindowInsets();
+        if (ins == null) return 0;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return ins.isVisible(WindowInsets.Type.navigationBars()) ? ins.getInsets(WindowInsets.Type.navigationBars()).bottom : 0;
+        }
+        return ins.getSystemWindowInsetBottom();
+    }
+
+    /** Height of the anchored adaptive banner for this screen's width, px (50 dp if the SDK cannot tell) */
+    private static int adaptiveBannerPx() {
+        int dp = 0;
+        try { dp = MaxAdFormat.BANNER.getAdaptiveSize(activity).getHeight(); } catch (Throwable e) { /* older SDK */ }
+        return AppLovinSdkUtils.dpToPx(activity, dp > 0 ? dp : 50);
     }
 
     static void showBanner(final String placement) {
@@ -159,7 +185,8 @@ final class AdsBridge {
             banner.setPlacement(placement);
             bannerBox.setVisibility(View.VISIBLE);
             banner.startAutoRefresh();
-            ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "shown"));
+            // the system bar under it now (the bars may have been showing when "ready" was sent)
+            ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "shown", "systemPx", lp.bottomMargin));
         });
     }
 

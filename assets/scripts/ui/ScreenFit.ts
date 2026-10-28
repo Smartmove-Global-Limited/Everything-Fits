@@ -58,14 +58,17 @@ export const ScreenFit = {
   },
   get adBottom() { return adBottom; },
   onInsetsChange(fn: () => void) { insetListeners.push(fn); return () => { const i = insetListeners.indexOf(fn); if (i >= 0) insetListeners.splice(i, 1); }; },
-  /** Insets of the unsafe areas (notch, status bar, gesture bar, bottom ad banner) in design units */
+  /** Insets of the unsafe areas in design units: top the notch / camera, bottom the ad banner */
   insets(out = { top: 0, bottom: 0 }) {
     if (embedded) { out.top = 0; out.bottom = 0; return out; }
     const vis = view.getVisibleSize();
     let safe: Rect | null = null;
     try { safe = sys.getSafeAreaRect(); } catch { safe = null; }
     if (!safe || safe.width <= 0) { out.top = 0; out.bottom = adBottom; return out; }
-    out.bottom = Math.max(0, safe.y) + adBottom;
+    // bottom: only the ad banner. The game runs full screen with the navigation bar hidden
+    // (AppActivity.hideSystemBars), yet the engine's safe area still kept the bar's height at the
+    // bottom (about 34 dp on a Redmi), which lifted the tab bar and the banner's strip off the edge.
+    out.bottom = adBottom;
     out.top = Math.max(0, vis.height - (safe.y + safe.height));
     return out;
   },
