@@ -1,7 +1,7 @@
 'use strict';
 // Android build hooks: everything that used to be manual steps around Cocos' Build button.
 //   before Build  check the Build panel settings, delete build/android/data (Cocos keeps files of
-//                 earlier builds: old images shipped). Version and signing were saved by the
+//                 earlier builds: old images shipped) and the build/android/assets link to it. Version and signing were saved by the
 //                 EF Android panel (main.js) to native/engine/android/version.properties and
 //                 keystore.properties, read by Gradle and Android Studio.
 //   after Build   tools/android-prepare.sh (Gradle for JDK 21, AppsFlyer key, no Cocos logo, app name),
@@ -100,6 +100,10 @@ exports.onBeforeBuild = async function (options) {
   status(options, { state: 'building', step: 'Cocos build…', error: null, files: null, sha: null, owner: null, installed: null });
   const data = path.join(buildDir(options), 'data');
   fs.rmSync(data, { recursive: true, force: true });
+  // Cocos links build/android/assets -> data again on every build; a link left by an earlier
+  // build made that fail now and then ("EEXIST: file already exists, symlink … data -> … assets")
+  const link = path.join(buildDir(options), 'assets');
+  try { if (fs.lstatSync(link).isSymbolicLink()) fs.unlinkSync(link); } catch { /* not there */ }
   console.log(`[${PKG}] cleaned ${data}`);
 };
 

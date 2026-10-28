@@ -43,7 +43,8 @@ exports.load = function () {};
 exports.unload = function () {};
 
 exports.methods = {
-  openPanel() { Editor.Panel.open('ef-android'); },
+  // the full panel name: the short 'ef-android' stopped opening it (the menu did nothing)
+  openPanel() { Editor.Panel.open('ef-android.default'); },
 
   loadSettings() {
     const ver = readProps(path.join(androidDir(), 'version.properties'));
