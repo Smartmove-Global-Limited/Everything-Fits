@@ -219,7 +219,7 @@ export class EditorPage {
     if (locked.length && !key) warns.push('Có hộp bí ẩn nhưng chưa có chìa khóa.');
     if (key && !key.inBag) warns.push('GDD: chìa khóa phải nằm sẵn trong túi (bật "Đặt sẵn trong túi").');
     if (key?.inBag && !pointInPolygon(key.x ?? 0, key.y ?? -30, L.container.shape)) warns.push('Chìa khóa nằm ngoài lòng túi.');
-    for (const it of L.items) if (it.link && !L.items.find((j: any) => j.id === it.link)) warns.push(`${it.id} buộc dây với ${it.link} nhưng món đó không có trong level.`);
+    for (const it of L.items) if (it.link && !L.items.find((j: any) => j !== it && j.id === it.link)) warns.push(`${it.id} buộc dây với ${it.link} nhưng món đó không có trong level.`);
     for (const it of L.items) if (!this.catalog.items.has(Number(it.id))) warns.push(`Món #${it.id} chưa có trong project.`);
     if (!this.catalog.bags.has(L.container.skin)) warns.push(`Túi "${L.container.skin}" chưa có trong project.`);
     if (d.density > .95) warns.push('Density > 95%: gần như không xếp được với vật lý.');

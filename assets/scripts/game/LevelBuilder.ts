@@ -12,6 +12,7 @@ import { overlapsBagArea, findFreeSpot, clearEjects, beginSpotBatch } from './Ba
 import { Sound } from '../audio/Sound';
 import { Fx } from './Fx';
 import { BagView } from './BagView';
+import { buildTethers, clearTethers, resetTetherDrawing } from './Tethers';
 
 const DROP_INTERVAL = 110;     // ms between two items dropping in
 const FIRST_DROP = 150;        // pause before the first one
@@ -28,6 +29,8 @@ export class LevelBuilder {
   private frontHolder: Node;
   /** soft shadow under the bag (web bags.js drawBagShadow), drawn once per level */
   private shadow: Graphics;
+  /** strings of the tied pairs (game/Tethers): over the items, under the bag rim */
+  readonly strings: Graphics;
 
   constructor(private bagLayer: Node, private itemLayer: Node, private frontLayer: Node) {
     this.frontHolder = new Node('BagFront');
@@ -40,6 +43,11 @@ export class LevelBuilder {
     bagLayer.insertChild(sh, 0);
     this.shadow = sh.addComponent(Graphics);
     sh.addComponent(UIOpacity);
+    const st = new Node('Strings');
+    st.layer = frontLayer.layer;
+    st.addComponent(UITransform);
+    frontLayer.insertChild(st, 0);
+    this.strings = st.addComponent(Graphics);
   }
 
   /**
@@ -110,7 +118,9 @@ export class LevelBuilder {
       item.levelIndex = i;
       item.setLevelScale(k);
       item.presetInBag = !!it.inBag;
-      item.locked = !!it.locked;
+      // the mystery box needs a box and a key picture this art set does not have yet: a hidden
+      // item would never count as packed, so the level could not be won. Shown as itself instead.
+      item.locked = false;
       item.releasedAt = item.floorBuzzAt = item.spunAt = item.toppleSide = 0; item.stuckFrames = item.insideFrames = item.outsideFrames = 0; item.fitAt = 0; item.outAt = -1e9;
       item.frozen = false; item.holdUntil = 0; item.cracks = 0; item.broken = false;
       item.body.type = ERigidBody2DType.Dynamic;   // a pooled item may come back frozen (static)
@@ -122,6 +132,7 @@ export class LevelBuilder {
     });
     S.items = items;
     S.itemsToPack = items.filter(i => i.itemId !== 0).length;
+    buildTethers(items, level);
     this.scheduleEntrance();
   }
 
@@ -268,6 +279,7 @@ export class LevelBuilder {
       list.push(it); this.itemPool.set(it.itemId, list);
     }
     S.items = [];
+    clearTethers(); resetTetherDrawing(this.strings);
     for (const it of S.thrown) {
       it.node.active = false;
       const list = this.itemPool.get(it.itemId) || [];

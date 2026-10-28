@@ -18,6 +18,7 @@ import { Fx } from './Fx';
 import { tickPhone, tickBalloons, setMechanicsEvents } from './Mechanics';
 import { Shake } from './Shake';
 import { tickSettle, wakeAll } from './Settle';
+import { tickTethers, drawTethers } from './Tethers';
 import { checkLevels, checkItems } from './LevelCheck';
 import { LocalStore } from '../services/LocalStore';
 import { Analytics } from '../services/Analytics';
@@ -79,7 +80,11 @@ export class GameController extends Component {
     const extra = Math.max(0, vis.height - DESIGN_H) / 2;
     GameState.ceilGain = Math.max(0, extra - ins.top);
     const dockDrop = extra - ins.bottom;                       // how far EdgePin moved the dock down
-    GameState.floorDrop = Math.max(0, (DOCK_TOP_Y + dockDrop - FLOOR_Y) / 2);
+    // room between the tray floor and the dock top: on a tall screen the floor takes half of it; when
+    // the dock rose instead (banner under it, short screen) the floor rises with it, else the items
+    // lay under the booster buttons
+    const room = DOCK_TOP_Y + dockDrop - FLOOR_Y;
+    GameState.floorDrop = room >= 0 ? room / 2 : room;
     const floor = this.node.parent!.getChildByName('Field')?.getChildByName('Environment')?.getChildByName('Floor');
     if (floor) {
       if (this.floorBaseY === null) this.floorBaseY = floor.position.y;
@@ -280,6 +285,7 @@ export class GameController extends Component {
     applyEjects();
     this.drag.tick(dt);
     this.builder.tick();
+    tickTethers();                           // stretched strings pull their pairs together
     // special items and shaking push their bodies before the physics step of this frame
     const phone = tickPhone(ms);
     if (phone && this.fx) this.fx.phoneWaves(phone.node.position.x, phone.node.position.y);
@@ -334,6 +340,7 @@ export class GameController extends Component {
     checkEject(GameState.clock);
     updatePacked(GameState.clock);
     tickSettle(director.getDeltaTime());   // packed clusters that only twitch go to sleep
+    drawTethers(this.builder.strings);
   }
 
   // ---------- boosters (web boosters.js) ----------

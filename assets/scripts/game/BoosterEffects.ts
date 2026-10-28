@@ -2,7 +2,7 @@
 //   Freeze    20 s: items lying fully inside the bag, and items dropped into it, stay exactly where
 //             they are (static bodies). Counted on the game clock, so pausing pauses it too.
 //   Resize    shrinks the biggest item still outside the bag by 20%.
-//   Throw out removes one ordinary item (not one of the 3 biggest), preferring one outside the bag.
+//   Throw out removes one ordinary item (not one of the 3 biggest, not a tied one), preferring one outside the bag.
 import { ERigidBody2DType } from 'cc';
 import { GameState, isHeld } from '../core/GameState';
 import { bagZone, itemAABB } from './BagRules';
@@ -60,7 +60,7 @@ export function shrinkBiggestOutside(): ItemView | null {
 export function throwOne(): ItemView | null {
   const S = GameState;
   const big = new Set(S.items.filter(it => it.itemId !== 0).sort((a, b) => area(b) - area(a)).slice(0, 3));
-  const all = S.items.filter(it => !it.waiting && !isHeld(it) && !it.locked && it.itemId !== 0 && !big.has(it));
+  const all = S.items.filter(it => !it.waiting && !isHeld(it) && !it.locked && !it.partner && it.itemId !== 0 && !big.has(it));
   if (!all.length) return null;
   const outside = all.filter(it => !bagZone(it).fullyInside);
   const pool = outside.length ? outside : all;

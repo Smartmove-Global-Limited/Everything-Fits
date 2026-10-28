@@ -230,6 +230,9 @@ export function eject(item: ItemView, reason: 'noFit' | 'stuck') {
   item.stuckFrames = 0;
   for (const e of pendingEjects) if (e.item === item) return;
   pendingEjects.push({ item, reason });
+  // a tied pair goes out together (web rules.js eject), else the string keeps tugging at the one left inside
+  const pt = item.partner;
+  if (pt && !pt.waiting && pt.node.active && !pendingEjects.some(e => e.item === pt)) { pt.stuckFrames = 0; pendingEjects.push({ item: pt, reason }); }
 }
 
 /** Called from update(), before the physics step */

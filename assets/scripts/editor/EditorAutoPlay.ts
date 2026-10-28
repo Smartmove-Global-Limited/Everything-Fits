@@ -3,7 +3,7 @@
 // Uses the level's stored solution when it still matches the items, otherwise the solver's plan.
 // Each item is dropped only where it overlaps nothing (the same shape test as dragging); a taken
 // spot is searched around, and an item with no spot stays on the tray. The next item waits for the
-// previous one to come to rest. Tethered items are skipped (as on the web).
+// previous one to come to rest. Both items of a tied pair are skipped (as on the web).
 import { GameState } from '../core/GameState';
 import { levelToFieldY } from '../core/GameConstants';
 import { computeGhost, itemAABB } from '../game/BagRules';
@@ -40,7 +40,7 @@ export class EditorAutoPlay {
     for (const st of steps) {
       if (!alive()) { this.active = my === this.run ? false : this.active; return null; }
       const it = S.items[st.i];
-      if (!it || !it.node.activeInHierarchy || level.items[st.i]?.link) continue;
+      if (!it || !it.node.activeInHierarchy || it.partner) continue;
       if (this.drop(it, st)) { placed++; await this.rest(it, alive); }
       else await sleep(150);
     }

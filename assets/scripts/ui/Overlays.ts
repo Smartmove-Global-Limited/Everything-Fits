@@ -1,7 +1,7 @@
 // Screen-wide overlays shared by every scene: the short toast (web efToast), the simulated ads
 // (TEST AD screen, TEST BANNER strip) and the views Ads.ts draws real banners around.
 // Prefabs load once; one instance per scene sits on top of the Canvas.
-import { Node, Prefab, instantiate, director, Director, resources, UIOpacity, Tween, tween, UITransform, Graphics, Color, Layers, Label, Vec3, Sprite, SpriteFrame, NodePool } from 'cc';
+import { Node, Prefab, instantiate, director, Director, resources, UIOpacity, Tween, tween, UITransform, Graphics, Color, Layers, Label, Vec3, Sprite, SpriteFrame, NodePool, view } from 'cc';
 import { findNode, setText, tap, labelIn, contentOf } from './UiKit';
 import { ScreenFit } from './ScreenFit';
 import { Startup } from '../services/Startup';
@@ -171,6 +171,7 @@ let adPlaying: Promise<boolean> | null = null;
 let bannerWanted: BannerSlot | null = null;
 /** TestBanner prefab height and its texts' places */
 let bannerBase: { h: number; ys: number[] } | null = null;
+let followsResize = false;
 const SIM_FILL = new Color(46, 58, 72, 255), AD_FILL = new Color(0, 0, 0, 255);
 
 /**
@@ -181,6 +182,9 @@ const SIM_FILL = new Color(46, 58, 72, 255), AD_FILL = new Color(0, 0, 0, 255);
  */
 async function bannerSlot(slot: BannerSlot | null) {
   bannerWanted = slot;
+  // the screen changed size (preview device switched, split screen, rotation): the strip and the
+  // bars above it are placed again for the new visible height, like the bars pinned by EdgePin
+  if (!followsResize) { followsResize = true; view.on('design-resolution-changed', () => { if (bannerWanted) bannerSlot(bannerWanted); }); }
   if (!slot) {
     const n = director.getScene()?.getChildByName('Canvas')?.getChildByName('__testBanner');
     if (n) n.active = false;

@@ -116,9 +116,9 @@ export class EditorBoard {
       ctx.lineWidth = 2; ctx.strokeStyle = b.color ? darker(b.color) : INK; ctx.stroke();
       if (this.tool === 'block' && i === this.selBlock) { ctx.setLineDash([5, 4]); ctx.strokeStyle = '#E2637F'; ctx.lineWidth = 2.4; ctx.strokeRect(o.x + b.x - 3, o.y + b.y - 3, b.w + 6, b.h + 6); ctx.setLineDash([]); }
     });
-    // tethers
+    // tethers: the partner is the first OTHER item with the linked id (as the game ties them, game/Tethers)
     for (const it of L.items) if (it.link) {
-      const o = L.items.find((j: any) => j.id === it.link); if (!o) continue;
+      const o = L.items.find((j: any) => j !== it && j.id === it.link); if (!o) continue;
       const a = this.itemPos(it), b = this.itemPos(o);
       ctx.strokeStyle = L.string || '#E2637F'; ctx.lineWidth = 3; ctx.setLineDash([]);
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo((a.x + b.x) / 2, (a.y + b.y) / 2 + 20, b.x, b.y); ctx.stroke();
