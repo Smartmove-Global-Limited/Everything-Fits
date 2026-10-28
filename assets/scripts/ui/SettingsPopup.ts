@@ -53,7 +53,7 @@ export class SettingsPopup extends Component {
     tap(this.toggles.bgm.node, () => { Sound.setMusic(!Sound.musicOn); this.redraw(true); }, 'tap', this);
     tap(this.toggles.sfx.node, () => { Sound.setSfx(!Sound.sfxOn); this.redraw(true); }, null, this);
     tap(this.toggles.vib.node, () => { Sound.setVibration(!Sound.vibrationOn); this.redraw(true); if (Sound.vibrationOn) Sound.vibrate(30); }, 'tap', this);
-    tap(findNode(n, 'setX'), () => this.close(), 'tap', this);
+    tap(findNode(n, 'setX'), () => this.close(), null, this);   // close() plays the menu-close sound
     tap(this.home, () => { const cb = this.opts.onHome; this.close(false); cb?.(); }, 'tap', this);
     tap(this.restart, () => { const cb = this.opts.onRestart; this.close(false); cb?.(); }, 'tap', this);
     this.prevLevel = this.devButton('« Level trước', () => this.opts.onPrevLevel);
@@ -90,12 +90,14 @@ export class SettingsPopup extends Component {
     this.layout(!!opts.inGame, dev, opts.version != null);
     if (this.version) this.version.string = opts.version != null ? `Levels v${opts.version}` : '';
     this.redraw(false);
+    Sound.play('menuOpen');
     openPopup(this.node, this.card);
   }
 
   /** Close; `notify` false when Home / Restart take over (they handle the round themselves) */
   close(notify = true) {
     const cb = notify ? this.opts.onClose : undefined;
+    Sound.play('menuClose');
     closePopup(this.node, cb);
   }
 

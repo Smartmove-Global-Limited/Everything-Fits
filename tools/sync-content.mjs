@@ -1,11 +1,10 @@
-// Sync game content (levels, item / bag / background images, UI icons, audio) from the web game
+// Sync game content (levels, item / bag / background images, UI icons) from the web game
 // repo into the Cocos project. Run again whenever the Level Editor exports a new levels.json or
 // art is added:
 //   node tools/sync-content.mjs                 (web repo defaults to ../snug)
 //   GAME=/path/to/web/repo node tools/sync-content.mjs
 //
 //   snug/public/content/cozy  → assets/gamecontent/content/cozy (asset bundle "content", loaded per level)
-//   snug/public/audio         → assets/resources/audio
 //   snug/public/ui            → assets/resources/uiart                   (UI prefabs reference it; runtime loads e.g. uiart/icons/star-off)
 //
 // Only new or changed files are copied; existing .meta files are kept (same uuids, prefabs keep
@@ -21,10 +20,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GAME = process.env.GAME || resolve(ROOT, '../snug');
 // Since 2026-10-23 this Cocos project is the source of the game content (levels and item data are
 // edited with its own Level Editor): from the web repo only NEW files are taken (new art), nothing
-// is overwritten or deleted there. Audio and UI art still follow the web repo.
+// is overwritten or deleted there. UI art still follows the web repo. Audio is the Cocos project's
+// own since 2026-10-28 (the sound designer's set): never synced, the web files are older.
 const PAIRS = [
   [join(GAME, 'public/content/cozy'), join(ROOT, 'assets/gamecontent/content/cozy'), { addOnly: true }],
-  [join(GAME, 'public/audio'), join(ROOT, 'assets/resources/audio')],
   [join(GAME, 'public/ui'), join(ROOT, 'assets/resources/uiart')],
 ];
 

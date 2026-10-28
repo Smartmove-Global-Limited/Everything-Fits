@@ -196,7 +196,7 @@ export class LevelBuilder {
     this.setBagVisible(bag, true);
     // web tickTuiHien: whoosh, then a thud with dust when the bag lands at the end of its pop
     Sound.play('whoosh', { gain: .45 });
-    Sound.play('land', { gain: .5, delay: .22 });
+    Sound.play('fall', { gain: .5, delay: .22 });
     const fx = Fx.instance;
     if (fx) { const cx = (bag.minX + bag.maxX) / 2, y = bag.minY - 8; fx.dust(cx - 40, y, { n: 6, strength: .8 }); fx.dust(cx + 40, y, { n: 6, strength: .8 }); }
     // small pop when the bag lands on the table

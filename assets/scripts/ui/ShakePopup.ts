@@ -3,6 +3,7 @@
 import { _decorator, Component, Node } from 'cc';
 import { findNode, tap, openPopup, closePopup } from './UiKit';
 import { Overlays } from './Overlays';
+import { Sound } from '../audio/Sound';
 const { ccclass } = _decorator;
 
 export type ShakeOptions = { onRefill: () => void; onClose: () => void };
@@ -16,9 +17,9 @@ export class ShakePopup extends Component {
   onLoad() {
     const n = this.node;
     this.card = findNode(n, 'efp-card')!;
-    const close = () => closePopup(n, () => this.opts.onClose());
-    tap(findNode(n, 'shakeX'), close, 'tap', this);
-    tap(findNode(n, 'shakeNo'), close, 'tap', this);
+    const close = () => { Sound.play('menuClose'); closePopup(n, () => this.opts.onClose()); };
+    tap(findNode(n, 'shakeX'), close, null, this);   // close plays the menu-close sound
+    tap(findNode(n, 'shakeNo'), close, null, this);
     this.adEnable = tap(findNode(n, 'shakeAd'), async () => {
       this.adEnable(false);
       const full = await Overlays.rewarded('refill_energy');
@@ -28,5 +29,5 @@ export class ShakePopup extends Component {
   }
 
   get isOpen() { return this.node.active; }
-  open(o: ShakeOptions) { this.opts = o; openPopup(this.node, this.card); }
+  open(o: ShakeOptions) { this.opts = o; Sound.play('menuOpen'); openPopup(this.node, this.card); }
 }

@@ -282,7 +282,7 @@ export class ShopScreen extends Component {
     this.lock(false);
     const p = product(b.id)!;
     if (r === 'ok') {
-      Sound.play('unlockLv', { gain: .7 });
+      Sound.play('purchase', { gain: .7 });
       if (p.noAds) Ads.hideBanner();
       this.celebrate(b, goldBefore);
       Overlays.toast(p.noAds && !p.boosters ? 'No Ads activated' : p.gold && !p.boosters ? `+${formatNumber(p.gold)} gold` : `${p.name} added!`);
@@ -339,7 +339,7 @@ export class ShopScreen extends Component {
     if (Wallet.gold < item.price) { Sound.play('nope'); Overlays.toast('Not enough gold'); return; }
     Wallet.add(-item.price);
     Boosters.add(item.key, 3);
-    Sound.play('unlockLv', { gain: .6 });
+    Sound.play('purchase', { gain: .6 });
     Overlays.toast(`${item.name} added!`);
   }
 

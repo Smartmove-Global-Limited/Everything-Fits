@@ -39,12 +39,14 @@ export async function openBoosterShop(onClose: () => void) {
   offGold?.(); offGold = Wallet.onChange(() => showGold(v));
   setText(v.bundleBuy, Purchases.price(BUNDLE_ID));
   fitPrice(v.bundleBuy);
+  Sound.play('menuOpen');
   openPopup(v.root, v.card);
 }
 
 function close() {
   if (!view || busy) return;
   offGold?.(); offGold = null;
+  Sound.play('menuClose');
   closePopup(view.root, () => { const f = onClosed; onClosed = null; f?.(); });
 }
 
@@ -112,7 +114,7 @@ async function build(): Promise<View> {
   goldPill.setPosition(-CARD_W / 2 + PAD + goldPill.getComponent(UITransform)!.width / 2, cardH / 2 - PAD - pillH / 2, 0);
   const xu = x.getComponent(UITransform)!;
   x.setPosition(CARD_W / 2 - PAD - xu.width / 2, cardH / 2 - PAD - pillH / 2, 0);
-  tap(x, () => close(), 'tap');   // after placing it: tap() keeps the button's resting height
+  tap(x, () => close(), null);   // after placing it: tap() keeps the button's resting height; close() plays the menu-close sound
   shop.destroy(); pop.destroy();
   root.active = false;
   return { root, card, gold, goldPill, bundleBuy, enables };
@@ -151,7 +153,7 @@ function spendGold(id: string, tile: Node) {
   if (Wallet.gold < s.price) { Sound.play('nope'); Overlays.toast('Not enough gold'); return; }
   Wallet.add(-s.price);
   Boosters.add(s.key, 3);
-  Sound.play('unlockLv', { gain: .6 });
+  Sound.play('purchase', { gain: .6 });
   Overlays.toast(`${s.name} added!`);
   pop(tile);
 }
@@ -166,7 +168,7 @@ async function buyBundle() {
   label.string = before;
   lock(false);
   if (r === 'ok') {
-    Sound.play('unlockLv', { gain: .7 });
+    Sound.play('purchase', { gain: .7 });
     Overlays.toast(`${product(BUNDLE_ID)!.name} added!`);
     pop(btn.parent!);
   } else Overlays.toast(FAIL[r] || FAIL.error);

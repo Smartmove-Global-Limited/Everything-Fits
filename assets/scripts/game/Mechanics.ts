@@ -24,7 +24,7 @@ const HARD_HIT_CRACK = 7 * STEP;     // hard item hitting a fragile one this fas
 const FALL_CRACK = 9 * STEP;         // fragile item falling this fast onto floor / hard item cracks
 const FLOOR_BUZZ = 3 * STEP;        // an item the player let go of landing on the floor this fast: one light buzz
 const NO_CRACK_AT_START = 2500;      // ms: items raining in at the start never crack
-const SOUND: Record<string, SfxName> = { glass: 'glass', ceramic: 'glass', metal: 'metal', paper: 'paper', fabric: 'drop', food: 'drop' };
+const SOUND: Record<string, SfxName> = { glass: 'glass', ceramic: 'glass', paper: 'paper' };   // anything else: the item fall sound
 const SOFT = new Set(['fabric', 'paper', 'food']);
 
 export type MechanicsEvents = { onBroken?(item: ItemView): void };
@@ -83,7 +83,7 @@ function onImpact(b: ItemView, v: number, at: Vec2, intoWall: boolean, other: It
   const energy = grams * k * k * web * web / 1000;
   const strength = Math.min(1, Math.max(0, Math.log10(energy + 1) / 2));
   const soft = isSoft(b);
-  Sound.play(SOUND[b.material] || 'land', { gain: (soft ? .12 : .18) + strength * .6 });
+  Sound.play(SOUND[b.material] || 'fall', { gain: (soft ? .12 : .18) + strength * .6 });
   const fx = Fx.instance;
   if (fx) {
     const d = soft ? .35 : 1;

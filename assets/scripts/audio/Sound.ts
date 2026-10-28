@@ -6,18 +6,19 @@ import { Node, AudioSource, AudioClip, director, resources, Tween, tween } from 
 import { LocalStore } from '../services/LocalStore';
 import { NativeBridge } from '../services/NativeBridge';
 
-export type SfxName = 'tap' | 'tapBig' | 'pick' | 'drop' | 'land' | 'fit' | 'nope' | 'eject' | 'jiggle' | 'shrink' | 'trash'
-  | 'unlock' | 'tick' | 'whoosh' | 'star' | 'win' | 'lose' | 'unlockLv' | 'glass' | 'metal' | 'paper' | 'crack' | 'break'
-  | 'winConfirm' | 'ting1' | 'ting2' | 'ting3' | 'fireworks' | 'confettiPop' | 'confettiBurst' | 'starShine';
+export type SfxName = 'tap' | 'tapBig' | 'pick' | 'drop' | 'fall' | 'fit' | 'nope' | 'misplace' | 'booster' | 'jiggle'
+  | 'tick' | 'clockTick' | 'whoosh' | 'win' | 'lose' | 'unlockLv' | 'purchase' | 'menuOpen' | 'menuClose'
+  | 'glass' | 'paper' | 'crack' | 'break' | 'fireworks' | 'starShine';
 
-/** Sounds made by the sound designer (m4a), everything else is <name>.wav */
+/** File in resources/audio for each sound (the name itself when not listed) */
 const FILE: Record<string, string> = {
-  bgm: 'bgm', tap: 'button_pressed', tapBig: 'button_pressed', star: 'star_get', win: 'level_complete', lose: 'lose',
-  // win celebration (doc §5, made by tools/sfx/make_win_sfx.py)
-  winConfirm: 'win_confirm', ting1: 'star_ting_1', ting2: 'star_ting_2', ting3: 'star_ting_3',
-  // recorded sounds the user picked (2026-10-27): confetti cannon (all fireworks), star sparkle, bag shake;
-  // confettiBurst (confetti.m4a) is kept but no longer played
-  confettiPop: 'confetti_pop', confettiBurst: 'confetti_burst', starShine: 'star_shine', jiggle: 'shake_bag',
+  bgm: 'bgm',
+  // the sound designer's set (2026-10-28): buttons, menus, items, boosters, clock, win / lose, purchase
+  tap: 'button_tap', tapBig: 'button_tap', menuOpen: 'menu_open', menuClose: 'menu_close',
+  pick: 'item_pick', drop: 'item_release', fall: 'item_fall', misplace: 'item_misplaced',
+  booster: 'booster_use', clockTick: 'clock_tick', win: 'level_success', lose: 'level_fail', purchase: 'purchase',
+  // recorded sounds the user picked (2026-10-27): star sparkle, bag shake
+  starShine: 'star_shine', jiggle: 'shake_bag',
   // fireworks on the win popup: one 6 s clip of ten shots, played once (2026-10-27)
   fireworks: 'fireworks_shoot',
 };
@@ -65,7 +66,7 @@ export const Sound = {
   get vibrationOn() { return prefs.vib !== false; },
 
   /** Preload the short sounds so the first tap is not silent */
-  preload() { for (const n of Object.keys(FILE).concat(['pick', 'drop', 'fit', 'nope', 'eject', 'tick', 'unlockLv', 'trash', 'shrink'])) clip(n); },
+  preload() { for (const n of Object.keys(FILE).concat(['fit', 'nope', 'tick', 'unlockLv'])) clip(n); },
 
   play(name: SfxName, { gain = 1, delay = 0 } = {}) {
     if (!prefs.sfx || muted) return;

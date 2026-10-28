@@ -2,10 +2,10 @@
   "ver": "1.0.0",
   "importer": "audio-clip",
   "imported": true,
-  "uuid": "c4196203-22c1-4660-a7f3-09f7708aed59",
+  "uuid": "0ca60330-ab48-4a46-b201-d760eccb21d9",
   "files": [
     ".json",
-    ".m4a"
+    ".wav"
   ],
   "subMetas": {},
   "userData": {
