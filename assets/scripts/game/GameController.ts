@@ -312,6 +312,9 @@ export class GameController extends Component {
   }
 
   restart() { Analytics.setReason('restart'); return this.openLevel(GameState.levelIndex); }
+  /** Try again after a loss: the level they were for and how many in a row (Ads try_again pacing) */
+  private retryLevel = -1;
+  private retries = 0;
 
   /** the round runs (clock, physics, items raining in) only once no loading veil covers it: they
    *  fell and sounded behind the veil before */
@@ -632,9 +635,13 @@ export class GameController extends Component {
     this.showResultBanner();
     p.open({
       itemsLeft: Math.max(0, S.itemsToPack - S.packed.size), reason,
-      // Try again: interstitial trigger level_lose, then the same level from the start
+      // Try again: the same level from the start. The interstitial (trigger level_lose) follows the
+      // Try agains in a row on this level: Remote Config inter_pacing_config.lose_screen.try_again
+      // ([2] by default: not the first one, the 2nd, 4th…), the other ad rules as usual
       onRetry: async () => {
-        if (!this.embedded) await Ads.interstitial('level_lose', this.levelNumber);
+        if (this.retryLevel !== S.levelIndex) { this.retryLevel = S.levelIndex; this.retries = 0; }
+        this.retries++;
+        if (!this.embedded) await Ads.interstitial('level_lose', this.levelNumber, this.retries);
         this.restart();
       },
       onExtraTime: () => {

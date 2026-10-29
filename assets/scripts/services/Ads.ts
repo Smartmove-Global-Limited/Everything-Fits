@@ -60,6 +60,20 @@ let tutorial = false;
 
 const now = () => Date.now() / 1000;
 
+/**
+ * Is this Try again (the `retry`-th in a row on one level) a slot of the lose screen's pacing
+ * (inter_pacing_config.lose_screen.try_again.pacing: gaps, the last one repeating; [2] → 2nd, 4th…)?
+ * Missing or broken: [2].
+ */
+export function retryAllows(retry: number, cfg: InterPacing) {
+  const raw = cfg?.lose_screen?.try_again?.pacing;
+  const gaps = (Array.isArray(raw) ? raw : [2]).map(Number).filter(n => n > 0);
+  if (!gaps.length || retry < 1) return false;
+  let slot = gaps[0], i = 1;
+  while (slot < retry) slot += gaps[Math.min(i++, gaps.length - 1)];
+  return slot === retry;
+}
+
 /** Is this level a pacing slot? Bands use their own pacing; the grid starts at the first band. */
 export function pacingAllows(level: number, cfg: InterPacing) {
   if (!cfg || !Array.isArray(cfg.bands) || !cfg.bands.length || level < (cfg.start_level || 0)) return false;
@@ -165,8 +179,11 @@ export const Ads = {
   },
 
   // ---------- interstitial ----------
-  /** Why the trigger shows nothing (null = it may show), in the doc's order */
-  interBlock(levelNumber: number): string | null {
+  /**
+   * Why the trigger shows nothing (null = it may show), in the doc's order. `retry`: a Try again on
+   * the lose screen (the n-th in a row on this level): its own pacing instead of the level bands.
+   */
+  interBlock(levelNumber: number, retry = 0): string | null {
     const rc = RemoteConfig.values, t = now();
     if (mode === 'disabled') return 'ads_off';
     if (Purchases.noAds) return 'no_ads';
@@ -175,13 +192,16 @@ export const Ads = {
     if (interShown >= rc.max_inter_per_session) return 'session_cap';
     if (t - lastInterAt < rc.min_inter_interval_sec) return 'inter_interval';
     if (t - lastRewardedAt < rc.min_between_reward_inter_sec) return 'reward_interval';
-    if (!pacingAllows(levelNumber, rc.inter_pacing_config)) return 'pacing';
+    if (retry > 0) {
+      if (levelNumber < (rc.inter_pacing_config?.start_level || 0)) return 'pacing';
+      if (!retryAllows(retry, rc.inter_pacing_config)) return 'try_again_pacing';
+    } else if (!pacingAllows(levelNumber, rc.inter_pacing_config)) return 'pacing';
     return null;
   },
   /** At a trigger: shows the interstitial when every rule passes; resolves when it is gone */
-  async interstitial(placement: InterPlacement, levelNumber: number): Promise<boolean> {
-    const block = this.interBlock(levelNumber);
-    if (block) { console.log(`[Ads] ${placement} lv${levelNumber} skipped: ${block}`); return false; }
+  async interstitial(placement: InterPlacement, levelNumber: number, retry = 0): Promise<boolean> {
+    const block = this.interBlock(levelNumber, retry);
+    if (block) { console.log(`[Ads] ${placement} lv${levelNumber}${retry ? ' try again #' + retry : ''} skipped: ${block}`); return false; }
     if (pending) return false;
     let shown = false;
     if (mode === 'max') {

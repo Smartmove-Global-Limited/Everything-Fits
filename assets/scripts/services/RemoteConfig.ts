@@ -5,7 +5,12 @@ import { LocalStore } from './LocalStore';
 import { NativeBridge } from './NativeBridge';
 
 export type PacingBand = { from: number; to: number; pacing: number[] };
-export type InterPacing = { start_level: number; bands: PacingBand[]; after_last_band: 'hold_last' | 'stop' };
+export type InterPacing = {
+  start_level: number; bands: PacingBand[]; after_last_band: 'hold_last' | 'stop';
+  /** Try again on the lose screen: pacing over the Try agains in a row on one level (gaps, the last
+   *  one repeating: [2] = the 2nd, 4th, 6th…), instead of the level bands */
+  lose_screen?: { try_again?: { pacing?: number[] } };
+};
 
 const DEFAULTS = {
   active_banner: true,
@@ -15,6 +20,7 @@ const DEFAULTS = {
     start_level: 10,
     bands: [{ from: 10, to: 60, pacing: [1] }],
     after_last_band: 'hold_last',
+    lose_screen: { try_again: { pacing: [2] } },
   } as InterPacing,
   min_inter_interval_sec: 60,
   min_between_reward_inter_sec: 30,
@@ -69,6 +75,7 @@ export const RemoteConfig = {
         if (msg.type !== 'values') return;
         // a fresh answer replaces everything: a key taken off the console goes back to its default
         if (msg.ok !== false && msg.values) { LocalStore.setJson(KEY, msg.values); Object.assign(values, DEFAULTS); apply(msg.values); }
+        console.log(`[RC] ${msg.ok === false ? 'failed' : 'ok'} inter_pacing_config ${JSON.stringify(values.inter_pacing_config)}`);
         done(msg.ok === false ? 'failed' : 'ok');
       });
     });
