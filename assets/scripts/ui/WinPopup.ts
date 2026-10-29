@@ -25,6 +25,8 @@ const STAR_FIRST = .15, STAR_GAP = .17, STAR_POP = .32;   // s: first star after
 
 export type WinOptions = {
   levelNumber: number; seconds: number; reward: number; stars: number; mistake?: string | null;
+  /** share-of-players line (ui/WinShare) */
+  shareLine: string;
   onContinue: () => void; onHome: () => void; onCollectX2: () => void;
 };
 
@@ -184,7 +186,7 @@ export class WinPopup extends Component {
     const n = this.node;
     setText(findNode(n, 'winLevel'), `LEVEL ${o.levelNumber} COMPLETE!`);
     setText(findNode(n, 'winRank'), 'Packed!');
-    setText(findNode(n, 'winPct'), 'Only 18% made it this far.');
+    setText(findNode(n, 'winPct'), o.shareLine);
     setText(findNode(n, 'winText'), 'Nice packing!');
     const stats = findNode(n, 'winScore')!;
     const m = Math.floor(o.seconds / 60), s = Math.max(0, o.seconds) % 60;
@@ -204,7 +206,7 @@ export class WinPopup extends Component {
       st.setScale(.3, .3, 1);
       // small to full size with one light bounce; only the stars won ring
       tween(st).delay(STAR_FIRST + i * STAR_GAP)
-        .call(() => { if (won) Sound.play('starShine', { gain: .15 }); })   // was .8, then .35: still too sharp
+        .call(() => { if (won) Sound.play('starShine', { gain: .5 }); })   // Success_01 (the old star_shine was too sharp even at .15)
         .to(STAR_POP * .6, { scale: big }, { easing: 'quadOut' })
         .to(STAR_POP * .4, { scale: Vec3.ONE }, { easing: 'quadInOut' })
         .call(() => { if (i === last) { this.fireworks(ui.width, ui.height); this.startParty(ui.width, ui.height); } })

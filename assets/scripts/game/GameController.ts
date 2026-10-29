@@ -4,7 +4,7 @@
 // Round flow like the web game (src/main.js, rules.js, hud.js): settings pause the round, a win
 // saves progress + gold and shows the reward popup, running out of time shows the lose popup.
 import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view, Sprite, instantiate, Vec2, RigidBody2D } from 'cc';
-import { levelToFieldY, FLOOR_Y, DOCK_TOP_Y, DESIGN_H } from '../core/GameConstants';
+import { levelToFieldY, FLOOR_Y, DOCK_TOP_Y, DESIGN_H, SIDE_PAD } from '../core/GameConstants';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { LevelBuilder } from './LevelBuilder';
@@ -29,6 +29,8 @@ import { GameHud, BoosterId, BoosterState } from '../ui/GameHud';
 import { showPopup } from '../ui/PopupHost';
 import { SettingsPopup } from '../ui/SettingsPopup';
 import { WinPopup } from '../ui/WinPopup';
+import { winShareLine } from '../ui/WinShare';
+import { playDifficultyOf } from '../core/PlayDifficulty';
 import { LosePopup } from '../ui/LosePopup';
 import { ShakePopup } from '../ui/ShakePopup';
 import { openBoosterShop } from '../ui/BoosterShop';
@@ -110,6 +112,16 @@ export class GameController extends Component {
     }
   }
   private floorBaseY: number | null = null;
+
+  /** The side walls of the field SIDE_PAD in from the screen edges: items never touch the edge */
+  private padSides() {
+    const env = this.node.parent!.getChildByName('Field')?.getChildByName('Environment');
+    for (const [name, dx] of [['WallLeft', SIDE_PAD], ['WallRight', -SIDE_PAD]] as [string, number][]) {
+      const wall = env?.getChildByName(name); if (!wall) continue;
+      wall.setPosition(wall.position.x + dx, wall.position.y, 0);
+      (wall.getComponent(RigidBody2D) as any)?.impl?.syncPositionToPhysics?.();
+    }
+  }
   /** the screen / banner changed during a round: the floor moves when the next level opens */
   private floorPending = false;
 
@@ -124,6 +136,7 @@ export class GameController extends Component {
       // Game.scene keeps its Canvas at the design centre (Field space == physics world space)
       this.offCamera = ScreenFit.fitCamera(this.node.parent!.getComponentInChildren(Camera)!);
     }
+    this.padSides();
     this.fitToScreen();
     view.on('canvas-resize', this.fitToScreen, this);   // the bag follows at the next level build
     // the banner under the dock came or went: the dock moved, the tray floor follows it (it was
@@ -541,6 +554,7 @@ export class GameController extends Component {
       this.showResultBanner();
       p.open({
         levelNumber: this.levelNumber, seconds: score.secondsUsed, reward,
+        shareLine: winShareLine(this.levelNumber, playDifficultyOf(GameState.level)),
         stars: Math.max(1, Math.min(3, Math.round(score.stars * 3 / 5))), mistake: score.mistakes[0] || null,
         onContinue: () => this.nextLevel(true),
         onHome: () => this.goHome(),

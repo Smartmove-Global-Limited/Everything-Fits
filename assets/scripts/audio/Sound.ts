@@ -18,7 +18,7 @@ const FILE: Record<string, string> = {
   pick: 'item_pick', drop: 'item_release', fall: 'item_fall', misplace: 'item_misplaced',
   booster: 'booster_use', clockTick: 'clock_tick', win: 'level_success', lose: 'level_fail', purchase: 'purchase',
   // recorded sounds the user picked (2026-10-27): star sparkle, bag shake
-  starShine: 'star_shine', jiggle: 'shake_bag',
+  starShine: 'success_01', jiggle: 'shake_bag',
   // fireworks on the win popup: one 6 s clip of ten shots, played once (2026-10-27)
   fireworks: 'fireworks_shoot',
 };

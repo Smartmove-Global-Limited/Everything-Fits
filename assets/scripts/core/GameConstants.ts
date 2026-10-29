@@ -14,6 +14,9 @@
 export const PTM = 32;
 
 export const DESIGN_W = 420;
+/** gap between items lying on the tray and the left / right screen edges (easier to grab); a
+ *  dragged item may still go up to the edge */
+export const SIDE_PAD = 3;
 export const DESIGN_H = 760;
 
 /** Top edge of the tray (items lie below it), in level coordinates (y down) */
