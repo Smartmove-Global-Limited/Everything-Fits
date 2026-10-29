@@ -171,6 +171,8 @@ export class LevelBuilder {
     item.held = false; item.body.enabled = true;   // a box taken off while held kept its body off
     item.releasedAt = item.floorBuzzAt = item.spunAt = item.toppleSide = 0; item.stuckFrames = item.insideFrames = item.outsideFrames = 0; item.fitAt = 0; item.outAt = -1e9;
     item.frozen = false; item.holdUntil = 0; item.cracks = 0; item.broken = false;
+    item.body.fixedRotation = false;   // kept by a turn held when the round ended
+    item.turning = false;
     // times on the game clock, which starts again at 0 each round
     item.crackedAt = 0; item.lastImpactAt = -1e9;
     item.body.type = ERigidBody2DType.Dynamic;   // a pooled item may come back frozen (static)

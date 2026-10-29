@@ -66,6 +66,8 @@ export class ItemView extends Component {
   set frozen(v: boolean) { if (v === this.isFrozen) return; this.isFrozen = v; setIceCoat(this, v); }
   /** angle (degrees) kept while it is turned with the rotate handle and a moment after (DragController) */
   holdAngle = 0;
+  /** in the hand of the rotate handle (a motor joint turns it): never put to sleep meanwhile */
+  turning = false;
   cracks = 0; crackedAt = 0; broken = false;
   held = false;
   lastImpactAt = 0;       // impact sound throttle (game clock)
@@ -122,6 +124,14 @@ export class ItemView extends Component {
 
   private onBeginContact(self: Collider2D, other: Collider2D, contact: IPhysics2DContact | null) {
     ItemView.contactHandler?.(this, self, other, contact);
+  }
+
+  /** How far its shape reaches below its centre when turned to `angle` (radians, units, level size) */
+  below(angle: number): number {
+    const sn = Math.sin(angle), cs = Math.cos(angle);
+    let most = 0;
+    for (const poly of this.localPolys) for (const p of poly) most = Math.max(most, -(p.x * sn + p.y * cs));
+    return most * this.levelScale;
   }
 
   private computeLocalBox() {

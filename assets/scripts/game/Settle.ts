@@ -40,7 +40,7 @@ const SLOW = 2;                            // m/s: faster than this it is still 
 const G_UNITS = 34.375 * PTM;              // game gravity in units/s² (Project Settings → Physics)
 
 function eligible(it: ItemView) {
-  return !it.waiting && !it.entering && !isHeld(it) && it.node.activeInHierarchy
+  return !it.waiting && !it.entering && !isHeld(it) && !it.turning && it.node.activeInHierarchy
     && it.body.type === ERigidBody2DType.Dynamic && it.physicsType !== ItemPhysics.FLOAT;
 }
 

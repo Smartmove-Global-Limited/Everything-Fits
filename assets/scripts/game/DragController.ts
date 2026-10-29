@@ -33,6 +33,13 @@ const HANDLE_EDGE = 3, HANDLE_PAD = 12;     // rotate button: always hit within 
 const LIFT_MAX = 70, FINGER_CLEARANCE = 26; // item is lifted above the finger by up to this much
 const LIFT_MOUSE = 8;                       // with a mouse only a small lift
 const HOLD_AFTER_SPIN = 1000;               // ms an item keeps its new angle inside the bag after rotating
+const MAX_TURN = 24;                          // rad/s: fastest turn of the rotate handle (about 4 turns a second)
+const TURN_GAIN = 30;                         // 1/s: spin = angle still to turn × this (closes it in about 1/30 s)
+const HOME_PULL = 6;                          // 1/s: a turning item drifts back to where the turn began
+const MAX_LEAD = 45;                          // degrees the finger may run ahead of the item
+const STUCK_FRAMES = 20, STUCK_TURN = 4, STUCK_LEAD = 8;  // turned < 4° in the last 20 frames (1/3 s), finger > 8° ahead: stuck
+const STEP = 1 / 60;                          // s, one physics step
+const CLIMB = 2;                              // units above what its shape needs: it is climbing what it turns into
 /**
  * Node angle in degrees, from the rotation quaternion. Do not read node.angle on physics bodies:
  * Box2D writes the rotation as a quaternion and node.angle keeps returning the old euler value
@@ -79,7 +86,11 @@ export class DragController extends Component {
   private transform: UITransform = null!;
   private camera: Camera = null!;
   private pending: { item: ItemView; x: number; y: number; id: number } | null = null;
-  private spin: { item: ItemView; id: number; startAngle: number; startPointer: number; x0: number; moved: boolean; sx: number; sy: number; tapped: ItemView | null } | null = null;
+  /** lead: degrees the finger is ahead of the item (never wrapped); pointer / lastAngle: last finger
+   *  angle (rad) and item angle (deg) it was measured from; blocked / stuckDir: the item is stuck
+   *  turning that way; turns: its turn in the last frames; bottom: height of its lowest point when
+   *  the turn began */
+  private spin: { item: ItemView; id: number; startAngle: number; pointer: number; lead: number; lastAngle: number; blocked: boolean; stuckDir: number; turns: number[]; bottom: number; x0: number; moved: boolean; sx: number; sy: number; tapped: ItemView | null } | null = null;
   private readonly tmpWorld = new Vec3();
   private readonly tmpLocal = new Vec3();
   private readonly tmpV2 = new Vec2();
@@ -231,6 +242,7 @@ export class DragController extends Component {
     const id = e.getID();
     if (this.spin && id === this.spin.id) {
       const sp = this.spin; this.spin = null;
+      this.letGo(sp);
       // turned into a neighbour: wake everything so the overlap is pushed apart, not left asleep
       if (sp.moved) { this.holdAfterSpin(sp.item); wakeAll(); this.events.onRotate?.(sp.item, angleOf(sp.item.node) - sp.startAngle); }
       else if (sp.tapped) this.select(sp.tapped);
@@ -264,6 +276,7 @@ export class DragController extends Component {
     // body switched off and floated where it was let go
     const d = GameState.drag;
     if (d) { GameState.drag = null; this.clearHeld(d.item); d.item.endHold(); }
+    this.letGo(this.spin);
     this.pending = null; this.spin = null;
     this.outline.clear();
     this.handle?.clear(); this.drawnKey = '';
@@ -381,7 +394,8 @@ export class DragController extends Component {
   private beginSpin(item: ItemView, x: number, y: number, id: number, tapped: ItemView | null = null) {
     const p = item.node.position;
     // nothing is done to the item until the finger really turns it: a tap only (un)selects
-    this.spin = { item, id, moved: false, startAngle: angleOf(item.node), startPointer: Math.atan2(y - p.y, x - p.x), x0: p.x, sx: x, sy: y, tapped };
+    const a = angleOf(item.node);
+    this.spin = { item, id, moved: false, startAngle: a, pointer: Math.atan2(y - p.y, x - p.x), lead: 0, lastAngle: a, blocked: false, stuckDir: 0, turns: [], bottom: 0, x0: p.x, sx: x, sy: y, tapped };
   }
   private moveSpin(x: number, y: number) {
     const sp = this.spin!, it = sp.item, p = it.node.position;
@@ -390,20 +404,82 @@ export class DragController extends Component {
       it.holdUntil = 0;
       it.holdAngle = angleOf(it.node);
       it.body.type = ERigidBody2DType.Dynamic;
+      it.body.fixedRotation = false;   // held after an earlier turn: the turn spins it
       it.stop();
+      sp.lastAngle = angleOf(it.node);
+      sp.bottom = p.y - it.below(sp.lastAngle * Math.PI / 180);
+      it.turning = true;
     }
-    it.holdAngle = sp.startAngle + (Math.atan2(y - p.y, x - p.x) - sp.startPointer) * 180 / Math.PI;
-    setAngle(it, it.holdAngle);
+    // the finger's turn since the last move, folded so crossing ±180° never flips the direction
+    const pointer = Math.atan2(y - p.y, x - p.x);
+    const d = turnDiff(pointer * 180 / Math.PI, sp.pointer * 180 / Math.PI);
+    sp.pointer = pointer;
+    // stuck: turning on does nothing (pushing again and again shook it), turning back frees it
+    if (sp.blocked) {
+      if (Math.sign(d) === sp.stuckDir) return;
+      sp.blocked = false; sp.turns.length = 0;
+    }
+    sp.lead = Math.max(-MAX_LEAD, Math.min(MAX_LEAD, sp.lead + d));
   }
-  /** Angle locked, no sliding sideways (contacts may still nudge it), falling stays natural */
+  /**
+   * After a turn the angle it was let go at is kept: Box2D's fixed rotation, so contacts and gravity
+   * cannot turn it while it still falls and is pushed like any item. Holding it by spinning it back
+   * fought gravity on an item left leaning (it shook non-stop and crept sideways). No sliding.
+   */
   private holdAngle(it: ItemView, still: boolean) {
-    if (Math.abs(turnDiff(angleOf(it.node), it.holdAngle)) > .01) setAngle(it, it.holdAngle);
+    if (!it.body.fixedRotation) it.body.fixedRotation = true;
     const v = it.body.linearVelocity;
     it.body.linearVelocity = v.set(0, still ? 0 : Math.min(0, v.y));
     it.body.angularVelocity = 0;
   }
+  private letGo(sp: NonNullable<DragController['spin']> | null) {
+    if (sp) sp.item.turning = false;
+  }
+  /**
+   * Spin the body towards `deg` more degrees, softly (proportional, not all in one step: a full step
+   * shoved the neighbour every frame and the two shook against each other). The game is seen from
+   * the side, so turning an item turns it over: on the floor its corner comes round into the floor
+   * and Box2D lifts it out. It may rise only as far as its own shape needs at its next angle (its
+   * lowest point kept where it was when the turn began, ItemView.below): the spin is set from
+   * script, so the floor's push could be any size and the speed kept from it threw the item up (it
+   * hopped). Pushed higher than that, it is turning into something beside it (a long item's end
+   * against the wall or a neighbour) and the forced turn makes it climb: as a real one held against
+   * it, it does not turn on until it has come back down. Sideways it keeps what the turn needs and
+   * is drawn back to where the turn began.
+   */
+  private turnBy(it: ItemView, deg: number, bottom: number, homeX: number) {
+    const now = angleOf(it.node) * Math.PI / 180, climbing = it.node.position.y > bottom + it.below(now) + CLIMB;
+    const w = climbing || Math.abs(deg) < .01 ? 0 : Math.max(-MAX_TURN, Math.min(MAX_TURN, deg * Math.PI / 180 * TURN_GAIN));
+    const next = now + w * STEP;
+    const rise = Math.max(0, (bottom + it.below(next) - it.node.position.y) / PTM / STEP);       // m/s
+    const side = Math.abs(w) * Math.hypot(it.localBox.width, it.localBox.height) * it.levelScale / 2 / PTM;
+    const v = it.body.linearVelocity;
+    const vx = v.x + (homeX - it.node.position.x) / PTM * HOME_PULL;
+    it.body.linearVelocity = v.set(Math.max(-side, Math.min(side, vx)), Math.min(rise, v.y));
+    it.spin = w;
+  }
+  /**
+   * Every frame of a turn: the finger runs ahead of the item by `lead` degrees and the item follows,
+   * pushing what is in the way like a real one (a free neighbour is moved away). Stuck (it hardly
+   * turns although the finger is well ahead: a shake back and forth adds up to nothing), it stops
+   * and stays still, as a real item jammed against another: pushing on against it made the two
+   * shake non-stop. Turning the finger back frees it.
+   */
   private holdSpinPosition() {
-    this.holdAngle(this.spin!.item, false);
+    const sp = this.spin!, it = sp.item, a = angleOf(it.node);
+    const turned = turnDiff(a, sp.lastAngle);
+    sp.lastAngle = a;
+    sp.lead -= turned;
+    sp.turns.push(turned);
+    if (sp.turns.length > STUCK_FRAMES) sp.turns.shift();
+    const net = sp.turns.reduce((n, t) => n + t, 0);
+    if (!sp.blocked && sp.turns.length === STUCK_FRAMES && Math.abs(net) < STUCK_TURN && Math.abs(sp.lead) > STUCK_LEAD) {
+      sp.blocked = true; sp.stuckDir = Math.sign(sp.lead);
+    }
+    if (sp.blocked) sp.lead = 0;
+    it.holdAngle = a + sp.lead;
+    this.turnBy(it, sp.lead, sp.bottom, sp.x0);
+    if (!sp.blocked) it.body.wakeUp();
   }
   /** After rotating: inside the bag keep the angle a moment, on the tray keep it until touched again */
   private holdAfterSpin(item: ItemView) {
@@ -414,7 +490,8 @@ export class DragController extends Component {
   private releaseSpinHolds() {
     const now = GameState.clock;
     for (const it of GameState.items) {
-      if (!it.holdUntil || (this.spin?.moved && this.spin.item === it)) continue;
+      if (!it.holdUntil) { if (it.body.fixedRotation) it.body.fixedRotation = false; continue; }   // hold over: it turns freely again
+      if (this.spin?.moved && this.spin.item === it) continue;
       it.stuckFrames = 0;
       if (it.holdUntil !== Infinity && now >= it.holdUntil) { it.holdUntil = 0; it.spunAt = now; it.stop(); it.body.wakeUp(); continue; }
       // in the bag: still a moment; on the tray: the angle stays, it may still fall
