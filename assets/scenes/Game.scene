@@ -2204,6 +2204,7 @@
     "__prefab": null,
     "mode": 0,
     "safeArea": true,
+    "aboveSystemBar": false,
     "extendToEdge": false,
     "_id": "89uLJMCyRF/6XewCcgtkQl"
   },
@@ -2639,6 +2640,7 @@
     "__prefab": null,
     "mode": 0,
     "safeArea": true,
+    "aboveSystemBar": false,
     "extendToEdge": false,
     "_id": "74r8EE1+RDYr5DqY4YWbg7"
   },
@@ -3388,6 +3390,7 @@
     "__prefab": null,
     "mode": 0,
     "safeArea": true,
+    "aboveSystemBar": false,
     "extendToEdge": false,
     "_id": "854q9oU2FIVK1uPdb1e2UV"
   },
@@ -3685,6 +3688,7 @@
     "__prefab": null,
     "mode": 0,
     "safeArea": true,
+    "aboveSystemBar": false,
     "extendToEdge": false,
     "_id": "93uIJZICBNqIQkXV+BNzpE"
   },
@@ -4678,9 +4682,9 @@
     "__prefab": null,
     "mode": 1,
     "safeArea": true,
+    "aboveSystemBar": true,
     "extendToEdge": false,
-    "_id": "67XuSImFdG9KdMvP4z6qEX",
-    "aboveSystemBar": true
+    "_id": "67XuSImFdG9KdMvP4z6qEX"
   },
   {
     "__type__": "cc.Node",
@@ -5672,9 +5676,9 @@
     "__prefab": null,
     "mode": 1,
     "safeArea": true,
+    "aboveSystemBar": true,
     "extendToEdge": false,
-    "_id": "ce/7akcRNIS7/rtih/wG9a",
-    "aboveSystemBar": true
+    "_id": "ce/7akcRNIS7/rtih/wG9a"
   },
   {
     "__type__": "cc.Node",
@@ -6666,9 +6670,9 @@
     "__prefab": null,
     "mode": 1,
     "safeArea": true,
+    "aboveSystemBar": true,
     "extendToEdge": false,
-    "_id": "16zO5BjcRDUYV26XNKBn/c",
-    "aboveSystemBar": true
+    "_id": "16zO5BjcRDUYV26XNKBn/c"
   },
   {
     "__type__": "cc.Node",
