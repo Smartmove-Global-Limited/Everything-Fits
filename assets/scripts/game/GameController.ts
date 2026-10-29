@@ -583,8 +583,10 @@ export class GameController extends Component {
   private async nextLevel(fromWin = false) {
     Analytics.setReason('next');
     const S = GameState;
-    if (fromWin && !this.embedded) await Ads.interstitial('level_win', this.levelNumber);
+    // the loading screen first, the interstitial over it: closing the ad shows the loading screen,
+    // not this level again for a moment
     await Overlays.cover();
+    if (fromWin && !this.embedded) await Ads.interstitial('level_win', this.levelNumber);
     await this.openLevel((S.levelIndex + 1) % S.chapter.levels.length);
     await Overlays.uncover();
   }

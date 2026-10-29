@@ -55,8 +55,8 @@ let veilPending = false;
  */
 let veilClear: Promise<void> = Promise.resolve();
 let veilCleared: (() => void) | null = null;
-function veilBusy() { if (!veilCleared) veilClear = new Promise(ok => (veilCleared = ok)); }
-function veilFree() { const f = veilCleared; veilCleared = null; f?.(); }
+function veilBusy() { if (!veilCleared) { veilClear = new Promise(ok => (veilCleared = ok)); Ads.veil(true); } }
+function veilFree() { const f = veilCleared; veilCleared = null; if (f) Ads.veil(false); f?.(); }
 function veilNode(): Node {
   const canvas = director.getScene()!.getChildByName('Canvas')!;
   let n = canvas.getChildByName('__veil');

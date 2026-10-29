@@ -148,6 +148,15 @@ export const Ads = {
       if (bannerLive && bannerPlacement === placement) NativeBridge.call('adsShowBanner', placement);
     });
   },
+  /**
+   * A loading veil covers / uncovers the screen. The real banner is a native view above the whole
+   * game: it hides while the veil is up (it showed over the loading screen), the reserved strip stays.
+   */
+  veil(covered: boolean) {
+    if (mode !== 'max' || !bannerLive || !bannerPlacement) return;
+    if (covered) NativeBridge.call('adsHideBanner');
+    else NativeBridge.call('adsShowBanner', bannerPlacement);
+  },
   hideBanner() {
     const had = bannerPlacement;
     bannerPlacement = null; bannerLive = false;
