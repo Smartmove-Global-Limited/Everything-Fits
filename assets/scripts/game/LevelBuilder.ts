@@ -220,6 +220,10 @@ export class LevelBuilder {
   private activate(it: ItemView, group: number) {
     it.waiting = false;
     it.node.active = true;
+    // its body at the node's place and angle, whatever happened to the node while it was off
+    // (Android: a body could stay at (0, 0) and pull the item there, under the tray floor)
+    const impl = (it.body as any).impl;
+    impl?.syncPositionToPhysics?.(); impl?.syncRotationToPhysics?.();
     it.setGroup(group);
     it.body.wakeUp();
   }

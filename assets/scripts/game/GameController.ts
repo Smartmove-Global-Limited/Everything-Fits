@@ -3,7 +3,7 @@
 // update(). Bag rules run right after the physics step (Director.EVENT_AFTER_PHYSICS).
 // Round flow like the web game (src/main.js, rules.js, hud.js): settings pause the round, a win
 // saves progress + gold and shows the reward popup, running out of time shows the lose popup.
-import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view, Sprite, instantiate, Vec2 } from 'cc';
+import { _decorator, Component, Node, director, Director, PhysicsSystem2D, sys, Camera, view, Sprite, instantiate, Vec2, RigidBody2D } from 'cc';
 import { levelToFieldY, FLOOR_Y, DOCK_TOP_Y, DESIGN_H } from '../core/GameConstants';
 import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
@@ -79,7 +79,17 @@ export class GameController extends Component {
    * Field stays on the 420×760 design. Use the extra room: the bag may rise as far as the HUD went
    * up, and the tray floor drops to halve its gap to the dock.
    */
-  private fitToScreen() {
+  /**
+   * The tray floor sits above the booster dock (which sits above the bottom banner). It is placed
+   * when a level opens and stays put during the round (asked): the real banner height comes from
+   * the ad SDK a moment after the level opened, and moving the floor under items that were falling
+   * or lying on it dropped them through it / left an invisible floor behind. A change during the
+   * round is applied when the next level opens. `force`: place it now (opening a level).
+   */
+  private fitToScreen(force = false) {
+    const S = GameState;
+    if (!force && S.level && S.items.length && !S.won && !S.lost) { this.floorPending = true; return; }
+    this.floorPending = false;
     const vis = ScreenFit.visible(), ins = ScreenFit.insets(undefined, true);   // the dock stays above the system bar (EdgePin.aboveSystemBar)
     const extra = Math.max(0, vis.height - DESIGN_H) / 2;
     GameState.ceilGain = Math.max(0, extra - ins.top);
@@ -92,10 +102,16 @@ export class GameController extends Component {
     const floor = this.node.parent!.getChildByName('Field')?.getChildByName('Environment')?.getChildByName('Floor');
     if (floor) {
       if (this.floorBaseY === null) this.floorBaseY = floor.position.y;
-      floor.setPosition(floor.position.x, this.floorBaseY - GameState.floorDrop, 0);
+      const y = this.floorBaseY - GameState.floorDrop;
+      if (Math.abs(floor.position.y - y) > .01) console.log(`[layout] tray floor ${floor.position.y.toFixed(1)} → ${y.toFixed(1)} (banner ${ScreenFit.adBottom.toFixed(1)}, screen ${vis.width.toFixed(0)}×${vis.height.toFixed(0)})`);
+      floor.setPosition(floor.position.x, y, 0);
+      // its static body at the node now too (a body only follows its node through a physics step)
+      (floor.getComponent(RigidBody2D) as any)?.impl?.syncPositionToPhysics?.();
     }
   }
   private floorBaseY: number | null = null;
+  /** the screen / banner changed during a round: the floor moves when the next level opens */
+  private floorPending = false;
 
   /** Running inside the Level Editor (Editor.scene): the editor gives the level and owns the screen */
   get embedded() { return this.node.scene?.name === 'Editor'; }
@@ -196,6 +212,7 @@ export class GameController extends Component {
     // with No Ads): placed before the level is built, so the dock and the tray floor do not move
     // under resting items; kept from level to level
     if (!this.embedded) Ads.showBanner('banner_gameplay', ContentLoader.levelNumber(S.chapterId, S.levelIndex));
+    this.fitToScreen(true);   // the floor for this round (it stays put until the next level)
     this.tutorial?.stop();
     this.drag.reset();
     S.timeLeft = (S.level.timer || 90) * 1000;
@@ -292,7 +309,9 @@ export class GameController extends Component {
     this.fx?.tick(dt);                       // effects keep playing under popups (win confetti)
     if (!S.level) return;
     const running = this.running;
-    PhysicsSystem2D.instance.enable = running;
+    // physics stays on under the loading veil (only the clock and the drops wait for it): items
+    // placed while it was off kept bodies at (0, 0) on Android and fell through the tray floor
+    PhysicsSystem2D.instance.enable = !S.won && !S.lost && !S.paused;
     if (!running) return;
     const ms = dt * 1000 * S.timeScale;
     S.clock += ms;
