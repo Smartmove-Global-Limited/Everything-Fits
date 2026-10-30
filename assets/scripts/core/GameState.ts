@@ -40,6 +40,8 @@ export const GameState = {
   winFrames: 0, won: false, lost: false, paused: false,
 
   timeLeft: 0, timerOn: true,
+  /** ms given on top of the level's timer this round (+60 sec on the lose popup) */
+  timeAdded: 0,
   /** game clock in ms, only advances while the round is running */
   clock: 0, timeScale: 1,
   startTime: 0,

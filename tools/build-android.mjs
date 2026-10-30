@@ -11,6 +11,10 @@ import { fileURLToPath } from 'node:url';
 
 const mode = process.argv[2] || 'store';
 if (!['device', 'store', 'test'].includes(mode)) { console.error('usage: node tools/build-android.mjs device|store|test'); process.exit(1); }
+// a store build never ships the testers' fake purchases (Purchases.ts TEMP_FAKE_IAP)
+if (mode === 'store' && /TEMP_FAKE_IAP\s*=\s*true/.test(readFileSync(new URL('../assets/scripts/services/Purchases.ts', import.meta.url), 'utf8'))) {
+  console.error('Purchases.ts: TEMP_FAKE_IAP is true (fake purchases). Set it to false before a store build.'); process.exit(1);
+}
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const msg = (module, message, args = []) => fetch('http://127.0.0.1:7461/msg', { method: 'POST', body: JSON.stringify({ module, message, args }) }).then(r => r.json());
 const tasks = async () => JSON.stringify((await msg('builder', 'query-tasks-info')).result);

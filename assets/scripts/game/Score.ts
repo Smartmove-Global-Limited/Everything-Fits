@@ -57,7 +57,7 @@ export function scoreRound() {
   const tight = clamp((clamp(scan.tight / best) - .65) / (1 - .65));
   const total = S.level?.timer || 0;
   const left = Math.max(0, Math.ceil(S.timeLeft / 1000));
-  const used = Math.max(0, total - left);
+  const used = Math.max(0, total + Math.round(S.timeAdded / 1000) - left);   // with the +60 sec taken
   const time = clamp((1 - (total > 0 ? used / total : 1)) / .5);
   const given = BOOSTER_KEYS.reduce((s, k) => s + DEFAULT_BOOSTS[k], 0);
   const kept = BOOSTER_KEYS.reduce((s, k) => s + Boosters.count(k), 0);

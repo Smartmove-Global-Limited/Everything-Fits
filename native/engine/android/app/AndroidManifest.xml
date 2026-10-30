@@ -21,6 +21,8 @@
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
     </activity>
+    <!-- TEMP testers' stand-in for the Google Play purchase sheet (Purchases.ts TEMP_FAKE_IAP) -->
+    <activity android:name="com.cocos.game.FakeBillingActivity" android:screenOrientation="portrait" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false"/>
     <activity android:name="com.cocos.lib.CocosEditBoxActivity" android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize" android:screenOrientation="behind" android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen"/>
   </application>
 </manifest>

@@ -14,12 +14,28 @@ function loadPrefab(path: string): Promise<Prefab> {
   if (hit) return Promise.resolve(hit);
   return new Promise((ok, fail) => resources.load(path, Prefab, (e, p) => (e ? fail(e) : (prefabs.set(path, p), ok(p)))));
 }
-/** Instance of a prefab on top of the current scene's Canvas, reused while the scene lives */
+/**
+ * Instance of a prefab on top of the current scene's Canvas, reused while the scene lives. Two
+ * calls while the prefab loads get the same one (the banner strip was made twice at start-up: the
+ * second was never hidden and covered the bars after No Ads).
+ */
+const making = new Map<string, Promise<Node>>();
 async function onTop(path: string, name: string): Promise<Node> {
   const canvas = director.getScene()!.getChildByName('Canvas')!;
   let n = canvas.getChildByName(name);
-  if (!n) { n = instantiate(await loadPrefab(path)); n.name = name; canvas.addChild(n); }
-  n.setSiblingIndex(canvas.children.length - 1);
+  if (!n) {
+    const key = canvas.uuid + '/' + name;   // per scene: a load begun before a scene change is not this one's
+    let p = making.get(key);
+    if (!p) {
+      p = loadPrefab(path).then(prefab => {
+        const made = instantiate(prefab); made.name = name; canvas.addChild(made);
+        return made;
+      }).finally(() => making.delete(key));
+      making.set(key, p);
+    }
+    n = await p;
+  }
+  n.setSiblingIndex(n.parent!.children.length - 1);
   return n;
 }
 
@@ -192,18 +208,26 @@ async function bannerSlot(slot: BannerSlot | null) {
     return;
   }
   // design units: the native banner's real height and the system bar it sits on, else the prefab's
-  const visH = ScreenFit.visible().height;
-  const safe = ScreenFit.insets().bottom - ScreenFit.adBottom;     // system inset Cocos knows
-  const m = slot.metrics, k = m ? visH / m.screenPx : 0;
-  const sys = m ? Math.max(safe, m.systemPx * k) : safe;
-  const h = m ? m.bannerPx * k : 50;
-  ScreenFit.setAdBottom(h + sys - safe);                            // bars move now, before the strip loads
+  const room = () => {
+    const visH = ScreenFit.visible().height;
+    const safe = ScreenFit.insets().bottom - ScreenFit.adBottom;   // system inset Cocos knows
+    const m = slot.metrics, k = m ? visH / m.screenPx : 0;
+    const sys = m ? Math.max(safe, m.systemPx * k) : safe;
+    return { visH, safe, sys, h: m ? m.bannerPx * k : 50 };
+  };
+  let r = room();
+  ScreenFit.setAdBottom(r.h + r.sys - r.safe);                      // bars move now, before the strip loads
   const n = await onTop('ui/TestBanner', '__testBanner');
-  if (bannerWanted !== slot) return;          // changed again while the prefab loaded
-  n.active = true;
-  // under the splash and the scene veil (the slot is kept behind the splash)
+  // under the splash and the scene veil (the slot is kept behind the splash): at once, also when
+  // this call is stale, as onTop just put the strip on top of everything
   const covers = n.parent!.children.filter(c => c.name === 'Splash' || c.name === '__veil');
   if (covers.length) n.setSiblingIndex(Math.min(...covers.map(c => c.getSiblingIndex())));
+  if (bannerWanted !== slot) return;          // changed again while the prefab loaded
+  // measured again: the room the banner takes changes the fit of a short screen (ScreenFit), so the
+  // visible height may differ from before the prefab loaded (the strip was placed over the bars)
+  r = room();
+  const { visH, sys, h } = r;
+  n.active = slot.shown;
   const ui = n.getComponent(UITransform)!;
   bannerBase ||= { h: ui.height, ys: contentOf(n).map(c => c.position.y) };
   ui.height = h;

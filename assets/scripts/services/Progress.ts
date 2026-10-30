@@ -28,6 +28,14 @@ export const Progress = {
     for (let i = 0; i < ch.levels.length; i++) if (!this.isDone(ch.id, i)) return i;
     return ch.levels.length - 1;
   },
+  /**
+   * The player won the last level there is (the spot was moved past it): Play / Next show the
+   * "You've played them all!" popup until new levels come (then the spot is the first new one)
+   */
+  finishedAll(chapters: any[]) {
+    const ch = chapters.find(c => c.id === data.chapter);
+    return !!ch && data.level >= ch.levels.length && ch.levels.every((_: any, i: number) => this.isDone(ch.id, i));
+  },
   setSpot(chapterId: string, idx: number) { data.chapter = chapterId; data.level = idx | 0; save(); },
   /**
    * Testers' level picker (Settings): the player is now at this level, as if every level before it

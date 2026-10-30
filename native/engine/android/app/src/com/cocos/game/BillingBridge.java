@@ -1,6 +1,7 @@
 package com.cocos.game;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -191,6 +192,25 @@ final class BillingBridge {
             }
             launch(productId);
         });
+    }
+
+    /**
+     * TEMP (testers, Purchases.ts TEMP_FAKE_IAP): the stand-in purchase sheet (FakeBillingActivity)
+     * instead of Google Play; the game pauses and resumes as with the real one
+     */
+    static void fakeBuy(final String productId, final String name, final String price) {
+        activity.runOnUiThread(() -> activity.startActivity(new Intent(activity, FakeBillingActivity.class)
+                .putExtra(FakeBillingActivity.EXTRA_ID, productId)
+                .putExtra(FakeBillingActivity.EXTRA_NAME, name)
+                .putExtra(FakeBillingActivity.EXTRA_PRICE, price)));
+    }
+
+    /** The stand-in sheet closed: a purchase with a "fake-" token (never sent to Play), or a cancel */
+    static void fakeResult(String productId, boolean bought) {
+        Log.i(TAG, "fake purchase " + productId + (bought ? " bought" : " cancelled"));
+        if (!bought) { flowEnd(productId, "cancelled"); return; }
+        ScriptEvents.send("billing", ScriptEvents.of("purchase", "productId", productId, "token", "fake-" + System.currentTimeMillis(),
+                "orderId", "FAKE", "fromFlow", true, "priceMicros", 0, "currency", ""));
     }
 
     /** Open the store's purchase sheet for a product whose details are loaded (on the UI thread) */

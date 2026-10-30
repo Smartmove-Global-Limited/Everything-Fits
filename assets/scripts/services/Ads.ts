@@ -24,7 +24,8 @@ export type RewardedPlacement = 'add_60s' | 'refill_energy' | 'collect_x2' | 'fr
 /** Where the bottom banner goes: its height and the system bar under it, in device pixels */
 export type BannerMetrics = { bannerPx: number; systemPx: number; screenPx: number };
 /** The bottom banner slot: the bars stay above it; a strip shows there until the ad covers it */
-export type BannerSlot = { placement: BannerPlacement; simulated: boolean; metrics: BannerMetrics | null };
+/** shown: the banner is on this screen (its strip drawn); false: only its place kept (behind the splash) */
+export type BannerSlot = { placement: BannerPlacement; simulated: boolean; metrics: BannerMetrics | null; shown: boolean };
 
 /** The visible part of ads, provided by the UI layer (Overlays): simulated screens and banner slot */
 export type AdViews = {
@@ -102,7 +103,7 @@ function onNative(msg: any) {
     const sys = msg.systemPx | 0;
     if (metrics && sys !== metrics.systemPx) {
       metrics = { ...metrics, systemPx: sys };
-      if (bannerPlacement) views?.bannerSlot({ placement: bannerPlacement, simulated: mode === 'sim', metrics });
+      if (bannerPlacement) views?.bannerSlot({ placement: bannerPlacement, simulated: mode === 'sim', metrics, shown: bannerLive });
     }
   } else if (msg.type === 'rewarded') {
     if (msg.state === 'loaded') rewardedLoaded = true;
@@ -127,6 +128,8 @@ export const Ads = {
   start(v: AdViews): Promise<StartResult> {
     views = v;
     if (started) return started;
+    // No Ads bought (either card in the Shop), confirmed later or restored: the banner and its strip go
+    Purchases.onNoAds(() => { if (Purchases.noAds) this.hideBanner(); });
     if (!NativeBridge.android) return (started = Promise.resolve('web'));
     mode = 'pending';
     const ready = new Promise<StartResult>(done => (onReady = done));
@@ -145,17 +148,18 @@ export const Ads = {
     return mode !== 'disabled' && rc.active_banner && !Purchases.noAds && levelNumber >= rc.banner_start_level;
   },
   /**
-   * Keep the banner's place only (the bars move above it, a strip shows there), no ad yet: Home
-   * behind the splash, so nothing jumps when the splash goes. Returns false when no banner here.
+   * Keep the banner's place only (the bars move above it, nothing drawn there yet): Home behind
+   * the splash, so nothing jumps when the splash goes. Returns false when no banner here.
    */
-  reserveBanner(placement: BannerPlacement, levelNumber: number) {
+  reserveBanner(placement: BannerPlacement, levelNumber: number, shown = false) {
     if (!this.bannerAllowed(levelNumber)) { this.hideBanner(); return false; }
-    if (bannerPlacement !== placement) views?.bannerSlot({ placement, simulated: mode === 'sim', metrics });
+    // its strip shows with the banner (showBanner), never behind or over the splash
+    if (bannerPlacement !== placement || (shown && !bannerLive)) views?.bannerSlot({ placement, simulated: mode === 'sim', metrics, shown });
     bannerPlacement = placement;
     return true;
   },
   showBanner(placement: BannerPlacement, levelNumber: number) {
-    if (!this.reserveBanner(placement, levelNumber)) return;
+    if (!this.reserveBanner(placement, levelNumber, true)) return;
     bannerLive = true;
     // the real banner is a native view above the game: only once the loading screen is gone
     if (mode === 'max') (views?.whenClear() ?? Promise.resolve()).then(() => {

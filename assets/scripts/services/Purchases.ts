@@ -41,6 +41,12 @@ export const product = (id: string) => PRODUCTS.find(p => p.id === id);
 export type BuyResult = 'ok' | 'cancelled' | 'pending' | 'error' | 'unavailable';
 
 const KEY_NO_ADS = 'snug.noads.v1';
+/**
+ * TEMP (testers): no Google Play. On the phone a stand-in purchase sheet opens (Buy / Cancel, the
+ * game pauses and resumes like with the real one) and nothing is charged or sent to analytics.
+ * Must be false for the store: tools/build-android.mjs store refuses to build while it is true.
+ */
+const TEMP_FAKE_IAP = false;
 const KEY_GRANTED = 'ef.iap.granted.v1';
 const GRANTED_KEEP = 300;
 let noAds = LocalStore.get(KEY_NO_ADS) === '1';
@@ -78,6 +84,12 @@ function onNative(msg: any) {
   } else if (msg.type === 'purchase') {
     const p = product(msg.productId), token = String(msg.token || '');
     if (!p || !token) return;
+    // the testers' stand-in sheet (TEMP_FAKE_IAP): granted, nothing to report or to finish with Play
+    if (token.startsWith('fake-')) {
+      grant(p);
+      if (buying?.id === p.id) { const b = buying; buying = null; b.done('ok'); }
+      return;
+    }
     if (granted.indexOf(token) < 0) {
       granted.push(token);
       if (granted.length > GRANTED_KEEP) granted.splice(0, granted.length - GRANTED_KEEP);
@@ -141,7 +153,8 @@ export const Purchases = {
     }
     return new Promise<BuyResult>(done => {
       buying = { id, done };
-      NativeBridge.call('billingBuy', id);
+      if (TEMP_FAKE_IAP) NativeBridge.call('billingFakeBuy', id, p.name, storePrices[id] || p.price);
+      else NativeBridge.call('billingBuy', id);
     });
   },
 

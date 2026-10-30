@@ -4,6 +4,7 @@ import { _decorator, Component, director, Prefab, instantiate } from 'cc';
 import { HomeScreen } from './HomeScreen';
 import { ShopScreen } from './ShopScreen';
 import { SettingsPopup } from './SettingsPopup';
+import { AllDonePopup } from './AllDonePopup';
 import { showPopup } from './PopupHost';
 import { ContentLoader } from '../content/ContentLoader';
 import { Progress } from '../services/Progress';
@@ -123,8 +124,9 @@ export class MainMenu extends Component {
     this.play();
   }
 
-  private play() {
+  private async play() {
     const s = this.spot(); if (!s) return;
+    if (Progress.finishedAll(ContentLoader.chapters())) { (await showPopup('AllDonePopup', AllDonePopup)).open(() => {}); return; }
     GameState.chapter = s.chapter; GameState.chapterId = s.chapter.id; GameState.levelIndex = s.index;
     GameState.fromMenu = true;
     Analytics.setReason('home');

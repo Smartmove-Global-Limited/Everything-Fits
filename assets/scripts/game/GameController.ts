@@ -33,6 +33,7 @@ import { winShareLine } from '../ui/WinShare';
 import { playDifficultyOf } from '../core/PlayDifficulty';
 import { LosePopup } from '../ui/LosePopup';
 import { ShakePopup } from '../ui/ShakePopup';
+import { AllDonePopup } from '../ui/AllDonePopup';
 import { openBoosterShop } from '../ui/BoosterShop';
 import { Overlays } from '../ui/Overlays';
 import { Sound } from '../audio/Sound';
@@ -228,7 +229,7 @@ export class GameController extends Component {
     this.fitToScreen(true);   // the floor for this round (it stays put until the next level)
     this.tutorial?.stop();
     this.drag.reset();
-    S.timeLeft = (S.level.timer || 90) * 1000;
+    S.timeLeft = (S.level.timer || 90) * 1000; S.timeAdded = 0;
     S.clock = 0; S.startTime = 0;
     PhysicsSystem2D.instance.enable = true;
     Shake.reset(); this.fx?.clear(); resetMystery();
@@ -545,7 +546,8 @@ export class GameController extends Component {
     this.tutorial?.stop();
     Analytics.levelEnd('win');
     const first = !this.embedded && Progress.markDone(S.chapterId, S.levelIndex);
-    if (!this.embedded) Progress.setSpot(S.chapterId, Math.min(S.levelIndex + 1, S.chapter.levels.length - 1));
+    // past the last level after it: the levels that come later open from there (Progress.finishedAll)
+    if (!this.embedded) Progress.setSpot(S.chapterId, S.levelIndex + 1);
     if (first && S.levelIndex + 1 < S.chapter.levels.length) Sound.play('unlockLv', { delay: 1.15, gain: .9 });
     const reward = S.level?.reward?.coin ?? 20;
     if (!this.embedded) Wallet.add(reward);
@@ -561,11 +563,17 @@ export class GameController extends Component {
         levelNumber: this.levelNumber, seconds: score.secondsUsed, reward,
         shareLine: winShareLine(this.levelNumber, playDifficultyOf(GameState.level)),
         stars: Math.max(1, Math.min(3, Math.round(score.stars * 3 / 5))), mistake: score.mistakes[0] || null,
-        onContinue: () => this.nextLevel(true),
+        // the last level there is: no wrapping back to level 1, the "played them all" popup, then Home
+        onContinue: () => (!this.embedded && S.levelIndex >= S.chapter.levels.length - 1 ? this.allDone() : this.nextLevel(true)),
         onHome: () => this.goHome(),
         onCollectX2: () => Wallet.add(reward),
       });
     }, WIN_POPUP_DELAY);
+  }
+
+  private async allDone() {
+    const p = await showPopup('AllDonePopup', AllDonePopup);
+    p.open(() => this.goHome());
   }
 
   /** Testers' level picker (Settings): the player is now at that level, opened behind the veil */
@@ -658,7 +666,7 @@ export class GameController extends Component {
         this.restart();
       },
       onExtraTime: () => {
-        S.timeLeft = 60000; S.lost = false;
+        S.timeLeft = 60000; S.timeAdded += 60000; S.lost = false;
         Analytics.extraTime();
         this.hud.resetClock(); this.hud.setClock(60);
         Sound.duckMusic(false);

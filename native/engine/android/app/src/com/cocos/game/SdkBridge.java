@@ -160,6 +160,7 @@ public final class SdkBridge {
     public static void adsShowRewarded(String placement) { AdsBridge.showRewarded(placement); }
     public static void billingSetup(String catalogueJson) { BillingBridge.setup(catalogueJson); }
     public static void billingBuy(String productId) { BillingBridge.buy(productId); }
+    public static void billingFakeBuy(String productId, String name, String price) { BillingBridge.fakeBuy(productId, name, price); }
     public static void billingFinish(String token, String consumable) { BillingBridge.finish(token, consumable); }
     public static void billingRestore() { BillingBridge.restore(); }
     public static void remoteConfigFetch(String keysJson) { RemoteConfigBridge.fetch(keysJson); }
