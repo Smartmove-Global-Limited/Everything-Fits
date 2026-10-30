@@ -1,7 +1,12 @@
 // Multi-resolution: the game is designed on 420×760. Taller screens (phones 19.5–21:9) keep the
 // width and get extra height; wider screens (tablets) keep the height and get extra width. The
 // 420×760 design box is always fully visible; EdgePin moves bars to the real screen edges.
+// The bottom banner / system bar is counted in: a screen too short for the box AND them (16:9,
+// 18:9 with a banner) shows a little more height, i.e. the whole game a little smaller, so the
+// tray keeps its room between the bag and the booster dock (with less, the items dropped at the
+// start were squeezed between the tray floor and the bag, overlapped and shook non-stop).
 import { view, ResolutionPolicy, sys, Rect, profiler, Camera, Size } from 'cc';
+import { DOCK_TOP_Y, FLOOR_Y } from '../core/GameConstants';
 
 export const DESIGN_W = 420, DESIGN_H = 760;
 const EMBEDDED_SIZE = new Size(DESIGN_W, DESIGN_H);
@@ -27,11 +32,17 @@ export const ScreenFit = {
     profiler.hideStats();   // the FPS panel the debug template turns on; players never see it
     const fit = () => {
       const frame = view.getFrameSize();
-      const tall = frame.height / frame.width >= DESIGN_H / DESIGN_W;
-      view.setDesignResolutionSize(DESIGN_W, DESIGN_H, tall ? ResolutionPolicy.FIXED_WIDTH : ResolutionPolicy.FIXED_HEIGHT);
+      // height the design box needs on this screen: 760, plus (centred, so twice) what the banner
+      // and the system bar take beyond the gap the design leaves under the tray floor
+      const needH = DESIGN_H + 2 * Math.max(0, this.insets(undefined, true).bottom - (DOCK_TOP_Y - FLOOR_Y));
+      const tall = frame.height / frame.width >= needH / DESIGN_W;
+      if (tall) view.setDesignResolutionSize(DESIGN_W, DESIGN_H, ResolutionPolicy.FIXED_WIDTH);
+      else view.setDesignResolutionSize(DESIGN_W * needH / DESIGN_H, needH, ResolutionPolicy.FIXED_HEIGHT);
     };
     fit();
     view.on('canvas-resize', fit);
+    // the banner came or went: the room it takes changed
+    insetListeners.push(fit);
   },
   /**
    * For a Canvas that does not follow the screen (alignCanvasWithScreen off, Game.scene): Cocos no

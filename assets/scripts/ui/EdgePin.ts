@@ -7,7 +7,7 @@
 //   grow     stays pinned to the top and grows downward by the extra height (scrolling lists)
 // Recomputed only when the screen size changes, never per frame.
 import { _decorator, Component, Enum, UITransform, view, Vec3, Size, Node } from 'cc';
-import { ScreenFit, DESIGN_H } from './ScreenFit';
+import { ScreenFit, DESIGN_H, DESIGN_W } from './ScreenFit';
 const { ccclass, property } = _decorator;
 
 export enum PinMode { TOP = 0, BOTTOM = 1, STRETCH = 2, COVER = 3, GROW = 4 }
@@ -23,6 +23,8 @@ export class EdgePin extends Component {
   /** full-height children and their own children's original y (extendToEdge) */
   private extended: { node: Node; h: number; y: number; kids: [Node, number][] }[] | null = null;
   private baseSize = new Size();
+  /** a full-width bottom bar's children: x and width as designed (widen) */
+  private wideKids: { node: Node; x: number; w: number }[] | null = null;
   private insets = { top: 0, bottom: 0 };
   private offInsets: (() => void) | null = null;
 
@@ -55,6 +57,25 @@ export class EdgePin extends Component {
     this.node.setPosition(this.node.position.x, this.node.position.y - d / 2, 0);
   }
 
+  /**
+   * A full-width bottom bar (the tab bar) on a screen showing more than 420 wide (tablets, and
+   * short phones that show the whole game a little smaller): as wide as the screen, its children
+   * spread and widened in proportion (the tabs), instead of leaving the background at both sides
+   */
+  private widen(visW: number) {
+    const ui = this.getComponent(UITransform);
+    if (!ui || this.baseSize.width < DESIGN_W - 1) return;
+    const k = Math.max(1, visW / this.baseSize.width);
+    this.wideKids ||= this.node.children.filter(c => c.name !== '__skin')
+      .map(c => ({ node: c, x: c.position.x, w: c.getComponent(UITransform)?.width ?? 0 }));
+    ui.width = this.baseSize.width * k;
+    for (const c of this.wideKids) {
+      c.node.setPosition(c.x * k, c.node.position.y, c.node.position.z);
+      // a tab (a good share of the bar) widens too; icons and labels keep their size
+      if (c.w >= this.baseSize.width / 6) c.node.getComponent(UITransform)!.width = c.w * k;
+    }
+  }
+
   apply() {
     const vis = ScreenFit.visible();
     const extraY = Math.max(0, vis.height - DESIGN_H) / 2;
@@ -68,6 +89,7 @@ export class EdgePin extends Component {
         this.node.setPosition(b.x, b.y - extraY + ins.bottom, b.z);
         // a bottom ad banner covers the system bar area itself: the bar then stops on top of it
         if (this.extendToEdge) this.extend(ScreenFit.adBottom > 0 ? 0 : ins.bottom);
+        this.widen(vis.width);
         break;
       case PinMode.STRETCH:
         if (ui) ui.setContentSize(Math.max(this.baseSize.width, vis.width), Math.max(this.baseSize.height, vis.height));

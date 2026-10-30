@@ -207,6 +207,7 @@ async function bannerSlot(slot: BannerSlot | null) {
   const ui = n.getComponent(UITransform)!;
   bannerBase ||= { h: ui.height, ys: contentOf(n).map(c => c.position.y) };
   ui.height = h;
+  ui.width = Math.max(ui.width, ScreenFit.visible().width);     // the whole screen width, as the real banner
   n.setPosition(0, -visH / 2 + sys + h / 2, 0);
   contentOf(n).forEach((c, i) => c.setPosition(c.position.x, bannerBase!.ys[i] * h / bannerBase!.h, 0));
   n.getComponent(RoundRect)!.fill = slot.simulated ? SIM_FILL : AD_FILL;
