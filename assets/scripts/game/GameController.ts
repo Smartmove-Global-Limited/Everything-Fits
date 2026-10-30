@@ -520,6 +520,16 @@ export class GameController extends Component {
     await this.openLevel(index);
   }
 
+  /**
+   * Level Editor: the level being played changed only in its item list (LevelBuilder.spliceItems):
+   * the round goes on, with `level` as its data from now on
+   */
+  async spliceItems(level: any, from: number, oldTo: number, to: number) {
+    const S = GameState;
+    S.level = level; S.chapter.levels[S.levelIndex] = level;
+    if (to > from || oldTo > from) await this.builder.spliceItems(level, from, oldTo, to);
+  }
+
   goHome() {
     if (this.embedded) { this.restart(); return; }   // no Home inside the editor
     this.tutorial?.stop();
@@ -543,6 +553,11 @@ export class GameController extends Component {
 
   private onWin() {
     const S = GameState;
+    if (!S.won) {   // Level Editor with its win popup off: the bag is packed, play goes on
+      Sound.play('win');
+      this.fx?.floatText(210, levelToFieldY(300), 'It fits!', { color: '#5FBF9B', size: 26, life: 1200 });
+      return;
+    }
     this.tutorial?.stop();
     Analytics.levelEnd('win');
     const first = !this.embedded && Progress.markDone(S.chapterId, S.levelIndex);

@@ -107,8 +107,12 @@ const ZONE_OUT = { inZone: false, fullyInside: false };
 
 /** Does any part of the item poke into the bag interior (or does the interior poke into the item) */
 export function overlapsInterior(item: ItemView): boolean {
+  return !!GameState.bagReady && reachesIntoBag(item);
+}
+/** overlapsInterior, also before the bag is shown (its place, while it appears) */
+export function reachesIntoBag(item: ItemView): boolean {
   const bag = GameState.bag;
-  if (!bag || !GameState.bagReady) return false;
+  if (!bag) return false;
   const polys = item.shapes;
   for (let i = 0; i < polys.length; i++) {
     const pts = polys[i];
@@ -323,6 +327,9 @@ export function updatePacked(now: number) {
 
   const toPack = S.itemsToPack;
   if (S.packed.size >= toPack && toPack > 0 && !S.drag && !S.lost) {
-    if (++S.winFrames > WIN_FRAMES && !S.won) { S.won = true; events.onWin?.(); }
-  } else S.winFrames = 0;
+    if (++S.winFrames > WIN_FRAMES && !S.won && !S.fitNoted) {
+      if (S.winPopup) S.won = true; else S.fitNoted = true;   // editor, win popup off: play goes on
+      events.onWin?.();
+    }
+  } else { S.winFrames = 0; S.fitNoted = false; }
 }

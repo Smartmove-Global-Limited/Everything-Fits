@@ -38,6 +38,10 @@ export const GameState = {
   /** item level indices removed by the throw-away booster */
   removed: new Set<number>(),
   winFrames: 0, won: false, lost: false, paused: false,
+  /** Level Editor preview: false = a packed bag only shows "It fits!" and play goes on (no win popup) */
+  winPopup: true,
+  /** that "It fits!" was shown for the bag as it is now (shown again once an item has left it) */
+  fitNoted: false,
 
   timeLeft: 0, timerOn: true,
   /** ms given on top of the level's timer this round (+60 sec on the lose popup) */

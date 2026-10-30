@@ -131,10 +131,16 @@ export class EditorPage {
     if (this.building) { this.again = true; return; }
     this.building = true;
     try {
+      const next = clone(this.level), prev = this.shown;
+      this.shown = next;
+      // only items added, removed or swapped: they go in or out of the round being played, so the
+      // way the designer has packed the bag so far stays
+      const cut = prev && this.itemSplice(prev, next);
+      if (cut) { this.autoplay.stop(); await this.game.spliceItems(next, cut.from, cut.oldTo, cut.to); return; }
       this.autoplay.stop();
       hidePopups();
       const idx = Math.max(0, this.store.indexOfLevel());
-      await this.game.playLevel(clone(this.level), { id: this.chapter.id, levels: this.chapter.levels.slice() }, idx);
+      await this.game.playLevel(next, { id: this.chapter.id, levels: this.chapter.levels.slice() }, idx);
       this.applyToggles();
     } catch (e) { console.error(e); }
     finally {
@@ -142,11 +148,36 @@ export class EditorPage {
       if (this.again) { this.again = false; this.buildPreview(); }
     }
   }
+  /** The level as the preview last got it */
+  private shown: any = null;
+  /**
+   * When the level changed only in its items (added, removed, swapped for another item or size;
+   * moved on the tray does not count): the slice of the list to replace. Null when the level has
+   * to be built again: another level, the bag, the background or the size of all items changed,
+   * the round has not started or is over, or a tied item, a mystery box or the key is involved.
+   */
+  private itemSplice(prev: any, next: any): { from: number; oldTo: number; to: number } | null {
+    const S = GameState;
+    if (!S.level || !S.bagReady || S.won || S.lost || prev.id !== next.id || S.level.id !== next.id) return null;
+    const same = (k: string) => JSON.stringify(prev[k] ?? null) === JSON.stringify(next[k] ?? null);
+    if (!same('container') || !same('background') || !same('itemScale')) return null;
+    const key = (it: any) => `${it.id}|${it.scale ?? 1}|${it.link ?? ''}|${it.locked ? 1 : 0}|${it.inBag ? 1 : 0}`;
+    const a = (prev.items || []).map(key), b = (next.items || []).map(key);
+    let from = 0, end = 0;
+    while (from < a.length && from < b.length && a[from] === b[from]) from++;
+    while (end < a.length - from && end < b.length - from && a[a.length - 1 - end] === b[b.length - 1 - end]) end++;
+    const oldTo = a.length - end, to = b.length - end;
+    const special = (it: any) => it.link != null || !!it.locked || Number(it.id) === KEY_ID;
+    if (prev.items.slice(from, oldTo).some(special) || next.items.slice(from, to).some(special)) return null;
+    return { from, oldTo, to };
+  }
+
   /** Timer, collision shapes and sound of the preview (the web editor's preview toggles) */
   private applyToggles() {
     GameState.timerOn = $('timerToggle').checked;
     PhysicsSystem2D.instance.debugDrawFlags = $('colliderToggle').checked ? EPhysics2DDrawFlags.Shape : EPhysics2DDrawFlags.None;
     Sound.setMuted(!$('audioToggle').checked);
+    GameState.winPopup = $('winPopupToggle').checked;
   }
 
   // ---------- save ----------
@@ -368,7 +399,7 @@ export class EditorPage {
     // preview: the machine plays / play again
     $('autoplayBtn').addEventListener('click', () => this.runAutoplay());
     $('restartBtn').addEventListener('click', () => { this.autoplay.stop(); hidePopups(); this.game.restart(); this.status('Đã dựng lại màn', 'ok'); });
-    for (const id of ['timerToggle', 'colliderToggle', 'audioToggle']) $(id).addEventListener('change', () => this.applyToggles());
+    for (const id of ['timerToggle', 'colliderToggle', 'audioToggle', 'winPopupToggle']) $(id).addEventListener('change', () => this.applyToggles());
     // generator dialog
     $('genBtn').addEventListener('click', () => { $('genModal').hidden = false; this.gen?.refresh(); });
     $('genClose').addEventListener('click', () => { $('genModal').hidden = true; });
@@ -406,11 +437,25 @@ export class EditorPage {
     await this.game.restart();
     this.applyToggles();
     this.status('Máy đang xếp thử…', '', 60000);
-    const r = await this.autoplay.play(GameState.level, this.items, this.skins, (t, k) => this.status(t, k, 5000));
-    if (!r) return;
-    for (let t = 0; t < 30 && !GameState.won && r.placed >= r.need; t++) await new Promise(ok => setTimeout(ok, 100));   // the win needs the bag to settle
-    if (GameState.won) this.status('Máy xếp xong · level giải được', 'ok', 6000);
-    else this.status(`Máy xếp được ${r.placed}/${r.need} món`, r.placed >= r.need ? 'ok' : 'bad', 6000);
+    // not packed: start over another way (another solver seed, or its stricter cell test), a few times
+    const TRIES = 8;
+    let r: { placed: number; need: number } | null = null;
+    for (let n = 1; n <= TRIES; n++) {
+      if (n > 1) {
+        this.status(`Chưa xếp hết, máy thử cách xếp khác (${n}/${TRIES})…`, '', 60000);
+        hidePopups();
+        await this.game.restart();
+        this.applyToggles();
+      }
+      const seed = Math.ceil(n / 2), mask = n % 2 ? 'center' : 'inner';
+      r = await this.autoplay.play(GameState.level, this.items, this.skins, (t, k) => this.status(t, k, 5000), seed, mask);
+      if (!r) return;
+      const packed = () => GameState.won || GameState.fitNoted;   // fitNoted: the win popup is off
+      for (let t = 0; t < 30 && !packed(); t++) await new Promise(ok => setTimeout(ok, 100));   // the win needs the bag to settle
+      if (packed()) break;
+    }
+    if (GameState.won || GameState.fitNoted) this.status('Máy xếp xong · level giải được', 'ok', 6000);
+    else this.status(`Máy xếp được ${r!.placed}/${r!.need} món`, r!.placed >= r!.need ? 'ok' : 'bad', 6000);
   }
 
   async boot() {
