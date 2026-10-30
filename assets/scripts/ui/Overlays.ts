@@ -177,8 +177,8 @@ const SIM_FILL = new Color(46, 58, 72, 255), AD_FILL = new Color(0, 0, 0, 255);
 /**
  * The banner slot at the bottom edge, just above the navigation / gesture bar (nothing over the
  * system bar: the game shows there). Bars pinned to the bottom go above it at once; the strip
- * shows "TEST BANNER" (simulated ads) or black "AD" until the real banner, a native view on top
- * of the game, covers it.
+ * shows "TEST BANNER" (simulated ads) or plain black (no "AD" label, asked) until the real
+ * banner, a native view on top of the game, covers it.
  */
 async function bannerSlot(slot: BannerSlot | null) {
   bannerWanted = slot;
@@ -210,7 +210,7 @@ async function bannerSlot(slot: BannerSlot | null) {
   n.setPosition(0, -visH / 2 + sys + h / 2, 0);
   contentOf(n).forEach((c, i) => c.setPosition(c.position.x, bannerBase!.ys[i] * h / bannerBase!.h, 0));
   n.getComponent(RoundRect)!.fill = slot.simulated ? SIM_FILL : AD_FILL;
-  setText(findNode(n, 'title'), slot.simulated ? 'TEST BANNER' : 'AD');
+  setText(findNode(n, 'title'), slot.simulated ? 'TEST BANNER' : '');
   setText(findNode(n, 'placement'), slot.simulated ? slot.placement : '');
 }
 

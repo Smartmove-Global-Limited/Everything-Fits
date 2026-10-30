@@ -6,7 +6,7 @@
 // Banner      Home / Shop at the bottom edge (banner_main_menu, banner_shop); in the Game scene only
 //             while a result popup covers the field (banner_gameplay), never during play.
 //             active_banner, banner_start_level. Bars pinned to the bottom move up above its slot,
-//             kept from the splash on (Home does not jump); a black "AD" strip until the ad loads.
+//             kept from the splash on (Home does not jump); a black strip until the ad loads.
 // Interstitial level_win (Continue after a win), level_lose (Try again after a loss). Checked in
 //             this order: active_inter → max_inter_per_session → min_inter_interval_sec →
 //             min_between_reward_inter_sec → level pacing (inter_pacing_config). A skipped trigger
@@ -32,7 +32,7 @@ export type AdViews = {
   simulateFullScreen(kind: 'rewarded' | 'interstitial', placement: string): Promise<boolean>;
   /**
    * the banner slot at the bottom (null = none): bottom bars move above it; it shows "TEST BANNER"
-   * (simulated) or a black "AD" strip the real banner covers once loaded
+   * (simulated) or a black strip the real banner covers once loaded
    */
   bannerSlot(slot: BannerSlot | null): void;
   /** resolves once no loading screen covers the game (the native banner draws above everything) */

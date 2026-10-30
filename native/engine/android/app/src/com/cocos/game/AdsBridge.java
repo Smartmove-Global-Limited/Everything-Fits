@@ -53,6 +53,15 @@ final class AdsBridge {
     private static FrameLayout bannerBox;
     private static int bannerHeight;
     private static boolean bannerWanted;
+    /**
+     * Banner loading, one owner at a time: until an ad has loaded, this code loads it (one load at a
+     * time, retried while the banner is wanted on screen, at once when a screen shows it); from the
+     * first ad on, MAX's auto refresh replaces it (a failed refresh keeps the ad on screen).
+     */
+    private static boolean bannerLoaded, bannerLoading;
+    private static int bannerRetry;
+    private static final int BANNER_RETRY_MAX_SEC = 30;
+    private static final Runnable bannerReload = () -> { if (bannerWanted) loadBanner(); };
     private static MaxInterstitialAd inter;
     private static MaxRewardedAd rewarded;
     private static boolean rewardEarned;
@@ -127,8 +136,24 @@ final class AdsBridge {
                 .setAdaptiveType(MaxAdViewConfiguration.AdaptiveType.ANCHORED).build());
         banner.setRevenueListener(SdkBridge::logAdRevenue);   // each paid impression → AppsFlyer af_ad_revenue
         banner.setListener(new MaxAdViewAdListener() {
-            @Override public void onAdLoaded(MaxAd ad) { ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "loaded")); }
-            @Override public void onAdLoadFailed(String unit, MaxError e) { Log.w(TAG, "banner failed " + e.getCode()); }
+            @Override public void onAdLoaded(MaxAd ad) {
+                boolean first = !bannerLoaded;
+                bannerLoaded = true; bannerLoading = false; bannerRetry = 0; main.removeCallbacks(bannerReload);
+                // MAX takes over from the first ad: its auto refresh while the banner is on screen
+                if (first && bannerWanted) banner.startAutoRefresh();
+                ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "loaded"));
+            }
+            // The first ad failed (no fill 204, no network at start…): it used to be loaded once only,
+            // so the strip stayed black for the whole session, gameplay included. Try again while a
+            // screen wants it (2, 4, 8, 16, 30 s…); hidden, the next screen that shows it loads it.
+            @Override public void onAdLoadFailed(String unit, MaxError e) {
+                Log.w(TAG, "banner failed " + e.getCode() + (bannerLoaded ? " (refresh: the shown ad stays)" : ""));
+                bannerLoading = false;
+                if (bannerLoaded || !bannerWanted) return;
+                bannerRetry = Math.min(bannerRetry + 1, 5);
+                main.removeCallbacks(bannerReload);
+                main.postDelayed(bannerReload, 1000L * Math.min(BANNER_RETRY_MAX_SEC, 1 << bannerRetry));
+            }
             @Override public void onAdDisplayed(MaxAd ad) {}
             @Override public void onAdHidden(MaxAd ad) {}
             @Override public void onAdClicked(MaxAd ad) {}
@@ -137,15 +162,24 @@ final class AdsBridge {
             @Override public void onAdCollapsed(MaxAd ad) {}
         });
         // as tall as the SDK says for this screen's width (about 56-62 dp on a phone instead of a
-        // fixed 50); the game's black "AD" strip takes the same height ("ready": bannerPx)
+        // fixed 50); the game's black strip takes the same height ("ready": bannerPx)
         bannerHeight = adaptiveBannerPx();
         // just the banner, right above the navigation / gesture bar (nothing over the system bar).
-        // Transparent until an ad loads: the game's black "AD" strip shows through (Overlays.ts)
+        // Transparent until an ad loads: the game's black strip shows through (Overlays.ts)
         bannerBox = new FrameLayout(activity);
         bannerBox.setVisibility(View.GONE);
         bannerBox.addView(banner, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, bannerHeight, Gravity.TOP));
         activity.addContentView(bannerBox, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, bannerHeight, Gravity.BOTTOM));
         banner.stopAutoRefresh();
+        loadBanner();                                          // ready before the first screen asks for it
+    }
+
+    /** One load at a time, and only until the first ad: then MAX's auto refresh loads the next ones */
+    private static void loadBanner() {
+        if (banner == null || bannerLoaded || bannerLoading) return;
+        bannerLoading = true;
+        main.removeCallbacks(bannerReload);
+        Log.i(TAG, "banner load");
         banner.loadAd();
     }
 
@@ -184,7 +218,10 @@ final class AdsBridge {
             bannerBox.setLayoutParams(lp);
             banner.setPlacement(placement);
             bannerBox.setVisibility(View.VISIBLE);
-            banner.startAutoRefresh();
+            // an ad is there: MAX refreshes it; none yet (failed so far): load now, the player is
+            // looking at the empty strip (nothing if a load is already on its way)
+            if (bannerLoaded) banner.startAutoRefresh();
+            else { bannerRetry = 0; loadBanner(); }
             // the system bar under it now (the bars may have been showing when "ready" was sent)
             ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "shown", "systemPx", lp.bottomMargin));
         });
@@ -196,6 +233,7 @@ final class AdsBridge {
             if (banner == null) return;
             bannerBox.setVisibility(View.GONE);
             banner.stopAutoRefresh();
+            main.removeCallbacks(bannerReload);                // no retries while no screen shows it
             ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "hidden"));
         });
     }
