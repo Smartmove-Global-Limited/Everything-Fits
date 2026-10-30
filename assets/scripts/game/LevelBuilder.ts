@@ -8,7 +8,7 @@ import { GameState } from '../core/GameState';
 import { ContentLoader } from '../content/ContentLoader';
 import { DESIGN_H, BAG_FLOOR, BAG_CEIL, PhysicsGroup, PTM, levelToFieldY, levelToNodeAngle } from '../core/GameConstants';
 import { ItemView } from './ItemView';
-import { overlapsBagArea, findFreeSpot, clearEjects, beginSpotBatch, moveInsideBag } from './BagRules';
+import { clearEjects, moveInsideBag } from './BagRules';
 import { Sound } from '../audio/Sound';
 import { Fx } from './Fx';
 import { BagView } from './BagView';
@@ -20,12 +20,16 @@ const FIRST_DROP = 150;        // pause before the first one
 const DROP_HEIGHT = 90;        // items start this far above the top of the screen
 const AVOID_CENTER = 62;       // never drop straight onto the top of the bag
 const BAG_MAX_WAIT = 2600;     // show the bag at the latest this long after the last drop (ms)
+const WALLS_SETTLE_MIN = 250;  // walls stand this long (ms) before the bag is shown…
+const WALLS_SETTLE_MAX = 1500; // …or longer, until what they pushed back has settled, at most this
 const SETTLED_SPEED = .7 * 60 / PTM; // "settled" speed for the bag reveal (m/s; web .7 units per step)
 
 export class LevelBuilder {
   private itemPool = new Map<number, ItemView[]>();
   private bagPool = new Map<string, BagView>();
   private lastDropAt = 0;
+  /** when the bag's walls stood up, before the bag is shown (-1: not yet) */
+  private wallsOnAt = -1;
   /** mystery boxes of this round and the prefab of the item each one hides */
   private hidden = new Map<ItemView, Prefab>();
   /** Node in the front layer that mirrors the bag transform; the bag's front image lives under it */
@@ -161,6 +165,7 @@ export class LevelBuilder {
       it.node.setPosition(x, DESIGN_H + DROP_HEIGHT + Math.random() * 40, 0);
     });
     this.lastDropAt = t0 + Math.max(0, falling.length - 1) * DROP_INTERVAL;
+    this.wallsOnAt = -1;
   }
 
   /** Per-round state of an item taken from the pool (level index, size, nothing held / frozen / cracked) */
@@ -235,6 +240,7 @@ export class LevelBuilder {
     const S = GameState;
     for (const it of S.items) {
       if (it.waiting && S.clock >= it.enterAt) {
+        if (!S.preview) this.aboveFalling(it);
         this.activate(it, PhysicsGroup.FALLING);
         it.entering = true;
         // web: 0.6 units/step sideways, 2–4 units/step down (units/s ÷ PTM = m/s)
@@ -250,6 +256,21 @@ export class LevelBuilder {
     if (!S.bagReady && S.bag) this.tryRevealBag();
   }
 
+  /**
+   * Start an item above the ones still dropping in under it: the previous one left only 110 ms
+   * earlier and was still there, the two came in one inside the other and were pushed apart.
+   */
+  private aboveFalling(it: ItemView) {
+    const r = (it.updateShape(), it.bounds);
+    let lift = 0;
+    for (const o of GameState.items) {
+      if (o === it || !o.entering) continue;
+      const b = (o.updateShape(), o.bounds);
+      if (b.xMax > r.xMin && b.xMin < r.xMax) lift = Math.max(lift, b.yMax + 4 - r.yMin);
+    }
+    if (lift > 0) it.node.setPosition(it.node.position.x, it.node.position.y + lift, 0);
+  }
+
   private tryRevealBag() {
     const S = GameState;
     let busy = false;
@@ -259,19 +280,21 @@ export class LevelBuilder {
       const v = it.body.linearVelocity;
       if (v.x * v.x + v.y * v.y > SETTLED_SPEED * SETTLED_SPEED) { busy = true; break; }
     }
-    if (busy && S.clock < this.lastDropAt + BAG_MAX_WAIT) return;
     const bag = S.bag!;
-    bag.refreshWorldShape();
-    // the walls appear around items already lying there: move those to the tray first,
-    // otherwise they end up inside a wall (stuck and pushed every step)
-    beginSpotBatch();
-    for (const it of S.items) {
-      if (it.waiting || it.presetInBag || !overlapsBagArea(it)) continue;
-      const spot = findFreeSpot(it, it.node.position.x);
-      it.node.setPosition(spot.x, spot.y, 0);
-      it.stop(); it.body.wakeUp();
+    // the walls stand up first, unseen, once the dropped items have settled: an item of the pile
+    // reaching into the bag's place is pushed back by them like by any wall, and the bag is shown
+    // only when that has settled too, so it never appears with an item through it. (Moving such
+    // items to a "free spot" put them on other items when the tray was full: they shook non-stop.)
+    if (this.wallsOnAt < 0) {
+      if (busy && S.clock < this.lastDropAt + BAG_MAX_WAIT) return;
+      bag.refreshWorldShape();
+      if (bag.walls) bag.walls.active = true;
+      for (const it of S.items) if (!it.waiting) it.body.wakeUp();   // a resting item does not feel a wall that appears
+      this.wallsOnAt = S.clock;
+      return;
     }
-    if (bag.walls) bag.walls.active = true;
+    const since = S.clock - this.wallsOnAt;
+    if (since < WALLS_SETTLE_MIN || (busy && since < WALLS_SETTLE_MAX)) return;
     bag.refreshWorldShape();
     for (const it of S.items) if (it.presetInBag && it.waiting) {
       this.activate(it, PhysicsGroup.ITEM);

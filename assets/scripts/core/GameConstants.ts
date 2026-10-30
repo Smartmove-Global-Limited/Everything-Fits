@@ -46,7 +46,8 @@ export const levelToNodeAngle = (rad: number) => -rad * 180 / Math.PI;
  *   BAG      bag walls, built-in dividers, obstacles inside the bag
  *   CEILING  invisible ceiling above the screen
  *   HELD     item in the player's hand: colliders become sensors, only report overlaps
- *   FALLING  item dropping in from above the screen at level start (passes the ceiling)
+ *   FALLING  item dropping in from above the screen at level start (passes the ceiling, meets
+ *            the other falling items)
  */
 export const PhysicsGroup = {
   ITEM: 1 << 1,
