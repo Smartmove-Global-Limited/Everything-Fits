@@ -39,7 +39,8 @@ const HOME_PULL = 6;                          // 1/s: a turning item drifts back
 const MAX_LEAD = 45;                          // degrees the finger may run ahead of the item
 const STUCK_FRAMES = 20, STUCK_TURN = 4, STUCK_LEAD = 8;  // turned < 4° in the last 20 frames (1/3 s), finger > 8° ahead: stuck
 const STEP = 1 / 60;                          // s, one physics step
-const CLIMB = 2;                              // units above what its shape needs: it is climbing what it turns into
+const TURN_FRICTION = .02;                    // the turning item is slick: neighbours slide off it
+const CLIMB_RISE = 1.5;                       // m/s: how fast a neighbour may lift the turning item onto itself
 /**
  * Node angle in degrees, from the rotation quaternion. Do not read node.angle on physics bodies:
  * Box2D writes the rotation as a quaternion and node.angle keeps returning the old euler value
@@ -409,6 +410,7 @@ export class DragController extends Component {
       sp.lastAngle = angleOf(it.node);
       sp.bottom = p.y - it.below(sp.lastAngle * Math.PI / 180);
       it.turning = true;
+      this.slick(it, true);
     }
     // the finger's turn since the last move, folded so crossing ±180° never flips the direction
     const pointer = Math.atan2(y - p.y, x - p.x);
@@ -433,8 +435,29 @@ export class DragController extends Component {
     it.body.angularVelocity = 0;
   }
   private letGo(sp: NonNullable<DragController['spin']> | null) {
-    if (sp) sp.item.turning = false;
+    if (!sp) return;
+    sp.item.turning = false;
+    this.slick(sp.item, false);
   }
+  /**
+   * While it turns, the item is slick and does not bounce: an item lying on it or beside it is pushed
+   * and slides away. With its own friction and bounce it dragged that item round and knocked it up
+   * each time a corner came by: it shook non-stop. Back to its own once the finger lets go.
+   */
+  private slick(it: ItemView, on: boolean) {
+    const kept = this.slickOf;
+    for (const c of it.colliders) {
+      if (on) {
+        if (!kept.has(c)) kept.set(c, [c.friction, c.restitution]);
+        c.friction = TURN_FRICTION; c.restitution = 0;
+      } else {
+        const k = kept.get(c); if (!k) continue;
+        c.friction = k[0]; c.restitution = k[1]; kept.delete(c);
+      }
+      c.apply();
+    }
+  }
+  private readonly slickOf = new Map<any, [number, number]>();
   /**
    * Spin the body towards `deg` more degrees, softly (proportional, not all in one step: a full step
    * shoved the neighbour every frame and the two shook against each other). The game is seen from
@@ -442,16 +465,16 @@ export class DragController extends Component {
    * and Box2D lifts it out. It may rise only as far as its own shape needs at its next angle (its
    * lowest point kept where it was when the turn began, ItemView.below): the spin is set from
    * script, so the floor's push could be any size and the speed kept from it threw the item up (it
-   * hopped). Pushed higher than that, it is turning into something beside it (a long item's end
-   * against the wall or a neighbour) and the forced turn makes it climb: as a real one held against
-   * it, it does not turn on until it has come back down. Sideways it keeps what the turn needs and
-   * is drawn back to where the turn began.
+   * hopped). Turned into a neighbour it may also ride up onto it, slowly (CLIMB_RISE: a hop from
+   * that speed is under one unit), as a real item turned against another one: stopping the turn
+   * there (it did) made it jerk and stick. Sideways it keeps what the turn needs and is drawn back
+   * to where the turn began.
    */
   private turnBy(it: ItemView, deg: number, bottom: number, homeX: number) {
-    const now = angleOf(it.node) * Math.PI / 180, climbing = it.node.position.y > bottom + it.below(now) + CLIMB;
-    const w = climbing || Math.abs(deg) < .01 ? 0 : Math.max(-MAX_TURN, Math.min(MAX_TURN, deg * Math.PI / 180 * TURN_GAIN));
+    const now = angleOf(it.node) * Math.PI / 180;
+    const w = Math.abs(deg) < .01 ? 0 : Math.max(-MAX_TURN, Math.min(MAX_TURN, deg * Math.PI / 180 * TURN_GAIN));
     const next = now + w * STEP;
-    const rise = Math.max(0, (bottom + it.below(next) - it.node.position.y) / PTM / STEP);       // m/s
+    const rise = Math.max(CLIMB_RISE, (bottom + it.below(next) - it.node.position.y) / PTM / STEP);   // m/s
     const side = Math.abs(w) * Math.hypot(it.localBox.width, it.localBox.height) * it.levelScale / 2 / PTM;
     const v = it.body.linearVelocity;
     const vx = v.x + (homeX - it.node.position.x) / PTM * HOME_PULL;
