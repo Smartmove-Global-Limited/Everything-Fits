@@ -29,5 +29,14 @@ export const Progress = {
     return ch.levels.length - 1;
   },
   setSpot(chapterId: string, idx: number) { data.chapter = chapterId; data.level = idx | 0; save(); },
+  /**
+   * Testers' level picker (Settings): the player is now at this level, as if every level before it
+   * was won (it is open, Play and Next go on from it, level-based rules see it)
+   */
+  jumpTo(chapterId: string, idx: number) {
+    const l = doneList(chapterId);
+    for (let i = 0; i < idx; i++) l[i] = true;
+    data.chapter = chapterId; data.level = idx | 0; save();
+  },
   reset() { data = { chapter: null, level: 0, done: {} }; save(); },
 };

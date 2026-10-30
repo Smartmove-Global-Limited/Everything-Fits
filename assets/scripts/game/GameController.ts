@@ -475,8 +475,10 @@ export class GameController extends Component {
     S.paused = true; Sound.duckMusic(true);
     const p = await showPopup('SettingsPopup', SettingsPopup);
     p.open({
-      // the levels.json version and the level jump buttons are for the Level Editor preview only
-      inGame: true, version: this.embedded ? ContentLoader.book?.version : null, devLevels: this.embedded,
+      // the level jump buttons are for the Level Editor preview only; the version line is also where
+      // testers turn the level picker on
+      inGame: true, version: ContentLoader.book?.version, devLevels: this.embedded,
+      levelPicker: this.embedded ? undefined : { count: S.chapter.levels.length, current: S.levelIndex, onPick: i => this.pickLevel(i) },
       onClose: () => { S.paused = wasPaused; Sound.duckMusic(false); },
       onHome: () => this.goHome(),
       onRestart: () => { S.paused = false; this.restart(); },
@@ -564,6 +566,17 @@ export class GameController extends Component {
         onCollectX2: () => Wallet.add(reward),
       });
     }, WIN_POPUP_DELAY);
+  }
+
+  /** Testers' level picker (Settings): the player is now at that level, opened behind the veil */
+  private async pickLevel(index: number) {
+    const S = GameState;
+    S.paused = false; Sound.duckMusic(false);
+    Progress.jumpTo(S.chapterId, index);
+    Analytics.setReason('next');
+    await Overlays.cover();
+    await this.openLevel(index);
+    await Overlays.uncover();
   }
 
   /** Level Editor preview buttons: the previous / next level of the chapter (wrapping), behind the veil */

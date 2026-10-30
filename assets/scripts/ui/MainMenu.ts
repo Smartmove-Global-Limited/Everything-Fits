@@ -109,7 +109,18 @@ export class MainMenu extends Component {
 
   private async openSettings() {
     const p = await showPopup('SettingsPopup', SettingsPopup);
-    p.open({ inGame: false });   // the levels.json version shows in the Level Editor only
+    const s = this.spot();
+    p.open({
+      inGame: false,
+      version: ContentLoader.book?.version,   // its line is also where testers turn the level picker on
+      levelPicker: s ? { count: s.chapter.levels.length, current: s.index, onPick: i => this.pickLevel(s.chapter, i) } : undefined,
+    });
+  }
+
+  /** Testers' level picker: the player is now at that level, and it opens */
+  private pickLevel(chapter: any, index: number) {
+    Progress.jumpTo(chapter.id, index);
+    this.play();
   }
 
   private play() {
