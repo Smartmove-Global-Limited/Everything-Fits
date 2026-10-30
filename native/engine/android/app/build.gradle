@@ -182,6 +182,14 @@ dependencies {
     implementation 'com.applovin:applovin-sdk:13.6.4'
     // MAX mediation networks: Google AdMob (only with admobAppId in applovin.properties)
     if (admobAppId) implementation 'com.applovin.mediation:google-adapter:25.5.0.0'
+    // Unity Ads and Meta Audience Network: their ids and the placements per unit are set by the
+    // publisher on the MAX dashboard; until then MAX simply does not call them. Each adapter pulls
+    // that network's SDK (Meta's is the largest, about 5 MB of the APK).
+    implementation 'com.applovin.mediation:unityads-adapter:4.21.0.1'
+    implementation 'com.applovin.mediation:facebook-adapter:6.22.0.1'
+    // their SDKs ask for androidx.browser 1.9.0, which needs Android Gradle plugin 8.9.1; Cocos 3.8.2
+    // builds with 8.5.2, so the last browser release that builds with it
+    implementation('androidx.browser:browser') { version { strictly '1.8.0' } }
     implementation 'com.android.billingclient:billing:9.1.0'   // 9.x: blocked Play Store now BILLING_UNAVAILABLE (not ERROR); targetSdk 35+ (we use 36)
     implementation project(':libcocos')
     if (Boolean.parseBoolean(PROP_ENABLE_INPUTSDK)) {

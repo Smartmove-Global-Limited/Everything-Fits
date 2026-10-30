@@ -16,6 +16,8 @@ import com.applovin.mediation.MaxAdFormat;
 import com.applovin.mediation.MaxAdViewConfiguration;
 import com.applovin.mediation.MaxAdListener;
 import com.applovin.mediation.MaxAdViewAdListener;
+import com.applovin.mediation.MaxAdWaterfallInfo;
+import com.applovin.mediation.MaxNetworkResponseInfo;
 import com.applovin.mediation.MaxError;
 import com.applovin.mediation.MaxReward;
 import com.applovin.mediation.MaxRewardedAdListener;
@@ -137,6 +139,8 @@ final class AdsBridge {
         banner.setRevenueListener(SdkBridge::logAdRevenue);   // each paid impression → AppsFlyer af_ad_revenue
         banner.setListener(new MaxAdViewAdListener() {
             @Override public void onAdLoaded(MaxAd ad) {
+                Log.i(TAG, "banner loaded from " + ad.getNetworkName() + " (" + ad.getNetworkPlacement() + "), revenue " + ad.getRevenue());
+                logWaterfall("banner", ad.getWaterfall());
                 boolean first = !bannerLoaded;
                 bannerLoaded = true; bannerLoading = false; bannerRetry = 0; main.removeCallbacks(bannerReload);
                 // MAX takes over from the first ad: its auto refresh while the banner is on screen
@@ -147,7 +151,8 @@ final class AdsBridge {
             // so the strip stayed black for the whole session, gameplay included. Try again while a
             // screen wants it (2, 4, 8, 16, 30 s…); hidden, the next screen that shows it loads it.
             @Override public void onAdLoadFailed(String unit, MaxError e) {
-                Log.w(TAG, "banner failed " + e.getCode() + (bannerLoaded ? " (refresh: the shown ad stays)" : ""));
+                Log.w(TAG, "banner failed " + e.getCode() + " after " + e.getRequestLatencyMillis() + " ms" + (bannerLoaded ? " (refresh: the shown ad stays)" : ""));
+                logWaterfall("banner", e.getWaterfall());
                 bannerLoading = false;
                 if (bannerLoaded || !bannerWanted) return;
                 bannerRetry = Math.min(bannerRetry + 1, 5);
@@ -172,6 +177,20 @@ final class AdsBridge {
         activity.addContentView(bannerBox, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, bannerHeight, Gravity.BOTTOM));
         banner.stopAutoRefresh();
         loadBanner();                                          // ready before the first screen asks for it
+    }
+
+    /**
+     * Which networks MAX asked for an ad and what each answered (logcat -s AdsBridge): the network
+     * that filled, the ones with no fill (204) or an error, and how long each took
+     */
+    static void logWaterfall(String what, MaxAdWaterfallInfo wf) {
+        if (wf == null) { Log.i(TAG, what + " waterfall: none"); return; }
+        Log.i(TAG, what + " waterfall " + wf.getName() + " / " + wf.getTestName() + ", " + wf.getLatencyMillis() + " ms:");
+        for (MaxNetworkResponseInfo r : wf.getNetworkResponses()) {
+            MaxError err = r.getError();
+            Log.i(TAG, "  " + r.getMediatedNetwork().getName() + (r.isBidding() ? " (bidding)" : "") + ": " + r.getAdLoadState()
+                    + ", " + r.getLatencyMillis() + " ms" + (err != null ? ", error " + err.getCode() + " " + err.getMessage() : ""));
+        }
     }
 
     /** One load at a time, and only until the first ad: then MAX's auto refresh loads the next ones */
