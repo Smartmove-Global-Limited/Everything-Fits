@@ -3,6 +3,7 @@
   "slug": "jacket",
   "code": "ITM_031",
   "name": "Áo khoác gấp",
+  "nameEn": "Jacket",
   "meta": {
     "size": "Large",
     "shape": "Rectangle",

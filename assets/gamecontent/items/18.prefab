@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "48vpvGOVxLtYXI8ROvcsr0"
+    "fileId": "beStMplDdLobCUkZ1xiFU4"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "faNjTeZp1Eb7tJsa+NOT4H"
+    "fileId": "1do3W1/AVAuJDHnm7JoElJ"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "0bYxdLRB9NerOKacMqy5rB"
+    "fileId": "b4s/Z0z5xDO7VZaQ32No2M"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "f4+TNOx5tJebzkhCtD7Ytr"
+    "fileId": "3d3Cotd79EyYTBmaE2jNk/"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 18,
     "nameVi": "Quả chuối",
-    "nameEn": "",
+    "nameEn": "Banana",
     "physicsType": 1,
     "massClass": 1,
     "material": "food",
@@ -521,7 +521,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e8DBwa5SVFgo5vLuKhcKY+"
+    "fileId": "247KIROJRBNJz6W+HyHjSN"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -531,7 +531,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "8eGCtzylJA65GCzw7SecCS",
+    "fileId": "9eSO2nNdZATL1S5fk9QCRw",
     "targetOverrides": null
   }
 ]

@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "fcWD3tmwxAqLSvO/lgLMhZ"
+    "fileId": "07bT7NwTVINq9bTaULjhvs"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3ba16FNDlAw522IvbPf54W"
+    "fileId": "07dv2AP01KHpj5WhSy7EjG"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "689ZZUrUhL1rCfyFLuMNN8"
+    "fileId": "12iuEnWhFNuYYDkvt7c7mD"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "26l+KleA9HTLH/9K4m2Kkw"
+    "fileId": "c8Zji46phEVot6dGZReAQ6"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 40,
     "nameVi": "Pin dự phòng",
-    "nameEn": "",
+    "nameEn": "Power Bank",
     "physicsType": 0,
     "massClass": 1,
     "material": "plastic",
@@ -431,7 +431,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ebw8khA45I2Y0e1x6KZqX7"
+    "fileId": "03Phx+BqBBQLXU8rtCXWuL"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -441,7 +441,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "4fPWhv8wNLgbdVUmVcN0bJ",
+    "fileId": "3eoTl+v5dPM7QWP4HiAPP0",
     "targetOverrides": null
   }
 ]

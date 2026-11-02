@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "df/2gi6jFFx4unK18MdkJZ"
+    "fileId": "16nbSW/S1Dm5Mb8tLCQxtb"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "bdCXeWl1BH14rEtj5h4K15"
+    "fileId": "86m3pOmqxGdKymV4JnrMrq"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "bbikeegHpKE5w2DcpEOzWC"
+    "fileId": "78QLkSkKVMWL+QDzIEmhMN"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -304,7 +304,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e4HB1qkfxL279dnZSn//C/"
+    "fileId": "3fnCcYK0hCeriv6ZrV7jOl"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -320,7 +320,7 @@
     },
     "itemId": 60,
     "nameVi": "Bóng bay",
-    "nameEn": "",
+    "nameEn": "Balloon",
     "physicsType": 2,
     "massClass": 0,
     "material": "fabric",
@@ -641,7 +641,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b22ZYiU3hFf5dyElbze42j"
+    "fileId": "56NfpAsKlM3q9fmDdK+BNa"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -651,7 +651,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "d4WYoogz5L6bHxgvEK8ogF",
+    "fileId": "a1t4RyXl1L9oNO1oB8OKkA",
     "targetOverrides": null
   }
 ]

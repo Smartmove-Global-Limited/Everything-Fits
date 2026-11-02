@@ -3,6 +3,7 @@
   "slug": "textbook",
   "code": "ITM_026",
   "name": "Sách giáo khoa",
+  "nameEn": "Textbook",
   "meta": {
     "size": "Large",
     "shape": "Rectangle",

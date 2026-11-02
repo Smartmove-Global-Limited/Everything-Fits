@@ -3,6 +3,7 @@
   "slug": "tshirt",
   "code": "ITM_001",
   "name": "Áo phông gấp",
+  "nameEn": "T-shirt",
   "meta": {
     "size": "Medium",
     "shape": "Rectangle",

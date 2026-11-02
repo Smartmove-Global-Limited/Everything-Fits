@@ -3,6 +3,7 @@
   "slug": "waterbottle",
   "code": "ITM_015",
   "name": "Bình nước",
+  "nameEn": "Water Bottle",
   "meta": {
     "size": "Medium",
     "shape": "Long",

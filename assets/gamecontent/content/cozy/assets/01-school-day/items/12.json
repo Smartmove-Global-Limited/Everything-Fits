@@ -3,6 +3,7 @@
   "slug": "calculator",
   "code": "ITM_012",
   "name": "Máy tính bỏ túi",
+  "nameEn": "Calculator",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "90mSeyFPVCu6TO0ka6vgOh"
+    "fileId": "e9MzEYDs5JHa7VC3bpUoYA"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c3wG+Ci8dG0qf7XMX6wVVB"
+    "fileId": "9cVGw9m7VMXZTeNfncqUfG"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "76CappL6JIAoahk1xpxqXk"
+    "fileId": "0dK8QL+qpKrKFW/I29e8lq"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c7tjHFEbtKf7C0uwfwvHhY"
+    "fileId": "f2b7EBXAhOzZc5y22LvZ6q"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 11,
     "nameVi": "Máy tính bảng",
-    "nameEn": "",
+    "nameEn": "Tablet",
     "physicsType": 0,
     "massClass": 2,
     "material": "plastic",
@@ -441,7 +441,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "8fqTH3WyRA55jhABdURzs8"
+    "fileId": "08wPSIdU5HA4tIi45njNZ+"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -451,7 +451,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "a0IAkoaDhLT69ppEoXA8EM",
+    "fileId": "c6YQFzlypApZFwvoXy0qCe",
     "targetOverrides": null
   }
 ]

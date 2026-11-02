@@ -409,7 +409,7 @@ export class GameController extends Component {
     Sound.play('unlockLv');
     fx?.ring(bp.x, bp.y, { color: '#E2B04A', r1: 64, life: 620, width: 5 });
     fx?.sparkle(bp.x, bp.y, { n: 18, color: '#FFD98A', speed: 1.4, life: 780 });
-    this.hud.toastMessage(`Unlocked: ${item.nameEn || item.nameVi}!`, 1.6);
+    this.hud.toastMessage('Unlocked!', 1.6);   // no item name: many items have only a Vietnamese one
   }
 
   // ---------- boosters (web boosters.js) ----------

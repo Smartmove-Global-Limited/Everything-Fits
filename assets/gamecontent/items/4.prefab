@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "d7O4Q0xNRKBpRS/bLC/jSc"
+    "fileId": "c09KhzGgBJs6saFJATwHSq"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "fbKaLA2U5NSZVSjEaRApWA"
+    "fileId": "0bZ6BbCM5Ezq9l5QvH2Qja"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "43kBrebepIAKiNPftPCHMx"
+    "fileId": "66A54viXBIFKmVHqJWvITv"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -264,7 +264,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "edQ36XOXZETqro380Tpnfq"
+    "fileId": "c6JZYj+m5EJLKWFznFoZtT"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -280,7 +280,7 @@
     },
     "itemId": 4,
     "nameVi": "Giày thể thao",
-    "nameEn": "",
+    "nameEn": "Sneaker",
     "physicsType": 0,
     "massClass": 2,
     "material": "fabric",
@@ -596,7 +596,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "08IkWERzNJzaPQIo4zJSov"
+    "fileId": "8dt1zB/ktAT7QzsqDYVVAN"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -606,7 +606,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "257uDOMlpDxrb7gZ6eaHer",
+    "fileId": "d8E8zKCodDt7k9wrLovmqk",
     "targetOverrides": null
   }
 ]

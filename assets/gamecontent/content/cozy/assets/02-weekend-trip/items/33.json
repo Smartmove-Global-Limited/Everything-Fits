@@ -3,6 +3,7 @@
   "slug": "toothbrush",
   "code": "ITM_033",
   "name": "Bàn chải",
+  "nameEn": "Toothbrush",
   "meta": {
     "size": "Small",
     "shape": "Long",

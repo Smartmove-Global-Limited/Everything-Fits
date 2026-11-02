@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "14QwkEgo1PH7YK7L5rdXBj"
+    "fileId": "21y81vaVFCPrSVJdeqpsV/"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3bLPhPW1pPnoebyq2zEYRe"
+    "fileId": "9en4sW1CVIqKZNpPm057hY"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "90js66R4NMDY4CZuGUns2y"
+    "fileId": "2a5l4jvG5BsJ5Kpm4oNjUt"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "bfVRBCS0dF/I5tDNF4JqMQ"
+    "fileId": "b0yfJM6J5NAYxg+n8UnZYO"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 45,
     "nameVi": "Ví tiền",
-    "nameEn": "",
+    "nameEn": "Wallet",
     "physicsType": 0,
     "massClass": 1,
     "material": "fabric",
@@ -491,7 +491,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "51F9NuUoBINoTRUZ5MrU4w"
+    "fileId": "00+nywSfFAEavPSToqfKpU"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -501,7 +501,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "ddKcf6dPBHXpd4lcShLS8l",
+    "fileId": "faYR8pSgNLEZ+jnMK4DUC7",
     "targetOverrides": null
   }
 ]

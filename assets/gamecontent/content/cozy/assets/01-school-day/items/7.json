@@ -3,6 +3,7 @@
   "slug": "sanitizer",
   "code": "ITM_007",
   "name": "Nước rửa tay",
+  "nameEn": "Hand Sanitizer",
   "meta": {
     "size": "Small",
     "shape": "Rounded rect",

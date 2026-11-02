@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "eauj7HrBJCVLshZ3kvET+b"
+    "fileId": "6bcDqrnfJAarHCllbRbf+i"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ecCHzyJYNBK6TfPLzbIpo+"
+    "fileId": "83ft07Ut5Fbp5Rxt0rF4W3"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "d75HJDpkBOo6Tp4NlGLtuV"
+    "fileId": "8d9uRep9hHqrnhIeKQnbVu"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b1ACgTcAdIbZI0RoHmyJQU"
+    "fileId": "21yV3YFwVOUa/86FcDj5oU"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 10,
     "nameVi": "Khăn ướt",
-    "nameEn": "",
+    "nameEn": "Wet Wipes",
     "physicsType": 0,
     "massClass": 0,
     "material": "fabric",
@@ -596,7 +596,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "6e8RxJAfVHLYGhwwDYFJwv"
+    "fileId": "3aavqoJ69GpK1CxTomJUo0"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -606,7 +606,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "f4ROe8dxZBXY0GZ2U9AcDc",
+    "fileId": "1aYP8yVy9LepSO1AvHfCws",
     "targetOverrides": null
   }
 ]

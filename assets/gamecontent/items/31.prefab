@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3dFyArj9NKyY/6vBtF/YQ0"
+    "fileId": "c6n4+NT65GhbBM4P2zr8KQ"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "1fEOFHUlFKU4yWszDKrWn5"
+    "fileId": "eepvxdNIZAgJlvkUKR6LVi"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "f1vjdXZEhPPJtP2fTqxExr"
+    "fileId": "72qwXMOaJP0o2o5e1lpQBS"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -269,7 +269,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e2JvlRiopAT4j8dmTzcTbE"
+    "fileId": "46uGegim5DzbTFhji5C75w"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -285,7 +285,7 @@
     },
     "itemId": 31,
     "nameVi": "Áo khoác gấp",
-    "nameEn": "",
+    "nameEn": "Jacket",
     "physicsType": 0,
     "massClass": 2,
     "material": "fabric",
@@ -516,7 +516,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ebW4WPzwVDCoJUiS3FRWWa"
+    "fileId": "88qmPy2cBIs7H9KyIHMyg3"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -526,7 +526,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "dfT0fFgGBM2Izcz6j56M9s",
+    "fileId": "e760KHC5JHgJE57VRbtJTJ",
     "targetOverrides": null
   }
 ]

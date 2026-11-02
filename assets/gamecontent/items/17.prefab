@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3eVy1TZR5KG4dzoFHMkX9g"
+    "fileId": "8cpWw0OtZAB6NpL+U3w/Lp"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "6bXAYzl99GKoNrzETP29UB"
+    "fileId": "f1UK71H6VFBJOAJibjppUS"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a735Ma+iBLjISh4Bk18EmM"
+    "fileId": "ffIoYE8nxLU4InU7rMkEVy"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b8fXMmCVJErp2nV3LsZsZo"
+    "fileId": "3bnOnMM6BCwZ4M19opKtUs"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 17,
     "nameVi": "Quả táo",
-    "nameEn": "",
+    "nameEn": "Apple",
     "physicsType": 1,
     "massClass": 1,
     "material": "food",
@@ -581,7 +581,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b5AighkdREwpAxIC2rBHER"
+    "fileId": "8aQfP/J11LsJQTF4BFXi8r"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -591,7 +591,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "f2tylAgmJAYaRz0ApXV6St",
+    "fileId": "ccNacev2dNBo/nO39FA4nW",
     "targetOverrides": null
   }
 ]

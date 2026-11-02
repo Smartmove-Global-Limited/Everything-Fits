@@ -3,6 +3,7 @@
   "slug": "map",
   "code": "ITM_049",
   "name": "Bản đồ gấp",
+  "nameEn": "Map",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

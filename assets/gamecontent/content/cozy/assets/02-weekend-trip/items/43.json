@@ -3,6 +3,7 @@
   "slug": "juice",
   "code": "ITM_043",
   "name": "Hộp nước ép",
+  "nameEn": "Juice Box",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

@@ -3,6 +3,7 @@
   "slug": "sandwich",
   "code": "ITM_016",
   "name": "Hộp bánh mì kẹp",
+  "nameEn": "Sandwich Box",
   "meta": {
     "size": "Medium",
     "shape": "Triangle",

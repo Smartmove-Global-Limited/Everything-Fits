@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "49jGRCBRZEWrjjRitc40Xl"
+    "fileId": "41rNPJNKtKiIUfo+jspwnD"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "47Glq+iLlFSq8eqtJdHvnT"
+    "fileId": "192V57uvJHUKtAgPH2LpVg"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "7eSWWyZThK+aj2QMYOUUj5"
+    "fileId": "7amqiZ/ypNXpnMf6qX5OZr"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "2917/ygO1Kwb2StiiB28Za"
+    "fileId": "e2zry8cqFHtrkAeiWCaAHe"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 37,
     "nameVi": "Lăn khử mùi",
-    "nameEn": "",
+    "nameEn": "Deodorant",
     "physicsType": 0,
     "massClass": 0,
     "material": "plastic",
@@ -491,7 +491,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "98P0KG1epG65xs7WDxT+Yi"
+    "fileId": "c0NQ72AbhNt5j0kz9Yfxtw"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -501,7 +501,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "fefItRHY1Heo0PB1T9XAZe",
+    "fileId": "e6WAQfrOtKP6VkVKoSs7R3",
     "targetOverrides": null
   }
 ]

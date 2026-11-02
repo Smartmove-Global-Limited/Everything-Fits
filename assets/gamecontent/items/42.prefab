@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "7fnkLU4rpFx441f6sd8RQL"
+    "fileId": "03qqW6fJRIyrnlCMR1LpIw"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "005V/CH65DZoNg3pLdF54f"
+    "fileId": "18VPqWFB5I1odq+DamVuSU"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b7L9tQmXhEEazHKutdGXS6"
+    "fileId": "11ImQ5LoZJe4hvT2eXGXZc"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -244,7 +244,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "6597rNE3hIFqeX+ydffoUW"
+    "fileId": "0dj3zoaGNLCoX33wxRQNFj"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -260,7 +260,7 @@
     },
     "itemId": 42,
     "nameVi": "Gói bánh quy",
-    "nameEn": "",
+    "nameEn": "Crackers",
     "physicsType": 0,
     "massClass": 1,
     "material": "paper",
@@ -581,7 +581,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "7cOhBhkMxHNLdpdcIQpPlB"
+    "fileId": "cdFeIp5MRIIZJ/RJI7dxJu"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -591,7 +591,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "f3JiNqkWRGCL5+YDak2+Ag",
+    "fileId": "82j+b1Yk1CK5jTQv/ugpsA",
     "targetOverrides": null
   }
 ]

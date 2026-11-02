@@ -3,6 +3,7 @@
   "slug": "raincoat",
   "code": "ITM_005",
   "name": "Áo mưa gấp",
+  "nameEn": "Raincoat",
   "meta": {
     "size": "Medium",
     "shape": "Rectangle",

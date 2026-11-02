@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b4+VU4ntxAuY8gUlUTxx9T"
+    "fileId": "70C6M8xtpEqqMt6mkrAD4G"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "46f/B2vHtEw6Y6m5UrVRag"
+    "fileId": "6ccEUvXflGq5O468epX/kB"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5d4VeYYy5CraKko5KEgjMg"
+    "fileId": "3fXJ4hLvlHCYMcq7U8F7Eb"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "0dmlCIR+RAULvP9egOhmOp"
+    "fileId": "19UPllP/9Hca1Nnusd/sW5"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 23,
     "nameVi": "Móc chìa khóa",
-    "nameEn": "",
+    "nameEn": "Keyring",
     "physicsType": 0,
     "massClass": 0,
     "material": "metal",
@@ -606,7 +606,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "62pJOf2xhC5pcCVT/fLIKA"
+    "fileId": "72ID7QhOlMjoWPBbU+5ons"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -616,7 +616,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "54oKC4pm1BW6iCWe95yCwA",
+    "fileId": "56+icwHwJDjo9Hp5VEz4Eg",
     "targetOverrides": null
   }
 ]

@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "731NYQi+9JJqSXFU/7gASR"
+    "fileId": "50c8iHDApLjo1yowBHagei"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "4fvQ0SggxN8I9AsFeCMxcr"
+    "fileId": "a0aW9AqHtBYZvE3SpKRRpP"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5fIcarRp1IO76nltvXxMj/"
+    "fileId": "d4Jo591itKNYEndYciV1Tq"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "67F7vJKH1KeaPvw9QTbOXt"
+    "fileId": "cfOfKOyEpBq7sbK5cWHqjE"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 47,
     "nameVi": "Gối cổ",
-    "nameEn": "",
+    "nameEn": "Neck Pillow",
     "physicsType": 0,
     "massClass": 1,
     "material": "fabric",
@@ -621,7 +621,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "44L3FOGNtMjalye6dREFaN"
+    "fileId": "4dFAYJDrNAXrsg3DdEp4KO"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -631,7 +631,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "a5+0TBLnJOHIb6brlhJ7JG",
+    "fileId": "28PgPzm19OsoSfGG76PF6k",
     "targetOverrides": null
   }
 ]

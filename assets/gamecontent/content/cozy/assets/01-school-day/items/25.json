@@ -3,6 +3,7 @@
   "slug": "notebook",
   "code": "ITM_025",
   "name": "Vở ghi",
+  "nameEn": "Notebook",
   "meta": {
     "size": "Medium",
     "shape": "Rectangle",

@@ -3,6 +3,7 @@
   "slug": "wallet",
   "code": "ITM_045",
   "name": "Ví tiền",
+  "nameEn": "Wallet",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

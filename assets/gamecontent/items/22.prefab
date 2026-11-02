@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "90GNQc+k1KAZosm8qcyXOX"
+    "fileId": "b2JDy/vJ1PUYK9FTxlwWUd"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "26x0+Ni9dCXZUa4zJo0i76"
+    "fileId": "1domrgifREJLoGNNnqwc3g"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "32N3dFw+tKqJ6CAe/XWNc8"
+    "fileId": "08Rw4F5NZAMp7ApxAWHHf1"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b8VO1yhhtCE4XkrSKWj/h7"
+    "fileId": "b8VbpQ9EBPHICJCgBkqwrH"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 22,
     "nameVi": "Ô gấp",
-    "nameEn": "",
+    "nameEn": "Folding Umbrella",
     "physicsType": 1,
     "massClass": 1,
     "material": "plastic",
@@ -616,7 +616,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "9fs5sQe9xOL7BTNDTHYT5K"
+    "fileId": "e5kC0pV0pENqdS5Ay/+LDs"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -626,7 +626,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "f8RqC3bZlC+5uaLgwktwXI",
+    "fileId": "26G4bKRFJDy7wk+9P/JVDS",
     "targetOverrides": null
   }
 ]

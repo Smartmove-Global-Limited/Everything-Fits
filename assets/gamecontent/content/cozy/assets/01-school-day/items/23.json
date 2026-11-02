@@ -3,6 +3,7 @@
   "slug": "keyring",
   "code": "ITM_023",
   "name": "Móc chìa khóa",
+  "nameEn": "Keyring",
   "meta": {
     "size": "Small",
     "shape": "Irregular",

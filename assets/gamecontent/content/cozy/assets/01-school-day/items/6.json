@@ -3,6 +3,7 @@
   "slug": "tissue",
   "code": "ITM_006",
   "name": "Gói giấy ăn",
+  "nameEn": "Tissue Pack",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

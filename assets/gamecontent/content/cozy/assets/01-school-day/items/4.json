@@ -3,6 +3,7 @@
   "slug": "sneaker",
   "code": "ITM_004",
   "name": "Giày thể thao",
+  "nameEn": "Sneaker",
   "meta": {
     "size": "Medium",
     "shape": "L-shape",

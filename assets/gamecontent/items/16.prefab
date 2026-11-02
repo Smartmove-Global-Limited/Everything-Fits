@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "0dX7V+pfFCGaAX2jlp88GJ"
+    "fileId": "6aH6T4prlN4bdL5KCxFBEF"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "eaOmfIs2ZAdYrt2jknjm8s"
+    "fileId": "e1JtYZbrhGGqRHMTsmzTPB"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "afCDWtBm9A1IfoTv0hqtYo"
+    "fileId": "b3wfCJiMNEyLzPDKkcZjro"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -264,7 +264,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "76oZ5kQ/tNh5Qlg8zuWjJL"
+    "fileId": "79H73YtU9H8ZfxFgV1+i42"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -280,7 +280,7 @@
     },
     "itemId": 16,
     "nameVi": "Hộp bánh mì kẹp",
-    "nameEn": "",
+    "nameEn": "Sandwich Box",
     "physicsType": 0,
     "massClass": 1,
     "material": "paper",
@@ -486,7 +486,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3cqRrauABK34W64WNdFomc"
+    "fileId": "ebNU60rNtH0Jvim/oQJQa6"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -496,7 +496,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "e74keZkMpKSKyGGhmH0IE3",
+    "fileId": "dcSayouy9JPaAzyenek666",
     "targetOverrides": null
   }
 ]

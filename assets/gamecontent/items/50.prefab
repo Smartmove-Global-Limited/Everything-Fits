@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "acY0jYyRhKiaLlA0yxu7Xx"
+    "fileId": "7dWo5NRApFAYiIevXqWREh"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "951m0HWdBJ1pSt2pzAydkX"
+    "fileId": "83tdoGpFlKgZxXRBg+iHdb"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "93d/TA/vZIV4BLMrd2FkyC"
+    "fileId": "a5+7i7CtFF2p+CvAwe/vjP"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "0bIBzcu7FP15Jy/C8MiG9A"
+    "fileId": "bfmpYks/RN0oetBg/QZF23"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 50,
     "nameVi": "Vé tàu xe",
-    "nameEn": "",
+    "nameEn": "Ticket",
     "physicsType": 0,
     "massClass": 0,
     "material": "paper",
@@ -496,7 +496,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e3Na4l/cZAJ7/i+01EsgL4"
+    "fileId": "ed8Yv3aYlLaonpzDi824kU"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -506,7 +506,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "f0+xgw19RGXpYLB9nYk1JP",
+    "fileId": "9eBEteoeNLEqEFJMKZQOfQ",
     "targetOverrides": null
   }
 ]

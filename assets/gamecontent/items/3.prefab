@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a1mj3lFqxLG5O8degRXdha"
+    "fileId": "feapnWWNxPG6z13wqCorKB"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "03i9pPLt1L8ZWm09cTVBR/"
+    "fileId": "36JURYyPNCSJoJFRmtTxx8"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "abwcPdbvBMkJwn5fHEK9Yy"
+    "fileId": "9co1t9i0NDQ70m+2v44C7l"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b4YhtmqLhCz6sZjAtI5iDz"
+    "fileId": "2bOaMAbJ9GXafr/AusAJA/"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 3,
     "nameVi": "Tất cuộn",
-    "nameEn": "",
+    "nameEn": "Socks",
     "physicsType": 1,
     "massClass": 0,
     "material": "fabric",
@@ -506,7 +506,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "f7pZCcUZVDioafB+iTdu1M"
+    "fileId": "7aGXVPm1NMjL2bjDr70i4Z"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -516,7 +516,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "c7xVnR50xLTJmNeovuU9aR",
+    "fileId": "2fJ+4ioAlPv6Okk1b5/e0s",
     "targetOverrides": null
   }
 ]

@@ -3,6 +3,7 @@
   "slug": "paintbox",
   "code": "ITM_030",
   "name": "Hộp màu nước",
+  "nameEn": "Paint Box",
   "meta": {
     "size": "Medium",
     "shape": "Rectangle",

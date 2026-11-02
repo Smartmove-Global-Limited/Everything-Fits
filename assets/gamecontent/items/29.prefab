@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "10ghiSG/1JzqPqaiIIbgVI"
+    "fileId": "b4gplVDZtNaLHh6gC8wbFd"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "9cfTtpHvFLvbjUq+rEHMju"
+    "fileId": "07NPpdRK1IKJ+t8ay5Copo"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "8aY3TARelP8LnQpEjXfF+s"
+    "fileId": "0bm+0SIc1FL4RALHNC0WVG"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c6MoyNifpHbaBItRy4Lyl4"
+    "fileId": "653tie7AFI36ccruZoXMwD"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 29,
     "nameVi": "Keo dán",
-    "nameEn": "",
+    "nameEn": "Glue Stick",
     "physicsType": 1,
     "massClass": 0,
     "material": "plastic",
@@ -466,7 +466,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c6hY11Z0BEo6nPvCFBmgRU"
+    "fileId": "0bunFddwdES5u8wEtex23Z"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -476,7 +476,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "996wjWYi1L3aSMjhKILdik",
+    "fileId": "ad9QNL2+FBR6pu+9KC+wuw",
     "targetOverrides": null
   }
 ]

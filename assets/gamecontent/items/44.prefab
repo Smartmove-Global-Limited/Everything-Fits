@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "97vcnKu+1Mxrfo5zXrbNp2"
+    "fileId": "1ccsRSKltH7qUbvQSQNR08"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e8pWD97gtO8r8AJt+QJiH1"
+    "fileId": "f4ThRCxV5Jb6zbw/coi0fP"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "86cC/zacxLPL8r4z5X+Plf"
+    "fileId": "e6VR+yvJtLxqYsx9NEZY+O"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "4f6+S8/fZKyrBJOaaY9bNP"
+    "fileId": "b4U407ALtB4atV9eq4wBnG"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 44,
     "nameVi": "Kính râm",
-    "nameEn": "",
+    "nameEn": "Sunglasses",
     "physicsType": 0,
     "massClass": 0,
     "material": "glass",
@@ -606,7 +606,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "65UbxWckdNsaG7LcUs7fkv"
+    "fileId": "1ev5CsB0hAGKBKHQbiUhyE"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -616,7 +616,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "4cSidiEERI+rzRQEa1/Xb2",
+    "fileId": "14VW1ZRYNP84xOvjprz3SQ",
     "targetOverrides": null
   }
 ]

@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "82qgZOHUhKNL5ol49bhenj"
+    "fileId": "feJZQmk8JMJplkevgykSPd"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "29YXWFYqFEc7WIDzqAT2Ei"
+    "fileId": "20Vyg6fJBDUZKR0lkvg3Rn"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "d5gSq2voxGA5hbanpthRwG"
+    "fileId": "cdi+RuRRlCyY8CqJ6WJjIE"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ffZ22IJLxFwaXoUWWqibpK"
+    "fileId": "7bUTnbtPxNyos5OoPs/My/"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 6,
     "nameVi": "Gói giấy ăn",
-    "nameEn": "",
+    "nameEn": "Tissue Pack",
     "physicsType": 0,
     "massClass": 0,
     "material": "paper",
@@ -526,7 +526,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "90981plrpLUL4QuSEwRlx+"
+    "fileId": "c9S9670VRFrpr7Sh6K5vYi"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -536,7 +536,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "d9dxbCGLJFjbnBqXu6qlha",
+    "fileId": "82ItgEW9JCipCbwPG0ZVBC",
     "targetOverrides": null
   }
 ]

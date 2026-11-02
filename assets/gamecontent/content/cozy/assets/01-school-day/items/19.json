@@ -3,6 +3,7 @@
   "slug": "milk",
   "code": "ITM_019",
   "name": "Hộp sữa",
+  "nameEn": "Milk Carton",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "dfbrKQg/BIGbfCGr0agLC/"
+    "fileId": "1cEcjXuKZK/rOBqThjQ+fv"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e3f57dJVZLq4gkHRGtrLoE"
+    "fileId": "b2DnBrHKNFN70X11ZO2XuF"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "000q0lYTZMYIfVoOT/qnq1"
+    "fileId": "a6lJ1aAAdLJ48Bs+uX/8nr"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e7dn7tC8VKgrtmBHJB4g2u"
+    "fileId": "33S0Zr+7BC8LNL57n/T48u"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 51,
     "nameVi": "Bộ bài",
-    "nameEn": "",
+    "nameEn": "Playing Cards",
     "physicsType": 0,
     "massClass": 1,
     "material": "paper",
@@ -476,7 +476,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "34sdqS9v5JmLagyc8Hi1fm"
+    "fileId": "79vc2AuftL3Yh3WmE1niqU"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -486,7 +486,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "56hdYo3JtHIrp6HDLg/zPx",
+    "fileId": "0au7owDI1Gz73xXPPVkeI8",
     "targetOverrides": null
   }
 ]

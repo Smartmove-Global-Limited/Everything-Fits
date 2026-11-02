@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ebpyxXsqdG0qUFpAonhrdT"
+    "fileId": "08uRsmtgtJnpP/WbDU7/36"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "cfGLxrOJZOgpz0Uv2U5O1j"
+    "fileId": "b2qcPVUQlHHZZ2wwfEc1Bf"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "baxtzyh/1CT7p/JhJ5kjih"
+    "fileId": "68ie5DV0BKXoxL2CYjerc2"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "6cEU+KbSlEsI6K2GfIf1L2"
+    "fileId": "438JdQOGRChpFDABBU6qC5"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 9,
     "nameVi": "Son dưỡng môi",
-    "nameEn": "",
+    "nameEn": "Lip Balm",
     "physicsType": 1,
     "massClass": 0,
     "material": "plastic",
@@ -466,7 +466,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "7b6wsq949Cr6H27NAY1lan"
+    "fileId": "24o/QFQ6lPrbg84F0TGI/1"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -476,7 +476,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "1fN0UhzDtKh4nyhTSYvbRa",
+    "fileId": "3fjKdSg/BGsIVp2fW8iqn8",
     "targetOverrides": null
   }
 ]

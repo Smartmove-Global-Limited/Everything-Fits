@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "00HyBtd49KTYrGTdIg+775"
+    "fileId": "29RQBXz21IOIoKxfMhqyKD"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "cdN8FYxvJA67LZmBwVy3Nv"
+    "fileId": "ef9ciJ76BAeIiyrVCbM1NE"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b3p3/K9RBGS58cZWN7UOIW"
+    "fileId": "absKHDZDlAYrx7edVZJlcC"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -249,7 +249,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5fXs3mo9JPyLfWfuNHslVU"
+    "fileId": "54SSaMv+1OMJgxunFQehHb"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -265,7 +265,7 @@
     },
     "itemId": 28,
     "nameVi": "Bút chì",
-    "nameEn": "",
+    "nameEn": "Pencil",
     "physicsType": 1,
     "massClass": 0,
     "material": "wood",
@@ -396,7 +396,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "0cXdXbUMlEzru9G0OIsfCW"
+    "fileId": "1e8R/zU+xPa406r+gysG1F"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -406,7 +406,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "59GktUebtL2KLXLzYg8y6+",
+    "fileId": "07RWHpSk1GEJjpItEdaAzY",
     "targetOverrides": null
   }
 ]

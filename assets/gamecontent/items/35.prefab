@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b43MLTPnpPNKo+YScH/Ffo"
+    "fileId": "77J6e+MfVFlKWppRsar3uO"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a6RAevGHRIiqu2eb29smZm"
+    "fileId": "f1Wm9tteJG66XVjG2sRMUU"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "cfpRmpDnRKBIRf2QTsqRwv"
+    "fileId": "11S5jpC9FILLsBUvxUYmC/"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -269,7 +269,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "57sDW1BspOXILQgYZQUTKR"
+    "fileId": "21P5FtjD5NzpXJ39qJzA2p"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -285,7 +285,7 @@
     },
     "itemId": 35,
     "nameVi": "Chai dầu gội",
-    "nameEn": "",
+    "nameEn": "Shampoo",
     "physicsType": 0,
     "massClass": 1,
     "material": "plastic",
@@ -526,7 +526,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "aaaRwgoC9Mi62bJ02rrzRt"
+    "fileId": "13GnnuxaFGoL5J4M/indgv"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -536,7 +536,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "3c3BJm6WBDpbvSxta0qjwe",
+    "fileId": "54tj6qyHhMW5y6lQXR2oCt",
     "targetOverrides": null
   }
 ]

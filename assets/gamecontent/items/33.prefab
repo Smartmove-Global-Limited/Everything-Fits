@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3eQV9o3MZHL5oKe9FgeKFZ"
+    "fileId": "80MDDk10xIR6zefwTpYR14"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "1dSZJQFXxLcKC6tLOEwUl9"
+    "fileId": "a4gfWi545Pjr8pow36UlNb"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "6cXdLXj89EE4IYKVvDWlTO"
+    "fileId": "ffqBNZZLVMeYUKWKm8ZlFi"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "bbJJBdKkhA5qS8t/YNz/u3"
+    "fileId": "69b3+VzZJP1ZbVchG8lBGE"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 33,
     "nameVi": "Bàn chải",
-    "nameEn": "",
+    "nameEn": "Toothbrush",
     "physicsType": 0,
     "massClass": 0,
     "material": "plastic",
@@ -571,7 +571,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "70Yb9n2sxMhKJnWSAarDIv"
+    "fileId": "c2N3o5K49HyJr60CIkBP/c"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -581,7 +581,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "81hjh378tPwKg5laZMnuC5",
+    "fileId": "10/5BqqyVJFZE+L0tgv2Ww",
     "targetOverrides": null
   }
 ]

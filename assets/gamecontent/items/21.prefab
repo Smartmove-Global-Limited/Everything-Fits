@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c7SloTfP5Mr4uEaz7rsqbI"
+    "fileId": "cayKhXXUJLTI7tc+TTASYB"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a4jW0F7lJHTIpi5x/RgUx9"
+    "fileId": "02BF4K81dIqIeWjRNw2Kzu"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c2vXqcunFNfa4B2d+DLCqL"
+    "fileId": "f6iM8cCB5DB6PDgAGchSyF"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "69sciCiNxFirg/GzBh+GtT"
+    "fileId": "5fzu6P8mJNIJ0bYKFzaPED"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 21,
     "nameVi": "Mũ lưỡi trai",
-    "nameEn": "",
+    "nameEn": "Cap",
     "physicsType": 0,
     "massClass": 0,
     "material": "fabric",
@@ -526,7 +526,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "90toHASndMSraKITjKTUYZ"
+    "fileId": "fdABZbm0dLv6aFEtUkVa/k"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -536,7 +536,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "d0r+1QfTZDX5lpv0uGGZr7",
+    "fileId": "26Fam3gndL/Iihkqk2c6XH",
     "targetOverrides": null
   }
 ]

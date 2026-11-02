@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "bf80eKKqxDNoAePFSlc7yj"
+    "fileId": "1elJZvfStMqp/YmXzswzae"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "77/bbEUe1HarYHVQXfk0vZ"
+    "fileId": "a2m1nbzCRIx4ijuNXoPy4m"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "4a+XNMuTBLfIdjnOIvmdhV"
+    "fileId": "f0z96N6u9Au5g3xtbvgPl4"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "132sAevKNLuoRn49gw9h72"
+    "fileId": "75izyKvPxKzJp18KBv/vWS"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 8,
     "nameVi": "Khăn tay",
-    "nameEn": "",
+    "nameEn": "Hand Towel",
     "physicsType": 0,
     "massClass": 0,
     "material": "fabric",
@@ -456,7 +456,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5beKgd2ipPr6Sz+PYMpGcy"
+    "fileId": "36s7+rme5N87787UEHBZll"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -466,7 +466,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "87Vgv9PY9CrZf9Z3QEqVhG",
+    "fileId": "f5ZLuA8JNKX61kTt0a7AWB",
     "targetOverrides": null
   }
 ]

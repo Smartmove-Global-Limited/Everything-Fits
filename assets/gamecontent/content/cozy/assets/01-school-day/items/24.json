@@ -3,6 +3,7 @@
   "slug": "studentcard",
   "code": "ITM_024",
   "name": "Thẻ học sinh",
+  "nameEn": "Student Card",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

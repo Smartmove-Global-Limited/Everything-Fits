@@ -3,6 +3,7 @@
   "slug": "handtowel",
   "code": "ITM_008",
   "name": "Khăn tay",
+  "nameEn": "Hand Towel",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

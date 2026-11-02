@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e3xSLFXkhGDZeL/uGe/c1S"
+    "fileId": "c1IoSHBFJJ8J0aawOrL4h/"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "bddrhW1X1KUY4pnSmjY7S2"
+    "fileId": "e0Ak3Xz+BOJaocK3HKUIqL"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "97EQOiYN9EV79e20Wj/JLn"
+    "fileId": "b8BArSjrdO8J3D/Xmv2O0D"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "89s5EynwBP4aSJPY6MEcv7"
+    "fileId": "8d7+20rJtCOLrU17KT1cSr"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 32,
     "nameVi": "Bộ ngủ gấp",
-    "nameEn": "",
+    "nameEn": "Pajamas",
     "physicsType": 0,
     "massClass": 1,
     "material": "fabric",
@@ -541,7 +541,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "9bMBgc5nZJrrXFGLEArJFk"
+    "fileId": "aeAUAhFhVPjaEofn743BNH"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -551,7 +551,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "b42DrNLLtPcIzoB3tuc13b",
+    "fileId": "8eQ4il3JNI6rPKcG101EiQ",
     "targetOverrides": null
   }
 ]

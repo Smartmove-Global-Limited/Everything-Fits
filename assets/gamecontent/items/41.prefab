@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ads5FkOXlOXqwzGYIWil1y"
+    "fileId": "89VSVZvcFCKYT6r7Y//oDR"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "1bZhnA849BzqYfQyo691OZ"
+    "fileId": "0dQX0XrRVMyIvJKFsbe3AY"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3cVSQ5Kv1KCLYMMjschoqo"
+    "fileId": "59Xh0lRR9HOLbzSu8dxtIp"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "1auaRvgttLt5mT2op5lcLp"
+    "fileId": "16JLXc9TVObqqEyG7SU+2J"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 41,
     "nameVi": "Dây sạc cuộn",
-    "nameEn": "",
+    "nameEn": "Charging Cable",
     "physicsType": 1,
     "massClass": 0,
     "material": "plastic",
@@ -611,7 +611,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "09U/Tx05hAOoVlIL/Z/JwW"
+    "fileId": "61vQo8uUJLmrzuHddKio1+"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -621,7 +621,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "3bYkaJcPRLXrz77BHz//hJ",
+    "fileId": "9dSfrYMVZDeqbuWykeQ73u",
     "targetOverrides": null
   }
 ]

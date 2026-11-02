@@ -3,6 +3,7 @@
   "slug": "ticket",
   "code": "ITM_050",
   "name": "Vé tàu xe",
+  "nameEn": "Ticket",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

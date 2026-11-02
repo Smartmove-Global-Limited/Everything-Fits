@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a0+V6FVqFMXoJiZmWVZ+FZ"
+    "fileId": "fcgX0z3W1CRpleWYHdzHmQ"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "873zhYNalEGovYGZ71gXNX"
+    "fileId": "45h5fMhadOxqv0DzD6u/SQ"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "be7n6/tLdEdIa1fM31EQtO"
+    "fileId": "17SCxSGjZIwYLp/BEGJTpm"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -259,7 +259,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "12vXHv3ltECoo6msCnITx0"
+    "fileId": "49bA8iYWZKjo0YeDvyZb2b"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -275,7 +275,7 @@
     },
     "itemId": 25,
     "nameVi": "Vở ghi",
-    "nameEn": "",
+    "nameEn": "Notebook",
     "physicsType": 0,
     "massClass": 1,
     "material": "paper",
@@ -381,7 +381,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ebvgJnK15HcLU6QGbGV6I0"
+    "fileId": "0f30A+q39MKZIpXPm8UHGu"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -391,7 +391,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "b1HXzV6spENYb7Xurmf0yD",
+    "fileId": "2cwML+syND7pA4q0NvKWbH",
     "targetOverrides": null
   }
 ]

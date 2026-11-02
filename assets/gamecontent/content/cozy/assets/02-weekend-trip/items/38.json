@@ -3,6 +3,7 @@
   "slug": "smartphone",
   "code": "ITM_038",
   "name": "Điện thoại",
+  "nameEn": "Smartphone",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

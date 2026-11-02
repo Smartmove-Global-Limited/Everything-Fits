@@ -3,6 +3,7 @@
   "slug": "charger",
   "code": "ITM_014",
   "name": "Củ sạc",
+  "nameEn": "Charger",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

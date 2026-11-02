@@ -3,6 +3,7 @@
   "slug": "powerbank",
   "code": "ITM_040",
   "name": "Pin dự phòng",
+  "nameEn": "Power Bank",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c21qTyXCZLL4CUP+fkd4F/"
+    "fileId": "edy0fZuThE0rdNvu8lkmOT"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "92hRVwu6tAupp+1Wj5D8Tu"
+    "fileId": "86sQlpu/dHDb9h876ZcUv5"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "81oVf2X6RAD6dBCzZoc//S"
+    "fileId": "aaxQrahm1P84RHrOhKtJl1"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "83hEavgNBImqv/iwAXMbLp"
+    "fileId": "c3S4q41nxGW4rZPQkZbYRu"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 36,
     "nameVi": "Lược chải",
-    "nameEn": "",
+    "nameEn": "Hairbrush",
     "physicsType": 0,
     "massClass": 0,
     "material": "plastic",
@@ -621,7 +621,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "fcXNSZZ8dJB46Lj5JPSADt"
+    "fileId": "3fHg8jGcZINo9E8+inQZ65"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -631,7 +631,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "7bE8LjxrFDk4hK2lVHwmun",
+    "fileId": "26sGemt2pAjJM5wE/WPRuu",
     "targetOverrides": null
   }
 ]

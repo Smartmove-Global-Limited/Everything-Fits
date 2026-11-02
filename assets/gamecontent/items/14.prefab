@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "4euyy6WANK3Im9iRpnmtEu"
+    "fileId": "85itnUkABJh7zMlalJzgaS"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "51LIrBQUdOaawSJ6S7LfR2"
+    "fileId": "76qH47aQdOXKE4mhG+uGTG"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "bfLvYfOFZP2pJUXeVDjmk3"
+    "fileId": "58dwWejLlJVroQO1ODZLjj"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "104cVWnwtGnYvUMEjh+jit"
+    "fileId": "f0Bdh6ZOdEfqV5HFy2fuXx"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 14,
     "nameVi": "Củ sạc",
-    "nameEn": "",
+    "nameEn": "Charger",
     "physicsType": 0,
     "massClass": 0,
     "material": "plastic",
@@ -491,7 +491,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "30txqO2fZBNKDxzW9i00Al"
+    "fileId": "27HZlEQq9C5La32bMo0MTk"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -501,7 +501,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "24p7jvGWJBjIslFARLh1ev",
+    "fileId": "0bNnUDymxOha2nv4BAtnfM",
     "targetOverrides": null
   }
 ]

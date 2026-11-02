@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ea4HnlhLlKQLe38spqykMK"
+    "fileId": "07QU0c1TpCN4l56PGgKlKo"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c4JGKnH+pGoJvtumSmgnne"
+    "fileId": "47vdEzWOpLOa/THMNZWQuH"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a5Lqyy2rBGbbrUUWpd5N48"
+    "fileId": "e6HoFpHF9NB5dNA9atPH2u"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -269,7 +269,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "195Zuj2qxD35K7EXMooglg"
+    "fileId": "b0fKiKxkNHoI+m1wEvI2SA"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -285,7 +285,7 @@
     },
     "itemId": 38,
     "nameVi": "Điện thoại",
-    "nameEn": "",
+    "nameEn": "Smartphone",
     "physicsType": 3,
     "massClass": 1,
     "material": "plastic",
@@ -481,7 +481,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "0ejEvkO5tLTJChkPOq0C90"
+    "fileId": "a6rvi0UO9KEquh6X+Bum+Y"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -491,7 +491,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "c2mP7No1dLQJx1rMsyCH3p",
+    "fileId": "35PDXZ24lCD6s3dmErfi0u",
     "targetOverrides": null
   }
 ]

@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "87XgrcCr1D6pUIrpki1he7"
+    "fileId": "53upo2rZ5A4otf9P03idEH"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "4f8Haf1+dOX5OrC+9ZPkX/"
+    "fileId": "e9bAqXJGVKt79sO8FLiUDA"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "19UmuiXRRHCbUOY4XlRdT6"
+    "fileId": "beHNfcpfdFs5z/l5pvdvv8"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "f00PsqLKRAl7kygitqKkpP"
+    "fileId": "e6MZlE3zRFYoTN61hBHcsR"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 1,
     "nameVi": "Áo phông gấp",
-    "nameEn": "",
+    "nameEn": "T-shirt",
     "physicsType": 0,
     "massClass": 1,
     "material": "fabric",
@@ -481,7 +481,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "11jJQPSbJKkJ/mxCZxiIec"
+    "fileId": "33bRHVUmhHhYiwnXOUtBIX"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -491,7 +491,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "0cb7x2ekJPv4DFvB9xNAPm",
+    "fileId": "1dYKVK42ZEc42KJ1QHkZmu",
     "targetOverrides": null
   }
 ]

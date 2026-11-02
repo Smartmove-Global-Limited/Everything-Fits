@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a7YX2iWTlHgq7Ksuzdsj5E"
+    "fileId": "92l5J8DkNGFKPiOqK0Kf32"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "0c9sR/JNxOP4xieq7w57Gw"
+    "fileId": "23g9e7PsBARajx7P+jkwmp"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "f2duJzh2VAwZxNMYbaKnge"
+    "fileId": "e3mti76r1HJriev16Dy4dM"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -249,7 +249,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "9ezkyRNVNDuJnesyYB3K8w"
+    "fileId": "b3qCfnG0ZFwoZ1MJs4GJ2Q"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -265,7 +265,7 @@
     },
     "itemId": 27,
     "nameVi": "Thước kẻ",
-    "nameEn": "",
+    "nameEn": "Ruler",
     "physicsType": 0,
     "massClass": 0,
     "material": "plastic",
@@ -346,7 +346,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ceGz1Z3sRGs4t/EU9POddn"
+    "fileId": "06Dz9ReoJGxKlrN3ZBC/11"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -356,7 +356,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "95bKNnsKVJe5Y/XRfCIS3O",
+    "fileId": "19XLEN0KVGBYU4Zww6eHCx",
     "targetOverrides": null
   }
 ]

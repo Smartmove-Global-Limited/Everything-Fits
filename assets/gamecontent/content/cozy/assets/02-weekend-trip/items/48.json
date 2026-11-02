@@ -3,6 +3,7 @@
   "slug": "guidebook",
   "code": "ITM_048",
   "name": "Sách hướng dẫn",
+  "nameEn": "Guidebook",
   "meta": {
     "size": "Medium",
     "shape": "Rectangle",

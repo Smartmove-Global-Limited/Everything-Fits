@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b58/ykWOtEGLNa2TKmtD0l"
+    "fileId": "59BacNTllGMJ0nc/Wo69pI"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "bdvK2OUjJEnYiDxNxOTews"
+    "fileId": "08NkOedyVBU6YWu96cHb3G"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "92vsup4RdMqLCSiyojiCEv"
+    "fileId": "49KgpGWl9AEZ4ZaRAkH8vJ"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -264,7 +264,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "cfVSRfE+dH0oRf4g8fiR2S"
+    "fileId": "a2A48C6DhNc7nSwzVu0oNM"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -280,7 +280,7 @@
     },
     "itemId": 24,
     "nameVi": "Thẻ học sinh",
-    "nameEn": "",
+    "nameEn": "Student Card",
     "physicsType": 0,
     "massClass": 0,
     "material": "paper",
@@ -376,7 +376,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "21rC5t57lN972/Fv8BvQC+"
+    "fileId": "e8cYg4H7dNz4rsirwWyfHZ"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -386,7 +386,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "0aciDTZfBJYIeleNd73aAx",
+    "fileId": "936Vrmpm5KWKb8G+nl3EJT",
     "targetOverrides": null
   }
 ]

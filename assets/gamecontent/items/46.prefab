@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "1eIz9/p2lBWonw9B2Ijdr4"
+    "fileId": "74haotmdBGn6L9Ko5UacMH"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b35RESQtJBqb/s8XJ04Quj"
+    "fileId": "c8XdFZWFpCXJsvkzuNJgSI"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3dR2Ck2ctG9YihOtNtetpC"
+    "fileId": "a1NAkYb0NPj6kETFxY87+t"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "70R23saCpGUbQc6YtnprfY"
+    "fileId": "a1qtXl/dtEv6V2GGjRPCtA"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 46,
     "nameVi": "Bịt mắt ngủ",
-    "nameEn": "",
+    "nameEn": "Sleep Mask",
     "physicsType": 0,
     "massClass": 0,
     "material": "fabric",
@@ -576,7 +576,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ad3794jhBEBblTX83kwtsn"
+    "fileId": "e9G6saKVlET4DpLlqVQAJk"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -586,7 +586,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "dcm7avNVZOoIOXuh+gvPn8",
+    "fileId": "49tTz0X9ZC+INGnHDpE0e5",
     "targetOverrides": null
   }
 ]

@@ -3,6 +3,7 @@
   "slug": "camera",
   "code": "ITM_039",
   "name": "Máy ảnh nhỏ",
+  "nameEn": "Camera",
   "meta": {
     "size": "Medium",
     "shape": "Irregular",

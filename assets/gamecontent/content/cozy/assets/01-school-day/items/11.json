@@ -3,6 +3,7 @@
   "slug": "tablet",
   "code": "ITM_011",
   "name": "Máy tính bảng",
+  "nameEn": "Tablet",
   "meta": {
     "size": "Large",
     "shape": "Rectangle",

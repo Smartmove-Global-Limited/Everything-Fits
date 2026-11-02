@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "45XZ3lh11Aqai3GCsdqGZy"
+    "fileId": "7dRhufMQlDB5lpXoQMmS0g"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "86r8a9zQFMGY9ent7Vvn99"
+    "fileId": "8eKLL9NnVCApGauUIGK60b"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a40fjzOkVGN7sBAWiM/BeT"
+    "fileId": "5d31SM1wVMUpN3P3eENrX5"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "94RyyYpqZGSaTA3BdIRXRt"
+    "fileId": "5aE26sFeRBS7iQeSLBFtHe"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 30,
     "nameVi": "Hộp màu nước",
-    "nameEn": "",
+    "nameEn": "Paint Box",
     "physicsType": 0,
     "massClass": 1,
     "material": "plastic",
@@ -586,7 +586,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ady/zQkDNMX5ep7239fGO4"
+    "fileId": "36tT8aSiVI5Ym/WrHibwj0"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -596,7 +596,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "15K86nD4BEYIYvb2x8LLVX",
+    "fileId": "fcB9qXOWNDt7191SVJ0LPK",
     "targetOverrides": null
   }
 ]

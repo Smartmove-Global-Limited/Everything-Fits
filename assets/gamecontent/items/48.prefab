@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a0s6BJ2s9NnJnEVc7dMEXD"
+    "fileId": "33TGKmjmZKAL4a2MzCqSTc"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b0WkbrLyFFXLtuPA/10Xtt"
+    "fileId": "e3sYbuPWNI2I3GNG2gawYa"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "74/L7AEdlIp7v2+84POBDF"
+    "fileId": "a9acLbEyZNq6+LHR9cVI+i"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -254,7 +254,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "9aDjzGRJxC3K9xgWZ2LRVf"
+    "fileId": "79I/ve1JFHLJNAVpQpdVVW"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -270,7 +270,7 @@
     },
     "itemId": 48,
     "nameVi": "Sách hướng dẫn",
-    "nameEn": "",
+    "nameEn": "Guidebook",
     "physicsType": 0,
     "massClass": 1,
     "material": "paper",
@@ -396,7 +396,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "47e64tDbxI9r28ah/cLTPl"
+    "fileId": "dacbolsWhE5JgvxQrCOlbr"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -406,7 +406,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "27DC/Gsq9K0ZL/2zzIooeO",
+    "fileId": "d1jcd95V1C6p27X2bFWfOi",
     "targetOverrides": null
   }
 ]

@@ -3,6 +3,7 @@
   "slug": "cable",
   "code": "ITM_041",
   "name": "Dây sạc cuộn",
+  "nameEn": "Charging Cable",
   "meta": {
     "size": "Small",
     "shape": "Circle",

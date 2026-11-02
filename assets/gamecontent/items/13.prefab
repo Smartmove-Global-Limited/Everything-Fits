@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "d6Zqz/kQtEK5MFmQvdMu2d"
+    "fileId": "achpJ291FGLLPBSNwD0PXV"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ce6ASCz7BAdK0aHgXWdBdJ"
+    "fileId": "42Jxe98PhBe6vdKoAv69Ky"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "58BDt/+IVPhIxSrtsDercS"
+    "fileId": "a5G/u1t6NGdI+/E602KzQc"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a1W5eQgBlNgJhpOKn848kH"
+    "fileId": "5fw/BJuhVDspKJj1hghwkp"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 13,
     "nameVi": "Hộp tai nghe",
-    "nameEn": "",
+    "nameEn": "Earbuds Case",
     "physicsType": 1,
     "massClass": 0,
     "material": "plastic",
@@ -461,7 +461,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "52FA/7CC5JHY/7Oskb1lBY"
+    "fileId": "b7i/BHOqRM4ZjXIr8SbWgD"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -471,7 +471,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "1bGPmNILhC6ZYXr0pfrFFz",
+    "fileId": "e2tEsmLLBENZvmQEoVqx5C",
     "targetOverrides": null
   }
 ]

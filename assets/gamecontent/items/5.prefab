@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "aaMjDnjJFHK5NcCVqeDjoT"
+    "fileId": "0bP9fHnitIL7eFGtEvAlei"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "87BWhUpt9Nfr6mmxSJCG6S"
+    "fileId": "c0Yz0x48FH+qpmtYZi0RxU"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a8l07dapdOBYxtAE+3I8Hb"
+    "fileId": "2aUk/00wtBaaxwSGpxBKD2"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "13v7b8/9RHwqP+yUultT7w"
+    "fileId": "87rSLjwq9OVrs99eoJUFbd"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 5,
     "nameVi": "Áo mưa gấp",
-    "nameEn": "",
+    "nameEn": "Raincoat",
     "physicsType": 0,
     "massClass": 1,
     "material": "fabric",
@@ -536,7 +536,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ffj0bFKv9C650bdu9ocrWs"
+    "fileId": "7baM4Xm6pFP49Y0vKKDJ6c"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -546,7 +546,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "3cb6SnMr9BdqC14OB1VKzq",
+    "fileId": "95m0EdBhVJppbeT/5cwFn6",
     "targetOverrides": null
   }
 ]

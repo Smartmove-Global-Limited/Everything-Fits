@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "43s5xlRY1OyIq60pkkSzeh"
+    "fileId": "8eFQHWUKVJrKrXyAYqWCng"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "87rBqQl71O17/QhaSXsYk9"
+    "fileId": "70a4Pbe25KKJ3IuLmFT/V3"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "59f8FRdOFK9LZjv0imFsz/"
+    "fileId": "f9DEaXFihPEa6ajuy7mC7e"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -254,7 +254,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "15Zsq30hRNA6v/E6tuzuxd"
+    "fileId": "58zgTMlGVBPbLV0GItWjit"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -270,7 +270,7 @@
     },
     "itemId": 20,
     "nameVi": "Thanh ngũ cốc",
-    "nameEn": "",
+    "nameEn": "Granola Bar",
     "physicsType": 0,
     "massClass": 0,
     "material": "paper",
@@ -536,7 +536,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "faARNHvOdDzI6vFIoo5VG2"
+    "fileId": "beCCPPkDhGwKREb62pXHeq"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -546,7 +546,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "6dE0AN971OCJ4aNvNVwB3P",
+    "fileId": "23xbLEC7VA1ZeI1n+CWdSs",
     "targetOverrides": null
   }
 ]

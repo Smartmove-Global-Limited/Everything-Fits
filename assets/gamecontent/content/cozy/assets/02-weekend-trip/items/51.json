@@ -3,6 +3,7 @@
   "slug": "cards",
   "code": "ITM_051",
   "name": "Bộ bài",
+  "nameEn": "Playing Cards",
   "meta": {
     "size": "Small",
     "shape": "Rectangle",

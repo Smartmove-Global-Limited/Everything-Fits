@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "c22snlhK1A+KLSvnXftodi"
+    "fileId": "37bpwUgjlCCIWfUmcqYxyH"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "36KmTHQv1EfaThPy2RtCyp"
+    "fileId": "9bc+C8/cpNG6aJ56770qdl"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "d0pZc1PPhCXquVfS4B9QHN"
+    "fileId": "eb6TvKUVdLibphiqhjxN1Q"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "41FM8tNulANZiYdMFmkiy/"
+    "fileId": "deJIzVyTVMhKJx7QldkRPR"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 49,
     "nameVi": "Bản đồ gấp",
-    "nameEn": "",
+    "nameEn": "Map",
     "physicsType": 0,
     "massClass": 0,
     "material": "paper",
@@ -456,7 +456,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "9fjdjM4VlJ5pC2/71oRGWt"
+    "fileId": "6aMbWDbXRNqrc+QXoHy+c6"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -466,7 +466,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "361pDT3DxMT47Hm1saiWB7",
+    "fileId": "6eetGDgapBMrEcws647dXT",
     "targetOverrides": null
   }
 ]

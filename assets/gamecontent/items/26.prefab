@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "7a8rg3pp1CxLUQVf0XnZAL"
+    "fileId": "b1EANzDilFapEiZT14jtSW"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "53qIkQiUNGu5mLa9xqbXNv"
+    "fileId": "61cQ/XNTZPO6yibmxgTNT0"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "30sViS2fBC3avwwndXclWj"
+    "fileId": "c44l7e7UlC5JSTkCBuvwYE"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -259,7 +259,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5evN/FT5dC851p1AiWrj0B"
+    "fileId": "9c8WeV3JdEoptF3CyrDsat"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -275,7 +275,7 @@
     },
     "itemId": 26,
     "nameVi": "Sách giáo khoa",
-    "nameEn": "",
+    "nameEn": "Textbook",
     "physicsType": 0,
     "massClass": 2,
     "material": "paper",
@@ -381,7 +381,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "15noPPaPhJhZtWEb/UY8uG"
+    "fileId": "0bcqNxH8ZCMZviF2tLAhLE"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -391,7 +391,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "19b1XiVBVN+qypurcxEp0z",
+    "fileId": "bdp7kbcgpBQI7Catd2wRvu",
     "targetOverrides": null
   }
 ]

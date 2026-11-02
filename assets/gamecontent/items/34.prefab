@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "a4dta8XghOu6YqorQfex7G"
+    "fileId": "c63ShyH4tGrIX64bTfK87i"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "134v10+iNKj4qq+UntMIid"
+    "fileId": "7960RudjZEQqs0fgF/i6NZ"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "dbfUSoINdL9ImYaxS+bdHq"
+    "fileId": "b52caQrS1KFpnSyKKurMWv"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -279,7 +279,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "ca7WGwA69Eb5pLzvRjOAvO"
+    "fileId": "14iSQH3spG57yWi3oHPaC6"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -295,7 +295,7 @@
     },
     "itemId": 34,
     "nameVi": "Kem đánh răng",
-    "nameEn": "",
+    "nameEn": "Toothpaste",
     "physicsType": 0,
     "massClass": 1,
     "material": "plastic",
@@ -466,7 +466,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "5b6PDlTMJHZbiRVfFVMq6A"
+    "fileId": "7fPluh6GFFfYwK1KUlnH71"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -476,7 +476,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "6ayfKJSiJEua3dv5VvCUSK",
+    "fileId": "b5X8620TpG075gNbAXdt2R",
     "targetOverrides": null
   }
 ]

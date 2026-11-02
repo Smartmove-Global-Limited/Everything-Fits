@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e5IhIRRo1NAplCbLj9KAGu"
+    "fileId": "51cDH7K61NE63MeLN+ZQEu"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "1eCkryT7ZMFo58YWFyhrpU"
+    "fileId": "24GvNwfgVDpJVeth1biaCh"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "63DsZfek5Le4o+OszMfV2x"
+    "fileId": "eexPY2AltGIr+714bqiNEH"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -274,7 +274,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "3aXXZ8BNdL/I+pYlnDVGHp"
+    "fileId": "8cyT+11r9KfaO9fMP7/ANF"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -290,7 +290,7 @@
     },
     "itemId": 52,
     "nameVi": "Cốc giữ nhiệt",
-    "nameEn": "",
+    "nameEn": "Travel Mug",
     "physicsType": 0,
     "massClass": 1,
     "material": "metal",
@@ -531,7 +531,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "53+5AxZPlLea3ZuLOZn/zl"
+    "fileId": "0eCYXLAyJDiaWUojU7mKOV"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -541,7 +541,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "a0n03b4FhA6Kh7NVp2f75U",
+    "fileId": "deX7DO09FEF5LVZnQV0ifk",
     "targetOverrides": null
   }
 ]

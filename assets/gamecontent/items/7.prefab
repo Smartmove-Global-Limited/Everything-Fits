@@ -94,7 +94,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "74TQBRS25L2KzpMg7I49nA"
+    "fileId": "081fa5p1hP8K4bClijUJYW"
   },
   {
     "__type__": "cc.Sprite",
@@ -139,7 +139,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "2ePNjKtwFHaaA8CYAGsF66"
+    "fileId": "0dGLbfBOVN+J3ac4Z2QSQw"
   },
   {
     "__type__": "cc.RigidBody2D",
@@ -173,7 +173,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b6NAF4a4VGeZ8hmEJqhkbB"
+    "fileId": "dbqps52cBBh6sDnRNDKsRK"
   },
   {
     "__type__": "cc.PolygonCollider2D",
@@ -284,7 +284,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "faEQo3uXNMvp/0lPFBX+gC"
+    "fileId": "eaZ6fD3KNMhJi23bKa2shK"
   },
   {
     "__type__": "6e069fkdCtADrTibl91gsqW",
@@ -300,7 +300,7 @@
     },
     "itemId": 7,
     "nameVi": "Nước rửa tay",
-    "nameEn": "",
+    "nameEn": "Hand Sanitizer",
     "physicsType": 0,
     "massClass": 0,
     "material": "plastic",
@@ -616,7 +616,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "39eaeAznNAOrHECjl230jp"
+    "fileId": "b0gBc/c+ZBr5jM+lPyJPtM"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -626,7 +626,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "99DE6YgfBBqL6Avzz1S8mA",
+    "fileId": "a6+JXTmGBBkbbhyhkj2owc",
     "targetOverrides": null
   }
 ]

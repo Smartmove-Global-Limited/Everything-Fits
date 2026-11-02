@@ -3,6 +3,7 @@
   "slug": "balloon",
   "code": "ITM_060",
   "name": "Bóng bay",
+  "nameEn": "Balloon",
   "meta": {
     "size": "Medium",
     "shape": "Round",
