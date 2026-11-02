@@ -249,6 +249,18 @@ export class GameController extends Component {
     this.renderBoosters();
     Sound.duckMusic(false);
     if (!this.embedded) this.maybeTutorial();
+    this.announceDifficulty();
+  }
+
+  /**
+   * A Hard / Super Hard level (levels.json playDifficulty, else the editor's tier, as the Home Play
+   * button) says so once the loading screen has gone
+   */
+  private announceDifficulty() {
+    const kind = playDifficultyOf(GameState.level);
+    if (kind === 'Easy') return;
+    const round = GameState.round;
+    this.scheduleOnce(() => { if (GameState.round === round) this.hud.showDifficulty(kind); }, 1.2);
   }
 
   // ---------- tutorial (ui/Tutorial.ts) ----------

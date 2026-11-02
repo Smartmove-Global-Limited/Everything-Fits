@@ -1,20 +1,16 @@
 // Main menu (web src/ui/menu.js, Figma "EF · Main Menu"): gold with "+" (opens the shop at the
 // gold packs), settings gear, mascot, Play button "Level N" coloured by the level difficulty,
 // bottom bar Shop / Home.
-import { _decorator, Component, Node, Color } from 'cc';
+import { _decorator, Component, Node } from 'cc';
 import { Overlays } from './Overlays';
 import { findNode, setText, tap, fitGoldPill } from './UiKit';
 import { RoundRect } from './RoundRect';
 import { Wallet, formatNumber } from '../services/Wallet';
-import { playDifficultyOf, PlayDifficulty } from '../core/PlayDifficulty';
+import { playDifficultyOf, PLAY_COLORS } from '../core/PlayDifficulty';
 const { ccclass } = _decorator;
 
-/** Play button colours by the level's playDifficulty (Figma EF / Play · Difficulty): fill, lip */
-const KIND: Record<PlayDifficulty, [Color, Color]> = {
-  Easy: [new Color(0x34, 0x74, 0x50, 255), new Color(0x24, 0x53, 0x3A, 255)],
-  Hard: [new Color(0xA9, 0x71, 0x3F, 255), new Color(0x7E, 0x51, 0x29, 255)],
-  'Super Hard': [new Color(0xA9, 0x4F, 0x50, 255), new Color(0x7A, 0x36, 0x37, 255)],
-};
+/** Play button colours by the level's playDifficulty */
+const KIND = PLAY_COLORS;
 
 export type HomeActions = { onPlay: () => void; onShop: (toGold: boolean) => void; onSettings: () => void };
 

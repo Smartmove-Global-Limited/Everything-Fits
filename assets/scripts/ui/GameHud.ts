@@ -7,6 +7,7 @@
 // except the tweens Cocos runs itself.
 import { _decorator, Component, Node, Label, Sprite, SpriteFrame, UITransform, Color, Tween, tween, Vec3, UIOpacity } from 'cc';
 import { RoundRect } from './RoundRect';
+import { PLAY_COLORS, PlayDifficulty } from '../core/PlayDifficulty';
 const { ccclass, property } = _decorator;
 
 export enum BoosterId { FREEZE = 0, RESIZE = 1, THROW = 2 }
@@ -253,6 +254,46 @@ export class GameHud extends Component {
     this.toast.setScale(.9, .9, 1);
     tween(this.toast).to(.3, { scale: Vec3.ONE }, { easing: 'backOut' }).start();
     tween(this.toastOpacity).to(.15, { opacity: 255 }).delay(seconds).to(.25, { opacity: 0 }).start();
+  }
+
+  // ---------- difficulty banner ----------
+  private difficulty: Node | null = null;
+  /**
+   * "Hard Level" / "Super Hard Level" when such a level starts: just a pill in the difficulty's
+   * colour (as the Home Play button); pops in, stays a moment, floats up and fades
+   */
+  showDifficulty(kind: PlayDifficulty) {
+    const [fill, lip] = PLAY_COLORS[kind];
+    const pill = this.difficulty || (this.difficulty = this.makeDifficultyPill());
+    const rr = pill.getComponent(RoundRect)!;
+    rr.fill = fill; rr.lipColor = lip;
+    const title = pill.getChildByName('title')!.getComponent(Label)!;
+    title.string = kind + ' Level';
+    title.updateRenderData(true);
+    pill.getComponent(UITransform)!.width = title.node.getComponent(UITransform)!.width + 48;   // as wide as its text
+    const op = pill.getComponent(UIOpacity)!;
+    Tween.stopAllByTarget(pill); Tween.stopAllByTarget(op);
+    pill.active = true; pill.setSiblingIndex(pill.parent!.children.length - 1);
+    const x = this.toast.position.x, y = this.toast.position.y + 40;
+    pill.setPosition(x, y, 0); pill.setScale(.6, .6, 1); op.opacity = 0;
+    tween(op).to(.18, { opacity: 255 }).delay(1.9).to(.35, { opacity: 0 }).call(() => { pill.active = false; }).start();
+    tween(pill).to(.38, { scale: Vec3.ONE }, { easing: 'backOut' }).delay(1.7).to(.35, { position: new Vec3(x, y + 24, 0) }, { easing: 'sineIn' }).start();
+  }
+
+  private makeDifficultyPill(): Node {
+    const pill = new Node('DifficultyPill'); pill.layer = this.toast.layer; this.toast.parent!.addChild(pill);
+    pill.addComponent(UITransform).setContentSize(220, 48);
+    pill.addComponent(UIOpacity);
+    const rr = pill.addComponent(RoundRect);
+    rr.radius = 24; rr.lip = 4; rr.borderWidth = 2; rr.borderColor = new Color(255, 248, 233, 255);
+    rr.shadowY = 3; rr.shadowBlur = 5;
+    const t = new Node('title'); t.layer = pill.layer; pill.addChild(t); t.setPosition(0, 2, 0);
+    t.addComponent(UITransform);
+    const l = t.addComponent(Label);
+    if (this.levelLabel.font) l.font = this.levelLabel.font;   // Baloo 2 ExtraBold, as the popups' titles
+    l.fontSize = 24; l.lineHeight = 30; l.color = new Color(255, 255, 255, 255);
+    pill.active = false;
+    return pill;
   }
 
   // ---------- bag hint ----------
