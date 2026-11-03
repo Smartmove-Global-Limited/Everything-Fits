@@ -12,7 +12,7 @@ import { beginSpotBatch, clearEjects, findFreeSpot, moveInsideBag, reachesIntoBa
 import { Sound } from '../audio/Sound';
 import { Fx } from './Fx';
 import { BagView } from './BagView';
-import { buildTethers, clearTethers, resetTetherDrawing, retie, setTetherLayers } from './Tethers';
+import { buildTethers, clearTethers, disposeTethers, resetTetherDrawing, retie, setTetherLayers } from './Tethers';
 import { KEY_ID, MYSTERY_ID } from './MysteryBox';
 
 const DROP_INTERVAL = 110;     // ms between two items dropping in
@@ -493,6 +493,7 @@ export class LevelBuilder {
 
   /** Scene teardown: pooled nodes sit outside the scene tree, destroy them explicitly */
   dispose() {
+    disposeTethers();
     for (const list of this.itemPool.values()) for (const it of list) if (it.isValid && !it.node.parent) it.node.destroy();
     this.itemPool.clear();
     for (const bag of this.bagPool.values()) if (bag.isValid && !bag.node.parent) bag.node.destroy();

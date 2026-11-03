@@ -61,7 +61,16 @@ export function buildTethers(items: readonly ItemView[], level: any) {
 export function clearTethers() {
   for (const t of tethers) { t.a.partner = t.b.partner = null; dangle(t.a, false); dangle(t.b, false); }
   tethers.length = 0;
+  drawnAt.length = 0;
 }
+
+/**
+ * Game scene torn down (Home): forget the pairs without touching the items, which the scene
+ * destroys (a destroyed component has no node any more). Left tied, the next round's clearTethers
+ * threw on them and the level never finished loading (stuck on the loading screen after Home →
+ * Play on a level with tied pairs).
+ */
+export function disposeTethers() { tethers.length = 0; drawnAt.length = 0; itemLayer = frontLayer = null; }
 
 /** A mystery box became its item: the string moves to the item */
 export function retie(from: ItemView, to: ItemView) {
@@ -80,7 +89,7 @@ function dangle(it: ItemView, on: boolean) {
   it.dangling = on;
   // also after a drop: the hand puts every item back in the item layer
   const to = on ? frontLayer : itemLayer;
-  if (to && it.node.parent !== to && !it.held && it.node.isValid) it.node.setParent(to, true);
+  if (to && it.node && it.node.isValid && it.node.parent !== to && !it.held) it.node.setParent(to, true);
 }
 
 /** The item of the pair that dangles from the other one now, or null */
