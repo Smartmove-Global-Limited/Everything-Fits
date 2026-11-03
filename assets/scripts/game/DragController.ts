@@ -108,28 +108,19 @@ export class DragController extends Component {
     this.raiseHandle();
   }
 
-  onDestroy() { this.node.targetOff(this); this.handleHit?.targetOff(this); }
+  onDestroy() { this.node.targetOff(this); }
 
   /**
    * The rotate handle goes on top of everything (items, bag rim, the booster bar), like the
-   * highest sorting order: its layer moves to the end of the Canvas, and a touch area that follows
-   * the button takes the touches on it before the booster buttons under it. Popups opened later
-   * are added after it, so they still cover it.
+   * highest sorting order: its layer moves to the end of the Canvas. Popups opened later are added
+   * after it, so they still cover it. It is a picture only (asked): it has no touch area of its own,
+   * every touch goes to the field under it. (A touch node that followed the button was cancelled by
+   * Cocos when the button hid as the item was picked up, which dropped the item at once.)
    */
-  private handleHit: Node | null = null;
   private raiseHandle() {
     const g = this.handle, canvas = this.node.parent;
     if (!g || !canvas) return;
     g.node.setParent(canvas, true);
-    const hit = this.handleHit = new Node('HandleHit');
-    hit.layer = g.node.layer;
-    hit.addComponent(UITransform);
-    canvas.addChild(hit);
-    hit.active = false;
-    hit.on(Node.EventType.TOUCH_START, this.onStart, this);
-    hit.on(Node.EventType.TOUCH_MOVE, this.onMove, this);
-    hit.on(Node.EventType.TOUCH_END, this.onEnd, this);
-    hit.on(Node.EventType.TOUCH_CANCEL, this.onEnd, this);
   }
 
   /** Pointer position in Field space (origin bottom-left of the design area) */
@@ -186,14 +177,16 @@ export class DragController extends Component {
     Vec2.transformMat4(this.tmpV2, this.tmpV2, item.node.worldMatrix);
     return out.set(this.tmpV2.x, this.tmpV2.y, 0);
   }
+  /** Button radius: smaller on a small item (a hairbrush at .79 is 60×36: a 14 button covered most of it) */
   private handleRadius(item: ItemView) {
     const box = item.localBox;
-    return Math.max(9, Math.min(14, Math.min(box.width, box.height) * item.levelScale * .3));
+    return Math.max(8, Math.min(14, Math.min(box.width, box.height) * item.levelScale * .22));
   }
   /**
    * On the selected item's rotate button. The button itself always wins; the margin around it
-   * (easier to hit) only where no other item is right under the finger, else the margin of a
-   * button resting next to another item swallowed the taps on that item.
+   * (easier to hit) only where no item is under the finger: on the selected item itself the press
+   * picks it up (the margin swallowed the whole of a small item: it could not be dragged), on
+   * another item it is that item's tap.
    */
   private hitHandle(x: number, y: number): boolean {
     const sel = GameState.selected; if (!sel) return false;
@@ -201,8 +194,7 @@ export class DragController extends Component {
     const d = Math.hypot(x - p.x, y - p.y), R = this.handleRadius(sel);
     if (d <= R + HANDLE_EDGE) return true;
     if (d > R + HANDLE_PAD) return false;
-    const under = this.itemUnder(x, y);
-    return !under || under === sel;
+    return !this.itemUnder(x, y);
   }
 
   // ---------- touch ----------
@@ -210,7 +202,13 @@ export class DragController extends Component {
     const S = GameState;
     if (S.won || S.lost || S.paused || S.drag) return;
     const p = this.local(e).clone(), id = e.getID();   // a copy: the hit tests below reuse the scratch vector
-    if (this.hitHandle(p.x, p.y)) { this.beginSpin(S.selected!, p.x, p.y, id); return; }
+    // a press on the selected item, or on its rotate button, always picks it up (asked): the button
+    // only marks the item as the one that turns, it never starts a turn itself (a finger pulling
+    // away from the button turned the item by a few degrees and seemed to freeze it). Turning it:
+    // a press anywhere off the item, see below
+    if (S.selected && (this.itemUnder(p.x, p.y) === S.selected || this.hitHandle(p.x, p.y))) {
+      this.pending = { item: S.selected, x: p.x, y: p.y, id }; return;
+    }
     const item = this.pickAt(p.x, p.y);
     // an item is selected (rotate mode): a press anywhere but on it turns it, even on another
     // item; only a tap (no move) on another item selects that one, a tap on empty space unselects
@@ -281,7 +279,6 @@ export class DragController extends Component {
     this.pending = null; this.spin = null;
     this.outline.clear();
     this.handle?.clear(); this.drawnKey = '';
-    if (this.handleHit) this.handleHit.active = false;
   }
 
   // ---------- pick / move / drop ----------
@@ -538,7 +535,6 @@ export class DragController extends Component {
     if (key === this.drawnKey) return;
     this.drawnKey = key;
     g.clear();
-    if (this.handleHit) this.handleHit.active = show;
     if (!show) return;
     const it = sel!;
     // dashed outline, pushed 3 units out from the centre of the shape
@@ -551,11 +547,7 @@ export class DragController extends Component {
     const polys: Vec2[][] = src ? src.map(pts => pts.map(p => local(Vec2.transformMat4(new Vec2(), p, m)))) : it.shapes.map(poly => poly.map(local));
     for (const poly of polys) dashedOutline(g, poly, 3, 5, 4);
     // button
-    const R = this.handleRadius(it), hit = this.handleHit;
-    if (hit) {   // the touch area: the button plus the same margin as hitHandle
-      hit.setPosition(hit.parent!.inverseTransformPoint(this.tmpLocal, this.handlePos(it, this.tmpWorld)));
-      hit.getComponent(UITransform)!.setContentSize((R + HANDLE_PAD) * 2, (R + HANDLE_PAD) * 2);
-    }
+    const R = this.handleRadius(it);
     const c = gn.inverseTransformPoint(this.tmpWorld, this.handlePos(it, this.tmpWorld));
     g.fillColor = BUTTON_SHADOW; g.circle(c.x, c.y - R * .18, R); g.fill();
     g.fillColor = SELECT_INK; g.circle(c.x, c.y, R); g.fill();

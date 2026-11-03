@@ -3,6 +3,11 @@ import { PhysicsGroup } from '../core/GameConstants';
 import { setIceCoat } from './IceCoat';
 const { ccclass, property, requireComponent, disallowMultiple } = _decorator;
 
+/** a rotate spot farther than this share of the box diagonal from the box corner is mid-edge (a slanted item) … */
+const HANDLE_MID = .3;
+/** … and is pushed this far out of the shape (units at scale 1) */
+const HANDLE_OUT = 5;
+
 /** Physics behaviour of an item (meta.physics in the web item data) */
 export enum ItemPhysics { NORMAL = 0, ROLLING = 1, FLOAT = 2, VIBRATING = 3, BOUNCY = 4 }
 /** Mass class, chosen for gameplay feel (not real grams, not size) */
@@ -140,7 +145,10 @@ export class ItemView extends Component {
     if (x0 === Infinity) { const ui = this.transform2d; x0 = -ui.width / 2; x1 = ui.width / 2; y0 = -ui.height / 2; y1 = ui.height / 2; }
     this.localBox.set(x0, y0, x1 - x0, y1 - y0);
     // the rotate button: the point of the shape's edge closest to the box's top-right corner. The
-    // corner itself can be far from the item (a triangle, a phone drawn slanted in its picture)
+    // corner itself can be far from the item (a triangle, a phone drawn slanted in its picture):
+    // then the spot is mid-edge, and it is pushed a little out of the shape, away from the box
+    // centre, so the button sits beside the item instead of over the middle of it (a hairbrush
+    // lying slanted). Items whose spot is at a corner keep it as it was.
     const edge = this.outline.length >= 3 ? [this.outline] : this.localPolys;
     let best = Infinity;
     this.handleSpot.set(x1, y1);
@@ -148,6 +156,9 @@ export class ItemView extends Component {
       const d = (p.x - x1) * (p.x - x1) + (p.y - y1) * (p.y - y1);
       if (d < best) { best = d; this.handleSpot.set(p.x, p.y); }
     }
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, ox = this.handleSpot.x - cx, oy = this.handleSpot.y - cy, l = Math.hypot(ox, oy);
+    const farFromCorner = Math.sqrt(best) > HANDLE_MID * Math.hypot(x1 - x0, y1 - y0);
+    if (farFromCorner && l > 1e-3) this.handleSpot.set(this.handleSpot.x + ox / l * HANDLE_OUT, this.handleSpot.y + oy / l * HANDLE_OUT);
   }
 
   /** Thinnest direction of the shape (3° steps): the long axis is across it */
