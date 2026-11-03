@@ -218,10 +218,12 @@ async function bannerSlot(slot: BannerSlot | null) {
   let r = room();
   ScreenFit.setAdBottom(r.h + r.sys - r.safe);                      // bars move now, before the strip loads
   const n = await onTop('ui/TestBanner', '__testBanner');
-  // under the splash and the scene veil (the slot is kept behind the splash): at once, also when
-  // this call is stale, as onTop just put the strip on top of everything
-  const covers = n.parent!.children.filter(c => c.name === 'Splash' || c.name === '__veil');
-  if (covers.length) n.setSiblingIndex(Math.min(...covers.map(c => c.getSiblingIndex())));
+  // onTop put the strip above everything: the splash and the loading veil go back on top of it (in
+  // their order), they cover the whole screen, banner included. Done at once, also when this call
+  // is stale. (Moving the strip down to the cover's index instead went wrong when two calls ran at
+  // once: the strip showed over the loading screen on the way Home.)
+  const canvas = n.parent!;
+  for (const c of canvas.children.filter(c => c.name === 'Splash' || c.name === '__veil')) c.setSiblingIndex(canvas.children.length - 1);
   if (bannerWanted !== slot) return;          // changed again while the prefab loaded
   // measured again: the room the banner takes changes the fit of a short screen (ScreenFit), so the
   // visible height may differ from before the prefab loaded (the strip was placed over the bars)
