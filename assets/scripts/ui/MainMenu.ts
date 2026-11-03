@@ -93,7 +93,7 @@ export class MainMenu extends Component {
     if (this.shop) this.shop.node.active = false;
     this.home.node.active = true;
     const s = this.spot();
-    if (s) this.home.show(ContentLoader.levelNumber(s.chapter.id, s.index), s.chapter.levels[s.index]);
+    if (s) this.home.show(ContentLoader.levelNumber(s.chapter.id, s.index), s.chapter.levels[s.index], Progress.finishedAll(ContentLoader.chapters()));
     if (this.splashDone) Ads.showBanner('banner_main_menu', this.playerLevel());
     // behind the splash: once the start-up knows No Ads, keep the banner's place, so the bars are
     // already above it when the splash goes (the ad itself shows after the splash)

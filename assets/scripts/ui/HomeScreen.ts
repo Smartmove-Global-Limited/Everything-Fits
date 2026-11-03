@@ -39,12 +39,15 @@ export class HomeScreen extends Component {
 
   onDestroy() { this.offGold?.(); }
 
-  /** Refresh gold and the Play button for the level about to be played */
-  show(levelNumber: number, level: any) {
+  /**
+   * Refresh gold and the Play button for the level about to be played. `allDone`: every level there
+   * is has been won (Progress.finishedAll): "Coming Soon" under Play until new levels come
+   */
+  show(levelNumber: number, level: any, allDone = false) {
     this.node.active = true;
     this.showGold(formatNumber(Wallet.gold));
-    setText(findNode(this.node, 'mPlayLv'), `Level ${levelNumber}`);
-    const [bg, edge] = KIND[playDifficultyOf(level)];
+    setText(findNode(this.node, 'mPlayLv'), allDone ? 'Coming Soon' : `Level ${levelNumber}`);
+    const [bg, edge] = KIND[allDone ? 'Easy' : playDifficultyOf(level)];
     if (this.play) { this.play.fill = bg; this.play.lipColor = edge; }
   }
 }
