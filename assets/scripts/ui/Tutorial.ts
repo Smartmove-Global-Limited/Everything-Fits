@@ -1,8 +1,8 @@
 // How-to-play tutorial (gameplay doc "Tutorial"), on the TutorialOverlay prefab above the field.
 //   Level 1, once:  1. a hand drags one item from the tray to its place in the bag
 //                      ("Drag items into the bag") until the player packs an item;
-//                   2. the hand taps an item that must turn, then drags the ↻ handle around
-//                      ("Tap an item, then drag ↻ to rotate it") until the player turns one;
+//                   2. the hand taps an item that must turn, then drags round it from beside it
+//                      ("Tap an item, then swipe around it to rotate") until the player turns one;
 //                   3. "Great! Pack everything before time runs out", then normal play.
 //   Shake, once:    when 3 items are in the bag on level 1 (after the basics, or when level 1 is
 //                   played again), the hand shakes over the bag ("Shake your phone to
@@ -31,6 +31,7 @@ const MYSTERY_DROP_ABOVE = 70;               // the hand lets go of the box this
 const SHAKE_AFTER_PACKED = 3;                // items in the bag before the shake step shows
 const DONE_SECONDS = 2.6;
 const MIN_TURN = 20;                         // degrees: a real rotation, not a slip of the finger
+const ROTATE_BESIDE = 26;                    // the hand turns an item from this far beyond its ↻ button (off the item)
 const SHAKE_TAP_AFTER = 1.5;                 // s before a tap also ends the shake step
 const PHONE_SIZE = 110;
 
@@ -170,14 +171,15 @@ export class Tutorial extends Component {
 
   private showRotateStep() {
     const host = this.host!;
-    // the item that must turn the most to fit its place
-    const sol = host.solution().filter(s => host.items()[s.i] && !host.packed(s.i));
-    const pick = sol.slice().sort((a, b) => turnBetween(angleOf(host.items()[b.i].node), b.angle) - turnBetween(angleOf(host.items()[a.i].node), a.angle))[0];
-    const items = host.items().filter((it, i) => !host.packed(i) && it.node.activeInHierarchy);
-    this.target = pick ? host.items()[pick.i] : items[0] || null;
+    // the item just dragged into the bag, else any item lying in the bag (asked: the turn is shown
+    // on an item in the bag, right where it was put); only with none there, one on the tray
+    const inBag = host.items().filter((it, i) => host.packed(i) && it.node.activeInHierarchy);
+    const dragged = this.target && inBag.includes(this.target) ? this.target : null;
+    const tray = host.items().filter((it, i) => !host.packed(i) && it.node.activeInHierarchy);
+    this.target = dragged || inBag[0] || tray[0] || null;
     if (!this.target) { this.finish(); return; }
     this.step = 'rotate';
-    this.say('Tap an item, then drag ↻ to rotate it');
+    this.say('Tap an item, then swipe around it to rotate');
     this.loop();
   }
 
@@ -331,20 +333,25 @@ export class Tutorial extends Component {
       this.tapRing(from, .25);
       tween(this.hand).delay(.35).to(1.1, { position: to }, { easing: 'sineInOut' }).call(() => this.tapRing(to, 0)).delay(.4).call(() => { op.opacity = 0; }).start();
     } else if (this.step === 'rotate') {
-      // tap the item, then go round its handle (top-right corner of the item's box)
+      // tap the item, then go round it from a spot beside it (off the item: on the item a drag
+      // picks it up; the ↻ button only marks the item, it has no touch area), past its handle
       const handle = this.handleOf(it, new Vec3());
       const selected = GameState.selected === it;
+      const c = from, dh = Vec3.distance(handle, from), r = dh + ROTATE_BESIDE, a0 = Math.atan2(handle.y - from.y, handle.x - from.x);
+      handle.set(c.x + Math.cos(a0) * r, c.y + Math.sin(a0) * r, 0);
       const start = selected ? handle : from;
       this.hand.setPosition(start);
       if (!selected) this.tapRing(from, .2);
-      const c = from, r = Vec3.distance(handle, from), a0 = Math.atan2(handle.y - from.y, handle.x - from.x);
       const arc = this.arc;
       Tween.stopAllByTarget(arc); arc.t = 0;
+      // a full circle, towards the middle of the screen (an item near the right edge: the hand would
+      // leave the screen going the other way)
+      const dir = c.x > 0 ? 1 : -1;
       tween(this.hand).delay(selected ? .1 : .5).to(.35, { position: handle }).start();
-      tween(arc).delay(selected ? .5 : .9).to(1.1, { t: 1 }, {
+      tween(arc).delay(selected ? .5 : .9).to(1.4, { t: 1 }, {
         easing: 'sineInOut',
         onUpdate: () => {
-          const a = a0 - arc.t * 1.6;   // clockwise about 90°
+          const a = a0 + dir * arc.t * Math.PI * 2;
           this.hand.setPosition(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 0);
         },
       }).call(() => { op.opacity = 0; }).start();
