@@ -17,6 +17,7 @@ export class EdgePin extends Component {
   @property({ type: Enum(PinMode) }) mode = PinMode.TOP;
   @property({ tooltip: 'Keep clear of the notch / status bar / gesture bar' }) safeArea = true;
   @property({ tooltip: 'Bottom: stay above the navigation / gesture bar area even while it is hidden (full screen), e.g. the booster dock' }) aboveSystemBar = false;
+  @property({ tooltip: 'Bottom: sink into the design margin above the edge when the banner leaves little room (ScreenFit.dockSink), e.g. the booster dock' }) sink = false;
   @property({ tooltip: 'Bottom bars: the background reaches the screen edge behind the navigation bar (Android edge-to-edge); full-height children (tabs) extend too, their content stays clear' }) extendToEdge = false;
 
   private base = new Vec3();
@@ -86,7 +87,7 @@ export class EdgePin extends Component {
     switch (this.mode) {
       case PinMode.TOP: this.node.setPosition(b.x, b.y + extraY - ins.top, b.z); break;
       case PinMode.BOTTOM:
-        this.node.setPosition(b.x, b.y - extraY + ins.bottom, b.z);
+        this.node.setPosition(b.x, b.y - extraY + ins.bottom - (this.sink ? ScreenFit.dockSink() : 0), b.z);
         // a bottom ad banner covers the system bar area itself: the bar then stops on top of it
         if (this.extendToEdge) this.extend(ScreenFit.adBottom > 0 ? 0 : ins.bottom);
         this.widen(vis.width);

@@ -6,7 +6,6 @@
 // tray keeps its room between the bag and the booster dock (with less, the items dropped at the
 // start were squeezed between the tray floor and the bag, overlapped and shook non-stop).
 import { view, ResolutionPolicy, sys, Rect, profiler, Camera, Size } from 'cc';
-import { DOCK_TOP_Y, FLOOR_Y } from '../core/GameConstants';
 
 export const DESIGN_W = 420, DESIGN_H = 760;
 const EMBEDDED_SIZE = new Size(DESIGN_W, DESIGN_H);
@@ -14,6 +13,8 @@ let applied = false;
 
 let embedded = false;
 /** Height of the bottom ad banner in design units (0 = none); bottom bars sit above it */
+/** the booster dock gives up this much of the 23 units under it in the design (dockSink) */
+const DOCK_SINK = 16;
 let adBottom = 0;
 const insetListeners: (() => void)[] = [];
 
@@ -33,8 +34,10 @@ export const ScreenFit = {
     const fit = () => {
       const frame = view.getFrameSize();
       // height the design box needs on this screen: 760, plus (centred, so twice) what the banner
-      // and the system bar take beyond the gap the design leaves under the tray floor
-      const needH = DESIGN_H + 2 * Math.max(0, this.insets(undefined, true).bottom - (DOCK_TOP_Y - FLOOR_Y));
+      // and the system bar take beyond what the booster dock gives up of its own bottom margin
+      // (dockSink). The gap between the tray floor and the dock is kept: the items lay right on
+      // the boosters on short and wide screens (tablets) when the banner was allowed to eat it
+      const needH = DESIGN_H + 2 * Math.max(0, this.insets(undefined, true).bottom - DOCK_SINK);
       const tall = frame.height / frame.width >= needH / DESIGN_W;
       if (tall) view.setDesignResolutionSize(DESIGN_W, DESIGN_H, ResolutionPolicy.FIXED_WIDTH);
       else view.setDesignResolutionSize(DESIGN_W * needH / DESIGN_H, needH, ResolutionPolicy.FIXED_HEIGHT);
@@ -43,6 +46,16 @@ export const ScreenFit = {
     view.on('canvas-resize', fit);
     // the banner came or went: the room it takes changed
     insetListeners.push(fit);
+  },
+  /**
+   * How far the booster dock sinks into its design margin above the screen edge (asked: the dock
+   * may go down, the banner is still well below it) on a screen where the banner and the system bar
+   * take more than the centring leaves: 0 on a tall phone, up to DOCK_SINK on a short or wide one.
+   * EdgePin (sink) moves the dock, GameController.fitToScreen keeps the tray floor above it.
+   */
+  dockSink() {
+    const extra = Math.max(0, this.visible().height - DESIGN_H) / 2;
+    return Math.max(0, Math.min(DOCK_SINK, this.insets(undefined, true).bottom - extra));
   },
   /**
    * For a Canvas that does not follow the screen (alignCanvasWithScreen off, Game.scene): Cocos no

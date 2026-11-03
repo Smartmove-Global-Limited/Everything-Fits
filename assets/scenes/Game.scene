@@ -4684,6 +4684,7 @@
     "safeArea": true,
     "aboveSystemBar": true,
     "extendToEdge": false,
+    "sink": true,
     "_id": "67XuSImFdG9KdMvP4z6qEX"
   },
   {
@@ -5678,6 +5679,7 @@
     "safeArea": true,
     "aboveSystemBar": true,
     "extendToEdge": false,
+    "sink": true,
     "_id": "ce/7akcRNIS7/rtih/wG9a"
   },
   {
@@ -6672,6 +6674,7 @@
     "safeArea": true,
     "aboveSystemBar": true,
     "extendToEdge": false,
+    "sink": true,
     "_id": "16zO5BjcRDUYV26XNKBn/c"
   },
   {

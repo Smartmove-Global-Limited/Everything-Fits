@@ -96,7 +96,7 @@ export class GameController extends Component {
     const vis = ScreenFit.visible(), ins = ScreenFit.insets(undefined, true);   // the dock stays above the system bar (EdgePin.aboveSystemBar)
     const extra = Math.max(0, vis.height - DESIGN_H) / 2;
     GameState.ceilGain = Math.max(0, extra - ins.top);
-    const dockDrop = extra - ins.bottom;                       // how far EdgePin moved the dock down
+    const dockDrop = extra - ins.bottom + ScreenFit.dockSink();   // how far EdgePin moved the dock down (sink: EdgePin.sink)
     // room between the tray floor and the dock top: on a tall screen the floor takes half of it; when
     // the dock rose instead (banner under it, short screen) the floor rises with it, else the items
     // lay under the booster buttons
