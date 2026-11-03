@@ -26,7 +26,7 @@ const BUY_IDS = [
 /** Spend Gold: three of a booster for gold (booster economy table: 150 / 150 / 200 gold each) */
 export const SPEND: Record<string, { key: BoosterKey; name: string; price: number }> = {
   spend_freeze: { key: 'freeze', name: 'Freeze ×3', price: 450 },
-  spend_resize: { key: 'resize', name: 'Re:Size ×3', price: 450 },   // names as in the Figma catalogue
+  spend_resize: { key: 'resize', name: 'Resize ×3', price: 450 },   // names as in the Figma catalogue
   spend_throw: { key: 'throw', name: 'Remove ×3', price: 600 },
 };
 const PURCHASED_BG = new Color(0x8F, 0xA5, 0x96, 255);
