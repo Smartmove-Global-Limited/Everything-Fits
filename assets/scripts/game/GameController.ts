@@ -254,13 +254,13 @@ export class GameController extends Component {
 
   /**
    * A Hard / Super Hard level (levels.json playDifficulty, else the editor's tier, as the Home Play
-   * button) says so once the loading screen has gone
+   * button) says so once the loading screen has gone (Overlays: the Figma notice card)
    */
   private announceDifficulty() {
     const kind = playDifficultyOf(GameState.level);
     if (kind === 'Easy') return;
     const round = GameState.round;
-    this.scheduleOnce(() => { if (GameState.round === round) this.hud.showDifficulty(kind); }, 1.2);
+    this.scheduleOnce(() => { if (GameState.round === round) Overlays.difficulty(kind); }, 1.2);
   }
 
   // ---------- tutorial (ui/Tutorial.ts) ----------

@@ -7,6 +7,8 @@ import { ScreenFit } from './ScreenFit';
 import { Startup } from '../services/Startup';
 import { Ads, AdViews, BannerSlot } from '../services/Ads';
 import { RoundRect } from './RoundRect';
+import { DifficultyNotice } from './DifficultyNotice';
+import type { PlayDifficulty } from '../core/PlayDifficulty';
 
 const prefabs = new Map<string, Prefab>();
 function loadPrefab(path: string): Promise<Prefab> {
@@ -339,6 +341,15 @@ export const Overlays = {
     Tween.stopAllByTarget(op);
     n.active = true; op.opacity = 0;
     tween(op).to(.15, { opacity: 255 }).delay(1.8).to(.25, { opacity: 0 }).call(() => { n!.active = false; }).start();
+  },
+
+  /**
+   * A Hard / Super Hard level starts (Figma "EF · Overlay / Hard Level"): the screen dims and the
+   * luggage-tag notice pops in over everything, stays a moment and fades (ui/DifficultyNotice)
+   */
+  async difficulty(kind: Exclude<PlayDifficulty, 'Easy'>) {
+    const n = await onTop('ui/DifficultyNotice', '__difficulty');
+    n.getComponent(DifficultyNotice)!.show(kind);
   },
 
   /** Start the ad and store services once (every scene controller calls it in onLoad) */
