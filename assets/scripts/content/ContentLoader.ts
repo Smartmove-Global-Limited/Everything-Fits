@@ -4,13 +4,14 @@
 // the app starts without reading the catalogue of every item and bag. Everything is cached.
 // Levels: the levels.json shipped with the app is the default; on Android the Remote Config key
 // "levels" (the same file, as JSON) replaces it whenever it holds a valid book (see remoteBook).
-import { assetManager, AssetManager, JsonAsset, Prefab, SpriteFrame } from 'cc';
+import { assetManager, AssetManager, JsonAsset, Prefab, SpriteFrame, sys } from 'cc';
 import { RemoteConfig } from '../services/RemoteConfig';
 import { NativeBridge } from '../services/NativeBridge';
 
 const prefabCache = new Map<string, Prefab>();
 const backgroundCache = new Map<string, SpriteFrame | null>();
 let book: any = null;
+let appBook: any = null;   // levels.json shipped in the app
 let bundle: Promise<AssetManager.Bundle> | null = null;
 
 function openBundle(): Promise<AssetManager.Bundle> {
@@ -24,12 +25,19 @@ async function load<T>(path: string, type: any): Promise<T> {
   return new Promise((ok, fail) => b.load(path, type, (err, asset) => (err ? fail(err) : ok(asset as T))));
 }
 
+/** Store page of the game, opened when the levels need a newer app (see needsUpdate) */
+const STORE_URL = 'https://play.google.com/store/apps/details?id=everything.fits.packing.puzzle.organize';
+/** Remote Config has levels this app cannot play (they use items or bags of a newer app) */
+let needsUpdate = false;
+
 /**
  * The levels from Remote Config ("levels", the latest fetched value; Android only), or null to
- * keep the app's own. Only a broken book is refused (not JSON, no chapters / levels). What the
- * installed app lacks is dealt with while playing: a missing item is left out of its level (and
- * not counted), a missing bag becomes the backpack, a missing background the default one. A level
- * none of whose items exist here is dropped (it could never be won).
+ * keep the app's own. Only a broken book is refused (not JSON, no chapters / levels). Levels are
+ * played in order, so the book stops at the first level that needs an item or a bag this app does
+ * not ship (new items come with a new app version): the levels before it stay, that one and every
+ * one after it are left out, and needsUpdate is set, so after the last playable level Play and the
+ * win popup's Continue ask for an update instead of "Coming Soon". Nothing moves: level numbers
+ * and saved progress stay the same as on an updated app. A missing background becomes the default.
  */
 async function remoteBook(): Promise<any> {
   if (!NativeBridge.android) return null;            // the Level Editor and the web play the files
@@ -39,20 +47,35 @@ async function remoteBook(): Promise<any> {
   try { b = JSON.parse(raw); } catch { console.warn('[levels] Remote Config levels is not JSON: ignored'); return null; }
   if (!Array.isArray(b?.chapters)) { console.warn('[levels] Remote Config levels has no chapters: ignored'); return null; }
   const content = await openBundle().catch(() => null);
-  const hasItem = (id: any) => !!content?.getInfoWithPath(`items/${id}`);
-  const dropped: string[] = [];
-  b.chapters = b.chapters.filter((ch: any) => {
-    if (!ch?.id || !Array.isArray(ch.levels)) return false;
-    ch.levels = ch.levels.filter((L: any, i: number) => {
-      const ok = L && typeof L === 'object' && Array.isArray(L.items) && L.items.some((it: any) => it && it.id !== 0 && hasItem(it.id));
-      if (!ok) dropped.push(`${ch.id} #${i + 1}`);
-      if (ok && (!L.container || typeof L.container !== 'object')) L.container = { skin: 'backpack' };
-      return ok;
-    });
-    return ch.levels.length > 0;
-  });
-  if (dropped.length) console.warn('[levels] Remote Config levels without any item of this app, left out:', dropped.join(', '));
-  if (!b.chapters.length) { console.warn('[levels] Remote Config levels has no playable level: ignored'); return null; }
+  if (!content) return null;
+  return cutAtMissing(b, path => !!content.getInfoWithPath(path));
+}
+
+/**
+ * The book up to (not including) its first level that is broken or needs an item / bag `has` does
+ * not know; null when not even its first level is playable. Sets needsUpdate when levels were cut.
+ */
+function cutAtMissing(b: any, has: (path: string) => boolean): any {
+  const playable = (L: any) => {
+    if (!L || typeof L !== 'object' || !Array.isArray(L.items)) return false;
+    const ids = L.items.map((it: any) => it?.id).filter((id: any) => id != null && id !== 0);
+    if (!ids.length || !ids.every((id: any) => has(`items/${id}`))) return false;
+    const skin = L.container?.skin;
+    return !skin || has(`bags/${skin}`);
+  };
+  const chapters: any[] = [];
+  for (const ch of b.chapters) {
+    if (!ch?.id || !Array.isArray(ch.levels)) continue;
+    const stop = ch.levels.findIndex((L: any) => !playable(L));
+    if (stop < 0) { chapters.push(ch); continue; }
+    console.warn(`[levels] Remote Config: ${ch.id} #${stop + 1} needs a newer app (items / bag not shipped); the levels stop before it`);
+    needsUpdate = true;
+    if (stop > 0) { ch.levels = ch.levels.slice(0, stop); chapters.push(ch); }
+    break;
+  }
+  for (const ch of chapters) for (const L of ch.levels) if (!L.container || typeof L.container !== 'object') L.container = { skin: 'backpack' };
+  b.chapters = chapters;
+  if (!chapters.length) { console.warn('[levels] Remote Config levels has no playable level: ignored'); needsUpdate = false; return null; }
   return b;
 }
 
@@ -64,11 +87,18 @@ export const ContentLoader = {
     // levels can be tested on the phone before the same levels are pasted into Remote Config
     const remote = await remoteBook();
     if (remote && Number(remote.version) < Number(json.json?.version)) console.log(`[levels] Remote Config v${remote.version} is older than the app\x27s v${json.json?.version}: the app\x27s levels are used`);
+    appBook = json.json;
     book = remote && !(Number(remote.version) < Number(json.json?.version)) ? remote : json.json;
     console.log(`[levels] v${book?.version} (${book === json.json ? 'in the app' : 'Remote Config'})`);
     return book;
   },
   get book() { return book; },
+  /** The levels go on in a newer app version: after the last level here, ask for an update */
+  get needsUpdate() { return needsUpdate && book !== null && book !== appBook; },
+  /** Open the game's store page (the update) */
+  openStore() { sys.openURL(STORE_URL); },
+  /** The cut on its own (tests): a book against a test of shipped paths */
+  cutAtMissing,
   chapters(): any[] { return book?.chapters || []; },
   chapterById(id: string) { return this.chapters().find((c: any) => c.id === id) || this.chapters()[0] || null; },
 

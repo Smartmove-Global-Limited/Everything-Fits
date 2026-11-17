@@ -28,6 +28,8 @@ export type WinOptions = {
   /** share-of-players line (ui/WinShare) */
   shareLine: string;
   onContinue: () => void; onHome: () => void; onCollectX2: () => void;
+  /** text of the Continue button ("Update Game" after the last level when the next ones need a newer app) */
+  continueText?: string;
 };
 
 let starFrames: Promise<[SpriteFrame | null, SpriteFrame | null]> | null = null;
@@ -188,6 +190,7 @@ export class WinPopup extends Component {
     setText(findNode(n, 'winRank'), 'Packed!');
     setText(findNode(n, 'winPct'), o.shareLine);
     setText(findNode(n, 'winText'), 'Nice packing!');
+    setText(findNode(n, 'next'), o.continueText || 'Continue');
     const stats = findNode(n, 'winScore')!;
     const m = Math.floor(o.seconds / 60), s = Math.max(0, o.seconds) % 60;
     setText(findNode(stats, 'b'), `${m}:${s < 10 ? '0' : ''}${s}`);

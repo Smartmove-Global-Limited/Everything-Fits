@@ -592,6 +592,7 @@ export class GameController extends Component {
         stars: Math.max(1, Math.min(3, Math.round(score.stars * 3 / 5))), mistake: score.mistakes[0] || null,
         // the last level there is: no wrapping back to level 1, the "played them all" popup, then Home
         onContinue: () => (!this.embedded && S.levelIndex >= S.chapter.levels.length - 1 ? this.allDone() : this.nextLevel(true)),
+        continueText: !this.embedded && S.levelIndex >= S.chapter.levels.length - 1 && ContentLoader.needsUpdate ? 'Update Game' : undefined,
         onHome: () => this.goHome(),
         onCollectX2: () => Wallet.add(reward),
       });
@@ -599,6 +600,8 @@ export class GameController extends Component {
   }
 
   private async allDone() {
+    // the next levels are there but need a newer app: its store page, and Home ("Update Game" under Play)
+    if (ContentLoader.needsUpdate) { ContentLoader.openStore(); this.goHome(); return; }
     const p = await showPopup('AllDonePopup', AllDonePopup);
     p.open(() => this.goHome());
   }

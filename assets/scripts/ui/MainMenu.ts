@@ -126,7 +126,10 @@ export class MainMenu extends Component {
 
   private async play() {
     const s = this.spot(); if (!s) return;
-    if (Progress.finishedAll(ContentLoader.chapters())) { (await showPopup('AllDonePopup', AllDonePopup)).open(() => {}, true); return; }
+    if (Progress.finishedAll(ContentLoader.chapters())) {
+      if (ContentLoader.needsUpdate) { ContentLoader.openStore(); return; }   // the next levels need a newer app
+      (await showPopup('AllDonePopup', AllDonePopup)).open(() => {}, true); return;
+    }
     GameState.chapter = s.chapter; GameState.chapterId = s.chapter.id; GameState.levelIndex = s.index;
     GameState.fromMenu = true;
     Analytics.setReason('home');

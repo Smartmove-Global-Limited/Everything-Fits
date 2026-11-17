@@ -5,6 +5,7 @@ import { _decorator, Component, Node } from 'cc';
 import { Overlays } from './Overlays';
 import { findNode, setText, tap, fitGoldPill } from './UiKit';
 import { RoundRect } from './RoundRect';
+import { ContentLoader } from '../content/ContentLoader';
 import { Wallet, formatNumber } from '../services/Wallet';
 import { playDifficultyOf, PLAY_COLORS } from '../core/PlayDifficulty';
 const { ccclass } = _decorator;
@@ -41,12 +42,13 @@ export class HomeScreen extends Component {
 
   /**
    * Refresh gold and the Play button for the level about to be played. `allDone`: every level there
-   * is has been won (Progress.finishedAll): "Coming Soon" under Play until new levels come
+   * is has been won (Progress.finishedAll): "Coming Soon" under Play until new levels come, or
+   * "Update Game" when the next levels are there but need a newer app (ContentLoader.needsUpdate)
    */
   show(levelNumber: number, level: any, allDone = false) {
     this.node.active = true;
     this.showGold(formatNumber(Wallet.gold));
-    setText(findNode(this.node, 'mPlayLv'), allDone ? 'Coming Soon' : `Level ${levelNumber}`);
+    setText(findNode(this.node, 'mPlayLv'), allDone ? (ContentLoader.needsUpdate ? 'Update Game' : 'Coming Soon') : `Level ${levelNumber}`);
     const [bg, edge] = KIND[allDone ? 'Easy' : playDifficultyOf(level)];
     if (this.play) { this.play.fill = bg; this.play.lipColor = edge; }
   }
