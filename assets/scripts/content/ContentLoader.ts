@@ -60,7 +60,11 @@ export const ContentLoader = {
   async loadBook(): Promise<any> {
     if (book) return book;
     const json = await load<JsonAsset>('content/cozy/levels', JsonAsset);
-    book = (await remoteBook()) || json.json;
+    // Remote Config wins unless the app ships a newer book (version number), so a build with new
+    // levels can be tested on the phone before the same levels are pasted into Remote Config
+    const remote = await remoteBook();
+    if (remote && Number(remote.version) < Number(json.json?.version)) console.log(`[levels] Remote Config v${remote.version} is older than the app\x27s v${json.json?.version}: the app\x27s levels are used`);
+    book = remote && !(Number(remote.version) < Number(json.json?.version)) ? remote : json.json;
     console.log(`[levels] v${book?.version} (${book === json.json ? 'in the app' : 'Remote Config'})`);
     return book;
   },
