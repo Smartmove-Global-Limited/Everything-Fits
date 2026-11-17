@@ -3,6 +3,7 @@ package com.cocos.game;
 import android.app.Activity;
 import android.os.Build;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
@@ -49,6 +50,9 @@ final class AdsBridge {
     private static boolean ready;
     private static String mode = "pending";
     private static String bannerUnit, interUnit, rewardedUnit;
+    // for the ad events (AdEvents): the ad each full-screen unit holds and how long its load took, when it went on screen
+    private static MaxAd interAd, rewardedAd;
+    private static long interLoadMs, rewardedLoadMs, interShownAt, rewardedShownAt;
 
     private static MaxAdView banner;
     /** banner + the strip under it down to the screen edge (behind the navigation bar) */
@@ -154,6 +158,7 @@ final class AdsBridge {
             @Override public void onAdLoaded(MaxAd ad) {
                 Log.i(TAG, "banner loaded from " + ad.getNetworkName() + " (" + ad.getNetworkPlacement() + "), revenue " + ad.getRevenue());
                 logWaterfall("banner", ad.getWaterfall());
+                AdEvents.request(MaxAdFormat.BANNER, true, ad.getNetworkName(), ad.getRequestLatencyMillis());
                 bannerLoaded = true; bannerHeardAt = System.currentTimeMillis();
                 main.removeCallbacks(bannerSafety);
                 ScriptEvents.send("ads", ScriptEvents.of("banner", "state", "loaded"));
@@ -164,11 +169,12 @@ final class AdsBridge {
                 Log.w(TAG, "banner failed " + e.getCode() + " after " + e.getRequestLatencyMillis() + " ms"
                         + (bannerLoaded ? " (refresh: the shown ad stays)" : " (MAX retries on its own)"));
                 logWaterfall("banner", e.getWaterfall());
+                AdEvents.request(MaxAdFormat.BANNER, false, "", e.getRequestLatencyMillis());
                 bannerHeardAt = System.currentTimeMillis();
             }
             @Override public void onAdDisplayed(MaxAd ad) {}
             @Override public void onAdHidden(MaxAd ad) {}
-            @Override public void onAdClicked(MaxAd ad) {}
+            @Override public void onAdClicked(MaxAd ad) { AdEvents.click(ad); }
             @Override public void onAdDisplayFailed(MaxAd ad, MaxError e) {}
             @Override public void onAdExpanded(MaxAd ad) {}
             @Override public void onAdCollapsed(MaxAd ad) {}
@@ -266,23 +272,49 @@ final class AdsBridge {
         inter = new MaxInterstitialAd(interUnit, activity);
         inter.setRevenueListener(SdkBridge::logAdRevenue);
         inter.setListener(new MaxAdListener() {
-            @Override public void onAdLoaded(MaxAd ad) { interRetry = 0; ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "loaded")); }
+            @Override public void onAdLoaded(MaxAd ad) {
+                interAd = ad; interLoadMs = ad.getRequestLatencyMillis();
+                AdEvents.request(MaxAdFormat.INTERSTITIAL, true, ad.getNetworkName(), interLoadMs);
+                interRetry = 0; ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "loaded"));
+            }
             @Override public void onAdLoadFailed(String unit, MaxError e) {
+                interAd = null; interLoadMs = e.getRequestLatencyMillis();
+                AdEvents.request(MaxAdFormat.INTERSTITIAL, false, "", interLoadMs);
                 interRetry = Math.min(interRetry + 1, 6);
                 main.postDelayed(() -> inter.loadAd(), 1000L * Math.min(RETRY_MAX_SEC, 1 << interRetry));
             }
-            @Override public void onAdDisplayed(MaxAd ad) { ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "shown")); }
-            @Override public void onAdHidden(MaxAd ad) { ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "closed")); inter.loadAd(); }
-            @Override public void onAdClicked(MaxAd ad) {}
-            @Override public void onAdDisplayFailed(MaxAd ad, MaxError e) { ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "showFailed")); inter.loadAd(); }
+            @Override public void onAdDisplayed(MaxAd ad) { interShownAt = SystemClock.elapsedRealtime(); ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "shown")); }
+            @Override public void onAdHidden(MaxAd ad) {
+                AdEvents.complete(ad, SystemClock.elapsedRealtime() - interShownAt, null);
+                ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "closed")); inter.loadAd();
+            }
+            @Override public void onAdClicked(MaxAd ad) { AdEvents.click(ad); }
+            @Override public void onAdDisplayFailed(MaxAd ad, MaxError e) {
+                AdEvents.impression(MaxAdFormat.INTERSTITIAL, false, ad.getNetworkName(), ad.getAdUnitId(), ad.getPlacement(), 0);
+                ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "showFailed"));
+                inter.loadAd();
+            }
         });
         inter.loadAd();
+    }
+
+    /** user_ad_request: format "inter" | "rewarded"; limited = the game's rules hold the ad back */
+    static void userRequest(final String format, final String placement, final boolean limited) {
+        main.post(() -> {
+            boolean isInter = "inter".equals(format);
+            boolean ready = isInter ? inter != null && inter.isReady() : rewarded != null && rewarded.isReady();
+            AdEvents.userRequest(isInter ? MaxAdFormat.INTERSTITIAL : MaxAdFormat.REWARDED, isInter ? interUnit : rewardedUnit, ready,
+                    ready ? (isInter ? interAd : rewardedAd) : null, isInter ? interLoadMs : rewardedLoadMs, limited, placement);
+        });
     }
 
     static void showInter(final String placement) {
         main.post(() -> {
             if (inter != null && inter.isReady()) inter.showAd(placement);
-            else ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "showFailed"));
+            else {
+                AdEvents.impression(MaxAdFormat.INTERSTITIAL, false, "", interUnit, placement, 0);   // none ready: is_show 0
+                ScriptEvents.send("ads", ScriptEvents.of("inter", "state", "showFailed"));
+            }
         });
     }
 
@@ -291,20 +323,28 @@ final class AdsBridge {
         rewarded = MaxRewardedAd.getInstance(rewardedUnit, activity);
         rewarded.setRevenueListener(SdkBridge::logAdRevenue);
         rewarded.setListener(new MaxRewardedAdListener() {
-            @Override public void onAdLoaded(MaxAd ad) { rewardedRetry = 0; ScriptEvents.send("ads", ScriptEvents.of("rewarded", "state", "loaded")); }
+            @Override public void onAdLoaded(MaxAd ad) {
+                rewardedAd = ad; rewardedLoadMs = ad.getRequestLatencyMillis();
+                AdEvents.request(MaxAdFormat.REWARDED, true, ad.getNetworkName(), rewardedLoadMs);
+                rewardedRetry = 0; ScriptEvents.send("ads", ScriptEvents.of("rewarded", "state", "loaded"));
+            }
             @Override public void onAdLoadFailed(String unit, MaxError e) {
+                rewardedAd = null; rewardedLoadMs = e.getRequestLatencyMillis();
+                AdEvents.request(MaxAdFormat.REWARDED, false, "", rewardedLoadMs);
                 rewardedRetry = Math.min(rewardedRetry + 1, 6);
                 main.postDelayed(() -> rewarded.loadAd(), 1000L * Math.min(RETRY_MAX_SEC, 1 << rewardedRetry));
             }
-            @Override public void onAdDisplayed(MaxAd ad) { rewardEarned = false; }
+            @Override public void onAdDisplayed(MaxAd ad) { rewardEarned = false; rewardedShownAt = SystemClock.elapsedRealtime(); }
             @Override public void onUserRewarded(MaxAd ad, MaxReward reward) { rewardEarned = true; }
             @Override public void onAdHidden(MaxAd ad) {
+                AdEvents.complete(ad, SystemClock.elapsedRealtime() - rewardedShownAt, rewardEarned ? "done" : "quit");
                 ScriptEvents.send("ads", ScriptEvents.of("rewarded", "state", "closed", "rewarded", rewardEarned));
                 rewardEarned = false;
                 rewarded.loadAd();
             }
-            @Override public void onAdClicked(MaxAd ad) {}
+            @Override public void onAdClicked(MaxAd ad) { AdEvents.click(ad); }
             @Override public void onAdDisplayFailed(MaxAd ad, MaxError e) {
+                AdEvents.impression(MaxAdFormat.REWARDED, false, ad.getNetworkName(), ad.getAdUnitId(), ad.getPlacement(), 0);
                 ScriptEvents.send("ads", ScriptEvents.of("rewarded", "state", "showFailed"));
                 rewarded.loadAd();
             }
@@ -315,7 +355,10 @@ final class AdsBridge {
     static void showRewarded(final String placement) {
         main.post(() -> {
             if (rewarded != null && rewarded.isReady()) rewarded.showAd(placement);
-            else ScriptEvents.send("ads", ScriptEvents.of("rewarded", "state", "showFailed"));
+            else {
+                AdEvents.impression(MaxAdFormat.REWARDED, false, "", rewardedUnit, placement, 0);   // none ready: is_show 0
+                ScriptEvents.send("ads", ScriptEvents.of("rewarded", "state", "showFailed"));
+            }
         });
     }
 }

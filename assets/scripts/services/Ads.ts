@@ -205,6 +205,9 @@ export const Ads = {
   /** At a trigger: shows the interstitial when every rule passes; resolves when it is gone */
   async interstitial(placement: InterPlacement, levelNumber: number, retry = 0): Promise<boolean> {
     const block = this.interBlock(levelNumber, retry);
+    // user_ad_request (AdEvents.java): a spot where an interstitial may show; is_limited when the
+    // rules hold it back or another ad is on screen (is_load / load_time come from the native side)
+    if (mode === 'max') NativeBridge.call('adsUserRequest', 'inter', placement, block || pending ? '1' : '0');
     if (block) { console.log(`[Ads] ${placement} lv${levelNumber}${retry ? ' try again #' + retry : ''} skipped: ${block}`); return false; }
     if (pending) return false;
     let shown = false;
@@ -224,6 +227,8 @@ export const Ads = {
   rewardedAvailable() { return mode === 'max' ? rewardedLoaded : mode === 'sim' || mode === 'disabled'; },
   /** Player chose to watch: true only when watched to the end (then grant the reward) */
   async rewarded(placement: RewardedPlacement): Promise<boolean> {
+    // user_ad_request: the player tapped a watch-an-ad button
+    if (mode === 'max') NativeBridge.call('adsUserRequest', 'rewarded', placement, pending ? '1' : '0');
     if (pending || !this.rewardedAvailable()) return false;
     let shown = false, full = false;
     if (mode === 'max') {

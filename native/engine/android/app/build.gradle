@@ -187,6 +187,20 @@ dependencies {
     // that network's SDK (Meta's is the largest, about 5 MB of the APK).
     implementation 'com.applovin.mediation:unityads-adapter:4.21.0.1'
     implementation 'com.applovin.mediation:facebook-adapter:6.22.0.1'
+    // the other bidding networks of the MAX account (2026-11-16, latest adapters on Maven Central). Like
+    // the two above they only serve once the network is set up on the MAX dashboard. Networks whose
+    // SDKs are not on Maven Central come from their own repositories (../build.gradle allprojects).
+    implementation 'com.applovin.mediation:bidmachine-adapter:3.8.0.1'
+    implementation 'com.applovin.mediation:fyber-adapter:8.5.1.0'          // DT Exchange
+    implementation 'com.applovin.mediation:inmobi-adapter:11.5.1.0'
+    implementation 'com.applovin.mediation:ironsource-adapter:9.7.0.0.0'
+    implementation 'com.applovin.mediation:vungle-adapter:7.8.0.0'         // Liftoff Monetize (Vungle)
+    implementation 'com.applovin.mediation:mintegral-adapter:17.2.21.0'
+    implementation 'com.applovin.mediation:moloco-adapter:4.14.1.0'
+    implementation 'com.applovin.mediation:bytedance-adapter:8.4.0.5.0'    // Pangle
+    implementation 'com.applovin.mediation:verve-adapter:3.9.3.0'          // Verve Group (HyBid)
+    implementation 'com.applovin.mediation:yandex-adapter:8.6.0.0'
+    implementation 'com.applovin.mediation:chartboost-adapter:9.14.1.1'
     // their SDKs ask for androidx.browser 1.9.0, which needs Android Gradle plugin 8.9.1; Cocos 3.8.2
     // builds with 8.5.2, so the last browser release that builds with it
     implementation('androidx.browser:browser') { version { strictly '1.8.0' } }

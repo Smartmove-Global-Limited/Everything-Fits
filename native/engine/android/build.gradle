@@ -20,6 +20,12 @@ allprojects {
         google()
         mavenCentral()
         // jcenter() // keeped as anchor, will be removed soon
+        // AppLovin MAX mediation networks whose SDKs are not on Maven Central (app/build.gradle)
+        maven { url 'https://artifactory.bidmachine.io/bidmachine' }                                      // BidMachine
+        maven { url 'https://dl-maven-android.mintegral.com/repository/mbridge_android_sdk_oversea' }     // Mintegral
+        maven { url 'https://artifact.bytedance.com/repository/pangle' }                                  // Pangle
+        maven { url 'https://verve.jfrog.io/artifactory/verve-gradle-release' }                           // Verve (HyBid)
+        maven { url 'https://cboost.jfrog.io/artifactory/chartboost-ads/' }                               // Chartboost
     }
 }
 

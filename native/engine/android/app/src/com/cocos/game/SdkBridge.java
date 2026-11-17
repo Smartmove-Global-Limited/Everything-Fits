@@ -100,13 +100,19 @@ public final class SdkBridge {
                 else bundle.putString(k, String.valueOf(v));
                 values.put(k, v);
             }
-            if (firebase != null) firebase.logEvent(name, bundle);
+            boolean purchase = "purchase".equals(name);
+            if (firebase != null) {
+                if (purchase) {
+                    firebase.logEvent(FirebaseAnalytics.Event.PURCHASE, ga4Purchase(json));
+                    Log.i(TAG, "purchase " + json.opt("value") + " " + json.optString("currency") + " " + json.optString("item_id") + " " + json.optString("transaction_id"));
+                } else firebase.logEvent(name, bundle);
+            }
             if (appsFlyerOn) {
                 // AppsFlyer books purchase revenue only from its own af_purchase event with af_revenue /
-                // af_currency, so a purchase goes to it under that scheme; Firebase keeps the game's name.
-                if ("purchase_success".equals(name)) {
+                // af_currency, so a purchase goes to it under that scheme
+                if (purchase) {
                     AppsFlyerLib.getInstance().logEvent(com.cocos.lib.GlobalObject.getActivity(), AFInAppEventType.PURCHASE, afPurchase(json));
-                    Log.i(TAG, "af_purchase " + json.opt("value") + " " + json.optString("currency") + " " + json.optString("product_id"));
+                    Log.i(TAG, "af_purchase " + json.opt("value") + " " + json.optString("currency") + " " + json.optString("item_id"));
                 } else {
                     AppsFlyerLib.getInstance().logEvent(com.cocos.lib.GlobalObject.getActivity(), name, values);
                 }
@@ -116,39 +122,73 @@ public final class SdkBridge {
         }
     }
 
-    /** purchase_success { product, product_id, value, currency, source } in AppsFlyer's purchase scheme */
+    /**
+     * purchase { transaction_id, value, currency, item_id, item_name, item_category, quantity, source }
+     * (Analytics.purchase) as GA4's recommended purchase event: transaction_id, value, currency and the
+     * items list (one item: the store product, priced at what Play charged)
+     */
+    private static Bundle ga4Purchase(JSONObject p) {
+        double value = p.optDouble("value", 0);
+        Bundle item = new Bundle();
+        item.putString(FirebaseAnalytics.Param.ITEM_ID, p.optString("item_id", ""));
+        item.putString(FirebaseAnalytics.Param.ITEM_NAME, p.optString("item_name", ""));
+        item.putString(FirebaseAnalytics.Param.ITEM_CATEGORY, p.optString("item_category", ""));
+        item.putDouble(FirebaseAnalytics.Param.PRICE, value);
+        item.putLong(FirebaseAnalytics.Param.QUANTITY, p.optLong("quantity", 1));
+        Bundle b = new Bundle();
+        String tx = p.optString("transaction_id", "");
+        b.putString(FirebaseAnalytics.Param.TRANSACTION_ID, tx.length() > 100 ? tx.substring(0, 100) : tx);   // GA4 cuts values at 100
+        b.putDouble(FirebaseAnalytics.Param.VALUE, value);
+        b.putString(FirebaseAnalytics.Param.CURRENCY, p.optString("currency", "USD"));
+        b.putParcelableArray(FirebaseAnalytics.Param.ITEMS, new Bundle[] { item });
+        b.putString("source", p.optString("source", ""));
+        return b;
+    }
+
+    /** The same purchase in AppsFlyer's purchase scheme (af_purchase) */
     private static Map<String, Object> afPurchase(JSONObject p) {
         Map<String, Object> m = new HashMap<>();
         m.put(AFInAppEventParameterName.REVENUE, p.optDouble("value", 0));
         m.put(AFInAppEventParameterName.CURRENCY, p.optString("currency", "USD"));
-        m.put(AFInAppEventParameterName.CONTENT_ID, p.optString("product_id", ""));
-        m.put(AFInAppEventParameterName.CONTENT_TYPE, p.optString("product", ""));
+        m.put(AFInAppEventParameterName.CONTENT_ID, p.optString("item_id", ""));
+        m.put(AFInAppEventParameterName.CONTENT_TYPE, p.optString("item_category", ""));
         m.put(AFInAppEventParameterName.QUANTITY, 1);
+        m.put(AFInAppEventParameterName.ORDER_ID, p.optString("transaction_id", ""));
         m.put("source", p.optString("source", ""));
         return m;
     }
 
     /**
-     * Impression-level ad revenue (AppsFlyer "Impression-level (SDK)" integration): every paid MAX
-     * impression (AdsBridge revenue listeners) goes to logAdRevenue, which the SDK sends as
-     * af_ad_revenue. MAX reports the revenue in USD.
+     * Impression-level ad revenue of every paid MAX impression (AdsBridge revenue listeners), MAX
+     * reports it in USD:
+     *   Firebase / GA4: ad_impression with is_show 1 (AdEvents)
+     *   AppsFlyer:      logAdRevenue ("Impression-level (SDK)" integration), sent as af_ad_revenue
      */
     static void logAdRevenue(MaxAd ad) {
-        String placement = ad == null ? "" : ad.getPlacement();   // the placement given to showAd / setPlacement
-        if (!appsFlyerOn || ad == null) return;
+        if (ad == null) return;
+        String placement = ad.getPlacement();   // the placement given to showAd / setPlacement
         double revenue = ad.getRevenue();
         String network = ad.getNetworkName();
+        String format = ad.getFormat() == null ? "" : ad.getFormat().getLabel();
+        AdEvents.impression(ad.getFormat(), true, network, ad.getAdUnitId(), placement, Math.max(0, revenue));   // < 0: MAX could not tell
+        if (!appsFlyerOn) return;
         if (revenue <= 0 || network == null || network.isEmpty()) return;   // MAX had no figure for it
         try {
             Map<String, Object> extra = new HashMap<>();
             extra.put(AdRevenueScheme.AD_UNIT, ad.getAdUnitId());
-            extra.put(AdRevenueScheme.AD_TYPE, ad.getFormat() == null ? "" : ad.getFormat().getLabel());
+            extra.put(AdRevenueScheme.AD_TYPE, format);
             extra.put(AdRevenueScheme.PLACEMENT, placement == null ? "" : placement);
             AppsFlyerLib.getInstance().logAdRevenue(new AFAdRevenueData(network, MediationNetwork.APPLOVIN_MAX, "USD", revenue), extra);
             Log.i(TAG, "af_ad_revenue " + revenue + " USD " + network + " " + extra.get(AdRevenueScheme.AD_TYPE) + " " + placement);
         } catch (Exception e) {
             Log.w(TAG, "AppsFlyer logAdRevenue failed", e);
         }
+    }
+
+    /** Firebase / GA4 event with a ready bundle (AdEvents) */
+    static void firebaseLog(String name, Bundle params) {
+        if (firebase == null) return;
+        try { firebase.logEvent(name, params); } catch (Exception e) { Log.w(TAG, "Firebase " + name + " failed", e); }
     }
 
     // ---------- ads (AdsBridge), billing (BillingBridge), remote config (RemoteConfigBridge) ----------
@@ -158,6 +198,8 @@ public final class SdkBridge {
     public static void adsHideBanner() { AdsBridge.hideBanner(); }
     public static void adsShowInter(String placement) { AdsBridge.showInter(placement); }
     public static void adsShowRewarded(String placement) { AdsBridge.showRewarded(placement); }
+    /** user_ad_request (AdEvents): format "inter" | "rewarded", limited "1" when the game's rules hold the ad back */
+    public static void adsUserRequest(String format, String placement, String limited) { AdsBridge.userRequest(format, placement, "1".equals(limited)); }
     public static void billingSetup(String catalogueJson) { BillingBridge.setup(catalogueJson); }
     public static void billingBuy(String productId) { BillingBridge.buy(productId); }
     public static void billingFakeBuy(String productId, String name, String price) { BillingBridge.fakeBuy(productId, name, price); }

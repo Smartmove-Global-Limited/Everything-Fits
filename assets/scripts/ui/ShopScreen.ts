@@ -8,6 +8,7 @@ import { RoundRect } from './RoundRect';
 import { Overlays } from './Overlays';
 import { Wallet, formatNumber } from '../services/Wallet';
 import { Purchases, product, BuyResult } from '../services/Purchases';
+import { Analytics } from '../services/Analytics';
 import { Boosters, BoosterKey } from '../services/Boosters';
 import { FreeGold, FREE_GOLD, FREE_GOLD_PER_DAY } from '../services/Daily';
 import { Ads } from '../services/Ads';
@@ -44,6 +45,8 @@ export class ShopScreen extends Component {
   private fx: ShopFx = null!;
   /** while bought coins fly in, the counter counts up with them instead of jumping */
   private holdGold = false;
+  /** where the Shop was opened from, for the IAP events: shop (tab) · shop_gold (the gold "+") */
+  private placement = 'shop';
 
   onLoad() {
     const n = this.node;
@@ -95,6 +98,9 @@ export class ShopScreen extends Component {
     this.scroll.scrollToTop(0);
     this.fx.intro();
     if (toGold) this.scheduleOnce(() => this.scrollToGold(), 0);
+    // iap_show: one for the whole list each time the Shop opens
+    this.placement = toGold ? 'shop_gold' : 'shop';
+    Analytics.iapShow(this.placement, 'shop');
   }
 
   private scrollToGold() {
@@ -271,6 +277,7 @@ export class ShopScreen extends Component {
     if (this.busy) return;
     if (b.kind === 'gold') return this.spendGold(b);
     if (b.kind === 'ad') return this.freeGold();
+    Analytics.iapClick(this.placement, b.id);
     this.lock(true);
     const label = labelIn(b.node)!, before = label.string;
     label.string = '…';

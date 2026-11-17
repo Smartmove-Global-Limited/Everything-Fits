@@ -98,7 +98,8 @@ function onNative(msg: any) {
       // once per transaction, with what Play charged (catalogue USD price before Play has answered)
       const micros = Number(msg.priceMicros) || 0;
       const value = micros > 0 ? micros / 1e6 : Number(p.price.replace(/[^0-9.]/g, '')) || 0;
-      Analytics.purchase(p, value, micros > 0 && msg.currency ? String(msg.currency) : 'USD', msg.fromFlow ? 'shop' : 'pending');
+      Analytics.purchase(p, value, micros > 0 && msg.currency ? String(msg.currency) : 'USD', msg.fromFlow ? 'shop' : 'pending',
+        String(msg.orderId || token));   // Play's order id (GPA.…); the token when Play gave none
     }
     NativeBridge.call('billingFinish', token, p.lifetime ? '0' : '1');
     if (buying?.id === p.id) { const b = buying; buying = null; b.done('ok'); }

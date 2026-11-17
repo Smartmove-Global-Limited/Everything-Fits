@@ -54,14 +54,49 @@ function send(name: string, params: Record<string, string | number>) {
 const productKind = (p: Product) => p.noAds ? (p.boosters ? 'no_ads_bundle' : 'no_ads')
   : p.gold && p.boosters ? 'bundle' : p.gold ? 'gold' : 'booster';
 
+// ---- IAP funnel (the team's tracking sheet, IAP): iap_show → iap_click → iap_purchase ----
+//   placement         where the packs were on screen: shop (Shop tab) · shop_gold (Shop from the
+//                     gold "+") · booster_popup (gameplay, a booster with none left)
+//   type              the pack, from its store id: remove_ads, remove_ads_bundle, small_bundle, gold_500…;
+//                     iap_show on the Shop: "shop" (one event for the whole list, asked)
+//   iap_index         the n-th time this player saw / clicked / bought it (1 = the first)
+const IAP_KEY = 'ef.iap.events.v1';
+type IapSaved = { show: Record<string, number>; click: Record<string, number>; buy: Record<string, number>; placement: Record<string, string> };
+const iap: IapSaved = { show: {}, click: {}, buy: {}, placement: {}, ...LocalStore.json<Partial<IapSaved>>(IAP_KEY, {}) };
+const iapType = (id: string) => id.replace(/^fit\./, '').replace(/\./g, '_');
+const iapCount = (k: 'show' | 'click' | 'buy', id: string) => { iap[k][id] = (iap[k][id] || 0) + 1; return iap[k][id]; };
+
 export const Analytics = {
   /**
-   * A store purchase was granted (once per transaction). Firebase gets purchase_success; SdkBridge
-   * sends it to AppsFlyer as af_purchase (af_revenue / af_currency), the only event AppsFlyer
-   * books purchase revenue from. value / currency = what Play charged.
+   * A store purchase was granted (once per transaction): GA4's recommended purchase event, which GA4
+   * books as purchase revenue. value / currency = what Play charged; transaction_id = Play's order id.
+   * SdkBridge turns the item fields into GA4's items list for Firebase, and sends the purchase to
+   * AppsFlyer as af_purchase (af_revenue / af_currency), the only event AppsFlyer books it from.
    */
-  purchase(p: Product, value: number, currency: string, source: string) {
-    send('purchase_success', { product: productKind(p), product_id: p.id, value, currency, source });
+  purchase(p: Product, value: number, currency: string, source: string, transactionId: string) {
+    send('purchase', {
+      transaction_id: transactionId, value, currency,
+      item_id: p.id, item_name: p.name, item_category: productKind(p), quantity: 1, source,
+    });
+    // the funnel's last step, at the place the pack was last clicked (a pending one granted later too)
+    send('iap_purchase', {
+      placement: iap.placement[p.id] || source, type: iapType(p.id), price: value, currency,
+      iap_index: iapCount('buy', p.id),
+    });
+    LocalStore.setJson(IAP_KEY, iap);
+  },
+
+  /** Store packs came on screen at `placement`: one event, `type` = the pack's store id or "shop" (the whole list) */
+  iapShow(placement: string, type: string) {
+    const t = type === 'shop' ? type : iapType(type);
+    send('iap_show', { placement, type: t, iap_index: iapCount('show', t) });
+    LocalStore.setJson(IAP_KEY, iap);
+  },
+  /** The buy button of a store pack was tapped */
+  iapClick(placement: string, id: string) {
+    iap.placement[id] = placement;
+    send('iap_click', { placement, type: iapType(id), iap_index: iapCount('click', id) });
+    LocalStore.setJson(IAP_KEY, iap);
   },
 
   /** Why the next round starts: next / restart / home */

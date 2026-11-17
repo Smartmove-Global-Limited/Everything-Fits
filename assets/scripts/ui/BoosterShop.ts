@@ -10,6 +10,7 @@ import { Overlays } from './Overlays';
 import { SPEND } from './ShopScreen';
 import { Wallet, formatNumber } from '../services/Wallet';
 import { Purchases, product, BuyResult } from '../services/Purchases';
+import { Analytics } from '../services/Analytics';
 import { Boosters } from '../services/Boosters';
 import { Sound } from '../audio/Sound';
 
@@ -39,6 +40,7 @@ export async function openBoosterShop(onClose: () => void) {
   offGold?.(); offGold = Wallet.onChange(() => showGold(v));
   setText(v.bundleBuy, Purchases.price(BUNDLE_ID));
   fitPrice(v.bundleBuy);
+  Analytics.iapShow('booster_popup', BUNDLE_ID);
   Sound.play('menuOpen');
   openPopup(v.root, v.card);
 }
@@ -161,6 +163,7 @@ function spendGold(id: string, tile: Node) {
 async function buyBundle() {
   if (busy || !view) return;
   const btn = view.bundleBuy, label = labelIn(btn)!, before = label.string;
+  Analytics.iapClick('booster_popup', BUNDLE_ID);
   lock(true);
   label.string = '…';
   let r: BuyResult = 'error';
