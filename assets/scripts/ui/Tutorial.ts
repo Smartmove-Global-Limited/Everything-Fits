@@ -1,13 +1,23 @@
 // How-to-play tutorial (gameplay doc "Tutorial"), on the TutorialOverlay prefab above the field.
 //   Level 1, once:  1. a hand drags one item from the tray to its place in the bag
 //                      ("Drag items into the bag") until the player packs an item;
-//                   2. the hand taps an item that must turn, then drags round it from beside it
-//                      ("Tap an item, then swipe around it to rotate") until the player turns one;
-//                   3. "Great! Pack everything before time runs out", then normal play.
-//   Shake, once:    when 3 items are in the bag on level 1 (after the basics, or when level 1 is
-//                   played again), the hand shakes over the bag ("Shake your phone to
-//                   settle the items") until the player shakes (or taps, where shaking cannot be
-//                   done), then "Nice! Shaking settles the items".
+//                   2. "Great! Pack everything before time runs out", then normal play.
+//   Turning, once each, on level 1 (or level 2 if not seen there):
+//     hold + turn:  the first time a held item is inside the bag where it fits (on level 1 that
+//                   is the drag step done), the clock stops and the item stays where it is; a hand
+//                   (left, mirrored) has its finger on the item, holding it, a right hand's finger
+//                   goes round it outside, down, up, a full circle and back, and the item turns
+//                   with it ("Hold it, and rotate with another finger"), back at its own angle.
+//                   Then it is let go into the bag (finger lifted or not): on level 1 the drag
+//                   step is not shown again, "Great! ..." follows.
+//     tap + turn:   the first time an item is tapped (rotate handle shown), two hands beside it at
+//                   once: the left finger goes down its left side and it turns left, then the right
+//                   finger goes down its right side and it turns back right
+//                   ("Swipe around it with 1 or 2 fingers to rotate either way") until the player turns it (an
+//                   unselect puts it off to the next tap).
+//   Shake, once, level 2: when 3 items are in the bag, the phone icon shakes over the bag ("Shake
+//                   your phone to settle the items") until the player shakes (or taps, where
+//                   shaking cannot be done), then "Nice! Shaking settles the items".
 //   Level 3 / 6 / 9, once each: the hand points at the booster that just opened, with one line
 //                   about it, until the player touches the screen.
 //   Mystery box, once: on the first level with a mystery box, the hand drags the box from the tray
@@ -16,7 +26,7 @@
 // The clock stays stopped and no interstitial shows while a tutorial runs. The overlay never
 // blocks touches: the player plays the real level under it. Animations are tweens restarted at
 // each loop (every ~2 s), nothing runs per frame.
-import { _decorator, Component, Node, Label, UITransform, Vec3, Vec2, tween, Tween, UIOpacity, EventTouch, Sprite, SpriteFrame, resources } from 'cc';
+import { _decorator, Component, Node, Label, UITransform, Vec3, tween, Tween, UIOpacity, EventTouch, Sprite, SpriteFrame, resources, instantiate, Layout } from 'cc';
 import { LocalStore } from '../services/LocalStore';
 import { GameState } from '../core/GameState';
 import { angleOf } from '../game/DragController';
@@ -27,11 +37,34 @@ const KEY_BASICS = 'ef.tutorial.basics.v1';
 const KEY_BOOSTER = 'ef.tutorial.booster.v1.';
 const KEY_SHAKE = 'ef.tutorial.shake.v1';
 const KEY_MYSTERY = 'ef.tutorial.mystery.v1';
+const KEY_HOLD_TURN = 'ef.tutorial.holdturn.v1';
+const KEY_TAP_TURN = 'ef.tutorial.tapturn.v1';
+const TURN_LAST_LEVEL = 2;                   // the turn hints wait for their moment on levels 1 and 2
+const SHAKE_LEVEL = 2;
+const HOLD_TURN_LINE = 'Hold it, and rotate with another finger';
+const TAP_TURN_LINE = 'Swipe around it with 1 or 2 fingers to rotate either way';
+/**
+ * Hold + turn: the rotate hand's way round the item, in degrees round its centre (0 = right, 90 =
+ * up), from its left side: down a quarter, up half a turn, a full circle, down a quarter back to
+ * the start; the item turns by as much as the hand went round, so it ends at its own angle (it
+ * fitted there: it is let go into the bag). Segment times in seconds.
+ */
+const HOLD_TURN_PATH = [180, 270, 90, -270, -180];
+const HOLD_TURN_TIMES = [.9, 1.3, 2.2, .9];
+const HOLD_TURN_LEAD = 1, HOLD_TURN_PAUSE = .15, HOLD_TURN_REST = .8;   // s: read the line, between moves, look at the result
+const HOLD_TIP_IN = 4;                       // the holding fingertip this far inside the item's bottom edge
+const HOLD_TURN_BESIDE = 40;                 // the rotate hand goes round this far outside the item
 const MYSTERY_DROP_ABOVE = 70;               // the hand lets go of the box this far above the key
 const SHAKE_AFTER_PACKED = 3;                // items in the bag before the shake step shows
 const DONE_SECONDS = 2.6;
+const LINE_CLEAR = 24;                        // the line above an item sits this far over it (and its hands)
+const SETTLE_SPEED = .3, SETTLE_MAX = 3;      // m/s, s: the tray has settled when nothing moves faster
 const MIN_TURN = 20;                         // degrees: a real rotation, not a slip of the finger
-const ROTATE_BESIDE = 26;                    // the hand turns an item from this far beyond its ↻ button (off the item)
+const ROTATE_BESIDE = 46;                    // the tap + turn hands go round this far outside the item (clear of a small one)
+// degrees round the item (0 = right, 90 = up): the left finger down its left side (the item turns
+// left, anticlockwise), the right finger down its right side (it turns back right, clockwise)
+const TAP_LEFT = [135, 225], TAP_RIGHT = [45, -45];
+const TAP_SWEEP = 1, TAP_LOOP = 3.4;         // s: one finger's way down, one pass of both
 const SHAKE_TAP_AFTER = 1.5;                 // s before a tap also ends the shake step
 const PHONE_SIZE = 110;
 
@@ -47,10 +80,20 @@ export type TutorialHost = {
   packedCount(): number;
   /** tutorial on / off: the game stops the clock and the ads while on */
   setActive(on: boolean): void;
+  /** hold + turn: freeze the held item where it is / let it go on (DragController.freezeHeld) */
+  freezeHeld(on: boolean): void;
+  /** let go of the held item now (DragController.dropHeld) */
+  dropHeld(): void;
+  /** turn the held item round its centre by `deg` degrees */
+  turnHeld(deg: number): void;
+  /** world position of the finger holding the item (null: nothing held) */
+  fingerWorld(out: Vec3): Vec3 | null;
+  /** tap + turn: turn the selected item for real, as a finger would (DragController.demoTurn*) */
+  demoTurnStart(item: ItemView): boolean;
+  demoTurnBy(deg: number): void;
+  demoTurnEnd(): void;
 };
 
-/** Smallest difference between two angles in degrees (0..180) */
-const turnBetween = (a: number, b: number) => { const d = Math.abs(((a - b) % 360 + 540) % 360 - 180); return d; };
 
 @ccclass('Tutorial')
 export class Tutorial extends Component {
@@ -60,20 +103,29 @@ export class Tutorial extends Component {
   @property({ type: Label, tooltip: 'Text of the bubble' }) text: Label = null!;
 
   private host: TutorialHost | null = null;
-  // waitShake: nothing on screen, waiting for enough items in the bag to show the shake step
-  private step: 'off' | 'drag' | 'rotate' | 'done' | 'waitShake' | 'shake' | 'shaken' | 'booster' | 'mystery' | 'opened' = 'off';
+  // watch: nothing on screen, waiting for the moment of a hint not seen yet (a held item over the
+  // bag, a tap on an item, 3 items in the bag on the shake level)
+  private step: 'off' | 'drag' | 'done' | 'watch' | 'shake' | 'shaken' | 'booster' | 'mystery' | 'opened' | 'holdTurn' | 'tapTurn' = 'off';
+  /** level number of the round the hints are for */
+  private level = 0;
+  /** ends the hold + turn hint: the finger holding the item was lifted, or a second finger turns it */
+  private holdEnd: ((lifted: boolean) => void) | null = null;
   private target: ItemView | null = null;
   private targetPlace = new Vec3();
   private boosterKey = '';
   private readonly tmp = new Vec3();
-  private readonly tmp2 = new Vec2();
 
   static needsBasics(levelNumber: number) { return levelNumber === 1 && !LocalStore.get(KEY_BASICS); }
   static needsBooster(key: string) { return !LocalStore.get(KEY_BOOSTER + key); }
   static needsShake() { return !LocalStore.get(KEY_SHAKE); }
   static needsMystery() { return !LocalStore.get(KEY_MYSTERY); }
-  /** something is on screen (waiting for the shake step is not) */
-  get active() { return this.step !== 'off' && this.step !== 'waitShake'; }
+  /** a hint still to be shown on this level when its moment comes (turn hints, shake) */
+  static needsWatch(levelNumber: number) {
+    return (levelNumber <= TURN_LAST_LEVEL && (!LocalStore.get(KEY_HOLD_TURN) || !LocalStore.get(KEY_TAP_TURN)))
+      || (levelNumber === SHAKE_LEVEL && Tutorial.needsShake());
+  }
+  /** something is on screen (waiting for a hint's moment is not) */
+  get active() { return this.step !== 'off' && this.step !== 'watch'; }
 
   onLoad() { this.bubbleY = this.bubble.position.y; this.node.active = false; }
   onDestroy() { this.node.targetOff(this); }
@@ -87,56 +139,221 @@ export class Tutorial extends Component {
   }
 
   // ---------- level 1 basics ----------
-  startBasics(host: TutorialHost) {
-    this.host = host;
+  startBasics(host: TutorialHost, levelNumber = 1) {
+    this.host = host; this.level = levelNumber;
     this.begin();
     host.setActive(true);
-    this.showDragStep();
+    this.step = 'drag';
+    this.bubble.active = false; this.hand.active = false; this.ring.active = false;   // the line comes with the item, above it
+    this.whenSettled(() => { if (this.step === 'drag') this.showDragStep(); });
+  }
+  /** Once the items have stopped falling onto the tray (or after SETTLE_MAX s), run `then` */
+  private whenSettled(then: () => void) {
+    let waited = 0;
+    const check = () => {
+      waited += .25;
+      const moving = this.host?.items().some(it => !it.waiting && it.node.activeInHierarchy && it.body?.enabled && it.body.isAwake() && it.body.linearVelocity.length() > SETTLE_SPEED);
+      if (moving && waited < SETTLE_MAX) this.scheduleOnce(check, .25); else then();
+    };
+    this.scheduleOnce(check, .25);
+  }
+
+  /** Off screen until the moment of a hint not seen yet on this level (turn hints, shake) */
+  watch(host: TutorialHost, levelNumber: number) {
+    this.host = host; this.level = levelNumber;
+    this.step = 'watch';
+    if (this.shakeDue()) this.startShake();
+  }
+  private shakeDue() {
+    return this.level === SHAKE_LEVEL && Tutorial.needsShake() && !!this.host && this.host.packedCount() >= SHAKE_AFTER_PACKED && !GameState.drag;
   }
 
   /** An item was packed into the bag */
   onPacked() {
-    if (this.step === 'drag') this.showRotateStep();
-    else if (this.step === 'waitShake' && this.host && this.host.packedCount() >= SHAKE_AFTER_PACKED) this.startShake();
-  }
-
-  /** Level 1 played again: the shake step was not shown yet (it ended before 3 items were in) */
-  watchShake(host: TutorialHost) {
-    this.host = host;
-    this.step = 'waitShake';
-    if (host.packedCount() >= SHAKE_AFTER_PACKED) this.startShake();
+    if (this.step === 'drag') this.basicsDone();
+    else if (this.step === 'watch' && this.shakeDue()) this.startShake();
   }
   private startShake() {
     this.begin();
     this.host!.setActive(true);
     this.showShakeStep();
   }
-  /** Basics done: off screen until enough items are in the bag */
-  private waitForShake() {
-    LocalStore.set(KEY_BASICS, '1');
-    this.stopLoop();
-    this.hand.active = false; this.ring.active = false;
-    this.node.active = false;
-    this.host?.setActive(false);
-    if (!Tutorial.needsShake() || !this.host) { this.step = 'off'; this.host = null; return; }
-    this.watchShake(this.host);
-  }
 
-  /** The player selected an item (the rotate handle appeared) or cleared the selection */
-  onSelect(item: ItemView | null) {
-    if (this.step !== 'rotate') return;
-    if (item) this.target = item;
-    this.loop();
-  }
-
-  /** The player turned an item with the handle by `degrees` */
-  onRotated(degrees: number) {
-    if (this.step !== 'rotate' || Math.abs(degrees) < MIN_TURN) return;
+  /** Level 1 basics done: one line, then on with the hints still to come */
+  private basicsDone() {
+    this.clearExtras();
     this.step = 'done';
     this.stopLoop();
     this.hand.active = false; this.ring.active = false;
     this.say('Great! Pack everything before time runs out');
-    this.scheduleOnce(() => this.waitForShake(), DONE_SECONDS);
+    this.scheduleOnce(() => { LocalStore.set(KEY_BASICS, '1'); this.resume(); }, DONE_SECONDS);
+  }
+
+  /**
+   * A hint is over (turn, shake, basics line): back to the drag step if the level 1 basics are not
+   * done yet, else off screen waiting for the next hint's moment, or off for good.
+   */
+  private resume() {
+    this.stopLoop();
+    this.unscheduleAllCallbacks();
+    this.clearExtras();
+    this.node.off(Node.EventType.TOUCH_START, this.onTouch, this);
+    this.hand.active = false; this.ring.active = false;
+    this.target = null;
+    const host = this.host;
+    if (!host) { this.step = 'off'; this.node.active = false; return; }
+    if (Tutorial.needsBasics(this.level)) {
+      this.begin();
+      host.setActive(true);
+      if (host.packedCount() > 0) this.basicsDone(); else this.showDragStep();
+      return;
+    }
+    this.node.active = false;
+    host.setActive(false);
+    if (Tutorial.needsWatch(this.level)) { this.step = 'watch'; if (this.shakeDue()) this.startShake(); }
+    else { this.step = 'off'; this.host = null; }
+  }
+
+  // ---------- turning ----------
+  /** The player selected an item (the rotate handle appeared) or cleared the selection */
+  onSelect(item: ItemView | null) {
+    // the first tap on an item shows how to turn it (also during the drag step of level 1)
+    // (also while "Great! ..." shows after the basics: a tap then was lost, it took a second one)
+    if ((this.step === 'watch' || this.step === 'drag' || this.step === 'done') && item && this.level <= TURN_LAST_LEVEL && !LocalStore.get(KEY_TAP_TURN) && !GameState.drag) {
+      if (this.step === 'done') { LocalStore.set(KEY_BASICS, '1'); this.unscheduleAllCallbacks(); }
+      this.startTapTurn(item);
+      return;
+    }
+    if (this.step !== 'tapTurn') return;
+    if (!item) { this.resume(); return; }   // unselected: again at the next tap
+    this.target = item;
+    this.loop();
+  }
+
+  /** The player's own finger started turning an item: the tap + turn hint is done at once (asked:
+   *  it stayed on screen until the finger was lifted) */
+  onTurnStart() {
+    if (this.step !== 'tapTurn') return;
+    LocalStore.set(KEY_TAP_TURN, '1');
+    this.resume();
+  }
+
+  /** The player turned an item with the handle by `degrees` */
+  onRotated(degrees: number) {
+    if (Math.abs(degrees) < MIN_TURN) return;
+    // turned while held (a second finger): the hold + turn hint is learnt, not shown again
+    if (GameState.drag) { LocalStore.set(KEY_HOLD_TURN, '1'); return; }
+    if (this.step !== 'tapTurn') return;
+    LocalStore.set(KEY_TAP_TURN, '1');
+    this.resume();
+  }
+  private startTapTurn(item: ItemView) {
+    this.stopLoop();
+    this.begin();
+    this.host!.setActive(true);
+    this.step = 'tapTurn';
+    this.target = item;
+    this.sayAbove(TAP_TURN_LINE, item, ROTATE_BESIDE + LINE_CLEAR);
+    this.loop();
+  }
+
+  /**
+   * A held item fits in the bag: the first time, show the second-finger turn on it with two hands:
+   * a left hand's finger on the item holding it, a right hand's finger coming down beside it, then
+   * going round it (down, up, a full circle, back), the item turning with it. Shown over and over
+   * until the player turns it with a second finger or lifts the finger holding it (asked: it used
+   * to end by itself and drop the item while the finger still held it).
+   */
+  onHeldOverBag(item: ItemView) {
+    if ((this.step !== 'watch' && this.step !== 'drag') || LocalStore.get(KEY_HOLD_TURN) || !this.host) return;
+    const host = this.host;
+    this.stopLoop();
+    this.begin();
+    host.setActive(true);
+    host.freezeHeld(true);
+    this.step = 'holdTurn';
+    this.target = item;
+    this.ring.active = false;
+    this.sayAbove(HOLD_TURN_LINE, item, HOLD_TURN_BESIDE + LINE_CLEAR);
+    const c = this.toLocal(item.node.worldPosition, new Vec3());
+    // radius in this node's units: a world point that far right of the item's centre
+    const box = item.localBox, R = Math.max(box.width, box.height) * item.levelScale / 2 + HOLD_TURN_BESIDE;
+    const w = item.node.worldPosition;
+    const r = Vec3.distance(c, this.toLocal(this.tmp.set(w.x + R, w.y, 0), new Vec3()));
+    // two hands, nothing else (asked: no tags, no ring, no arc): a left hand with its fingertip on
+    // the item's bottom edge, holding it (not on the player's finger: there the finger hid it),
+    // and a right hand that comes down beside it, then goes round it, the item turning with it
+    const hold = this.extraHand();
+    const hop = hold.getComponent(UIOpacity) || hold.addComponent(UIOpacity);
+    Tween.stopAllByTarget(hold); Tween.stopAllByTarget(hop);
+    hold.setScale(-1, 1, 1);   // a left hand: the picture mirrored
+    // fingertip on the item's lowest point, the hand below it: drawn over the item it hid it
+    const low = this.toLocal(this.tmp.set(w.x, w.y - item.below(angleOf(item.node) * Math.PI / 180), 0), new Vec3());
+    hold.active = true; hold.setPosition(c.x, low.y + HOLD_TIP_IN, 0); hop.opacity = 255;
+    const op = this.hand.getComponent(UIOpacity) || this.hand.addComponent(UIOpacity);
+    this.hand.active = true; op.opacity = 0;
+    this.hand.setScale(1.3, 1.3, 1);
+    tween(op).delay(.3).to(.3, { opacity: 255 }).start();
+    tween(this.hand).delay(.45).to(.25, { scale: Vec3.ONE }, { easing: 'quadIn' }).start();
+    const arc = this.arc; Tween.stopAllByTarget(arc);
+    const start = HOLD_TURN_PATH[0];
+    let turned = 0;
+    const place = () => {
+      const a = arc.t * Math.PI / 180, x = c.x + Math.cos(a) * r, y = c.y + Math.sin(a) * r;
+      this.hand.setPosition(x, y, 0);
+      const want = arc.t - start;
+      host.turnHeld(want - turned); turned = want;
+    };
+    // one round of the path; it ends a full turn from where it began, the same angle: again
+    const round = (lead: number) => {
+      arc.t = start; turned = 0; place();
+      let tw = tween(arc).delay(lead);
+      for (let k = 0; k < HOLD_TURN_TIMES.length; k++) {
+        if (k) tw = tw.delay(HOLD_TURN_PAUSE);
+        tw = tw.to(HOLD_TURN_TIMES[k], { t: HOLD_TURN_PATH[k + 1] }, { easing: 'sineInOut', onUpdate: place });
+      }
+      tw.delay(HOLD_TURN_REST).call(() => round(0)).start();
+    };
+    round(HOLD_TURN_LEAD);
+    this.holdEnd = lifted => {
+      this.holdEnd = null;
+      Tween.stopAllByTarget(arc);
+      host.turnHeld(-turned); turned = 0;   // back at the angle it fitted at
+      LocalStore.set(KEY_HOLD_TURN, '1');
+      this.clearExtras();
+      this.hand.active = false;
+      if (lifted) {
+        host.dropHeld();   // into the bag
+        // level 1: the item is in, the drag step is done (it is not shown again)
+        if (Tutorial.needsBasics(this.level)) { LocalStore.set(KEY_BASICS, '1'); this.basicsDone(); }
+        else this.resume();
+        return;
+      }
+      host.freezeHeld(false);   // back on the finger, the second finger turns it
+      if (Tutorial.needsBasics(this.level)) {
+        // level 1: nothing on screen, the drag step ends when it is packed (onPacked)
+        this.step = 'drag';
+        this.bubble.active = false;
+      } else this.resume();
+    };
+  }
+  /** The finger holding the item was lifted during the hold + turn hint: it ends, the item drops */
+  onHeldLetGo() { if (this.step === 'holdTurn') this.holdEnd?.(true); }
+  /** A second finger started turning the held item during the hold + turn hint: it ends */
+  onHeldTwist() { if (this.step === 'holdTurn') this.holdEnd?.(false); }
+
+  // second hand of the two-hand hints (mirrored: a left hand), made on first use
+  private hand2: Node | null = null;
+  private extraHand(): Node {
+    if (!this.hand2) { this.hand2 = instantiate(this.hand); this.hand2.name = 'hand2'; this.node.addChild(this.hand2); }
+    return this.hand2;
+  }
+  private clearExtras() {
+    const rop = this.ring.getComponent(UIOpacity);
+    Tween.stopAllByTarget(this.ring); if (rop) Tween.stopAllByTarget(rop);
+    this.ring.active = false; this.ring.setScale(1, 1, 1);
+    this.hand.setScale(1, 1, 1);
+    if (this.hand2) { const op = this.hand2.getComponent(UIOpacity); if (op) Tween.stopAllByTarget(op); this.hand2.active = false; }
   }
 
   /** The phone was shaken hard enough to move the items (Shake: one jolt) */
@@ -147,39 +364,26 @@ export class Tutorial extends Component {
     this.stopLoop();
     this.hand.active = false; this.ring.active = false;
     this.say('Nice! Shaking settles the items');
-    this.scheduleOnce(() => this.finish(), DONE_SECONDS);
+    this.scheduleOnce(() => { LocalStore.set(KEY_SHAKE, '1'); this.resume(); }, DONE_SECONDS);
   }
 
   /** The round ended (won / lost / left) while a tutorial ran */
   stop() {
-    if (this.step === 'waitShake') { this.step = 'off'; this.host = null; return; }   // tried again next round
+    if (this.step === 'watch') { this.step = 'off'; this.host = null; return; }   // tried again next round
     if (this.active) this.finish();
   }
 
   private showDragStep() {
     const host = this.host!;
-    // the item whose place in the solution needs no turning
-    const sol = host.solution().filter(s => host.items()[s.i] && !host.packed(s.i));
-    const pick = sol.slice().sort((a, b) => turnBetween(angleOf(host.items()[a.i].node), a.angle) - turnBetween(angleOf(host.items()[b.i].node), b.angle))[0];
+    // the item nearest the middle of the screen (asked: not one in a corner), with a place in the solution
+    const sol = host.solution().filter(s => host.items()[s.i] && !host.packed(s.i) && host.items()[s.i].node.activeInHierarchy);
+    const mid = (s: { i: number }) => Math.abs(this.toLocal(host.items()[s.i].node.worldPosition, this.tmp).x);
+    const pick = sol.slice().sort((a, b) => mid(a) - mid(b))[0];
     if (!pick) { this.finish(); return; }
     this.step = 'drag';
     this.target = host.items()[pick.i];
     this.targetPlace.set(pick.x, pick.y, 0);
-    this.say('Drag items into the bag');
-    this.loop();
-  }
-
-  private showRotateStep() {
-    const host = this.host!;
-    // the item just dragged into the bag, else any item lying in the bag (asked: the turn is shown
-    // on an item in the bag, right where it was put); only with none there, one on the tray
-    const inBag = host.items().filter((it, i) => host.packed(i) && it.node.activeInHierarchy);
-    const dragged = this.target && inBag.includes(this.target) ? this.target : null;
-    const tray = host.items().filter((it, i) => !host.packed(i) && it.node.activeInHierarchy);
-    this.target = dragged || inBag[0] || tray[0] || null;
-    if (!this.target) { this.finish(); return; }
-    this.step = 'rotate';
-    this.say('Tap an item, then swipe around it to rotate');
+    this.sayAbove('Drag items into the bag', this.target, LINE_CLEAR);
     this.loop();
   }
 
@@ -256,6 +460,7 @@ export class Tutorial extends Component {
 
   // ---------- common ----------
   private begin() {
+    if (this.node.active) return;   // one hint after another: no fade again
     this.node.active = true;
     this.node.setSiblingIndex(this.node.parent!.children.length - 1);
     const op = this.node.getComponent(UIOpacity) || this.node.addComponent(UIOpacity);
@@ -267,7 +472,11 @@ export class Tutorial extends Component {
     if (this.step === 'booster') LocalStore.set(KEY_BOOSTER + this.boosterKey, '1');
     else if (this.step === 'shake' || this.step === 'shaken') LocalStore.set(KEY_SHAKE, '1');
     else if (this.step === 'mystery' || this.step === 'opened') LocalStore.set(KEY_MYSTERY, '1');
-    else LocalStore.set(KEY_BASICS, '1');
+    else if (this.step === 'drag' || this.step === 'done') LocalStore.set(KEY_BASICS, '1');
+    // a turn hint cut short by the end of the round: shown again next time
+    if (this.step === 'holdTurn') this.host?.freezeHeld(false);
+    this.holdEnd = null;
+    this.clearExtras();
     this.step = 'off';
     this.node.off(Node.EventType.TOUCH_START, this.onTouch, this);
     this.stopLoop();
@@ -291,19 +500,38 @@ export class Tutorial extends Component {
     this.bubble.setScale(.85, .85, 1);
     tween(this.bubble).to(.22, { scale: Vec3.ONE }, { easing: 'backOut' }).start();
   }
+  /**
+   * Bubble right above an item (asked: the player looks at the item, not at the bag), clear of the
+   * hands going round it `beside` units out; kept inside the screen sides and under the HUD
+   */
+  private sayAbove(line: string, it: ItemView, beside: number) {
+    this.say(line);
+    const c = this.toLocal(it.node.worldPosition, new Vec3()), w = it.node.worldPosition, box = it.localBox;
+    const R = Math.max(box.width, box.height) * it.levelScale / 2 + beside;
+    const r = Vec3.distance(c, this.toLocal(this.tmp.set(w.x + R, w.y, 0), new Vec3()));
+    // the new line's size now (the label and the bubble's layout follow it only at the next frame)
+    this.text.updateRenderData(true);
+    this.bubble.getComponent(Layout)?.updateLayout();
+    const bui = this.bubble.getComponent(UITransform)!, half = this.node.getComponent(UITransform)!.width / 2;
+    const room = Math.max(0, half - bui.width / 2 - 8);
+    const x = Math.max(-room, Math.min(room, c.x));
+    const y = Math.min(this.bubbleY, c.y + r + bui.height / 2);
+    this.bubble.setPosition(x, y, 0);
+  }
   /** Bubble height in the basics: under the HUD, above the bag (set by the prefab position) */
   private bubbleY = 0;
 
   private loop() {
     this.stopLoop();
     this.playLoop();
-    this.schedule(this.playLoop, 2.4);
+    this.schedule(this.playLoop, this.step === 'tapTurn' ? TAP_LOOP : 2.4);
   }
   private stopLoop() {
     this.unschedule(this.playLoop);
     Tween.stopAllByTarget(this.hand);
     Tween.stopAllByTarget(this.ring);
     Tween.stopAllByTarget(this.arc);   // the circle of the rotate step moves (and then hides) the hand
+    this.host?.demoTurnEnd();   // a tap + turn pass cut short: the item's turn ends with it
     this.hidePhone();
   }
   private readonly arc = { t: 0 };
@@ -332,29 +560,38 @@ export class Tutorial extends Component {
       this.hand.setPosition(from);
       this.tapRing(from, .25);
       tween(this.hand).delay(.35).to(1.1, { position: to }, { easing: 'sineInOut' }).call(() => this.tapRing(to, 0)).delay(.4).call(() => { op.opacity = 0; }).start();
-    } else if (this.step === 'rotate') {
-      // tap the item, then go round it from a spot beside it (off the item: on the item a drag
-      // picks it up; the ↻ button only marks the item, it has no touch area), past its handle
-      const handle = this.handleOf(it, new Vec3());
-      const selected = GameState.selected === it;
-      const c = from, dh = Vec3.distance(handle, from), r = dh + ROTATE_BESIDE, a0 = Math.atan2(handle.y - from.y, handle.x - from.x);
-      handle.set(c.x + Math.cos(a0) * r, c.y + Math.sin(a0) * r, 0);
-      const start = selected ? handle : from;
-      this.hand.setPosition(start);
-      if (!selected) this.tapRing(from, .2);
-      const arc = this.arc;
-      Tween.stopAllByTarget(arc); arc.t = 0;
-      // a full circle, towards the middle of the screen (an item near the right edge: the hand would
-      // leave the screen going the other way)
-      const dir = c.x > 0 ? 1 : -1;
-      tween(this.hand).delay(selected ? .1 : .5).to(.35, { position: handle }).start();
-      tween(arc).delay(selected ? .5 : .9).to(1.4, { t: 1 }, {
-        easing: 'sineInOut',
-        onUpdate: () => {
-          const a = a0 + dir * arc.t * Math.PI * 2;
-          this.hand.setPosition(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 0);
-        },
-      }).call(() => { op.opacity = 0; }).start();
+    } else if (this.step === 'tapTurn') {
+      // both hands at once, beside the item (off it: on the item a press picks it up): the left
+      // hand's finger goes down its left side and the item turns left (anticlockwise), then the
+      // right hand's finger goes down its right side and it turns back right
+      if (GameState.selected !== it) this.tapRing(from, .2); else this.ring.active = false;   // the prefab's ring sat in the middle otherwise
+      const c = from, w = it.node.worldPosition, box = it.localBox;
+      const R = Math.max(box.width, box.height) * it.levelScale / 2 + ROTATE_BESIDE;
+      const r = Vec3.distance(c, this.toLocal(this.tmp.set(w.x + R, w.y, 0), new Vec3()));
+      const right = this.hand, left = this.extraHand();
+      left.setScale(-1, 1, 1);   // a left hand: the picture mirrored
+      const lop = left.getComponent(UIOpacity) || left.addComponent(UIOpacity);
+      Tween.stopAllByTarget(left); Tween.stopAllByTarget(lop);
+      left.active = true; lop.opacity = 255;
+      const at = (deg: number, out: Vec3) => out.set(c.x + Math.cos(deg * Math.PI / 180) * r, c.y + Math.sin(deg * Math.PI / 180) * r, 0);
+      left.setPosition(at(TAP_LEFT[0], new Vec3()));
+      right.setPosition(at(TAP_RIGHT[0], new Vec3()));
+      // the item itself turns, for real (it pushes its neighbours like a finger's turn would)
+      const host = this.host!;
+      const arc = this.arc; Tween.stopAllByTarget(arc); arc.t = 0;
+      let turned = 0, on = false;
+      const sweep = (hand: Node, way: number[], from: number) => () => {
+        hand.setPosition(at(way[0] + (way[1] - way[0]) * arc.t, this.tmp));
+        const want = from + (way[1] - way[0]) * arc.t;
+        if (on) host.demoTurnBy(want - turned);
+        turned = want;
+      };
+      tween(arc).delay(.3).call(() => { turned = 0; on = host.demoTurnStart(it); })
+        .to(TAP_SWEEP, { t: 1 }, { easing: 'sineInOut', onUpdate: sweep(left, TAP_LEFT, 0) })
+        .delay(.25).call(() => { arc.t = 0; })
+        .to(TAP_SWEEP, { t: 1 }, { easing: 'sineInOut', onUpdate: sweep(right, TAP_RIGHT, TAP_LEFT[1] - TAP_LEFT[0]) })
+        .delay(.3).call(() => { if (on) host.demoTurnEnd(); on = false; })
+        .delay(.1).call(() => { op.opacity = 0; lop.opacity = 0; }).start();
     }
   }
 
@@ -369,13 +606,6 @@ export class Tutorial extends Component {
     Tween.stopAllByTarget(op);
     tween(op).delay(delay).to(.05, { opacity: 230 }).to(.45, { opacity: 0 }).start();
     tween(ring).delay(delay).to(.5, { scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' }).start();
-  }
-
-  /** Rotate handle of an item (ItemView.handleSpot, as DragController draws it), following its rotation */
-  private handleOf(it: ItemView, out: Vec3) {
-    this.tmp2.set(it.handleSpot);
-    Vec2.transformMat4(this.tmp2, this.tmp2, it.node.worldMatrix);
-    return this.toLocal(out.set(this.tmp2.x, this.tmp2.y, 0), out);
   }
 
   private toLocal(world: Vec3, out: Vec3) { return this.node.getComponent(UITransform)!.convertToNodeSpaceAR(world, out); }

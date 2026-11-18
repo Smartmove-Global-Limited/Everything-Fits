@@ -9,6 +9,10 @@ export interface DragState {
   /** target pointer position (Field space) */
   targetX: number; targetY: number;
   lift: number; liftTo: number;
+  /** held with a mouse: only a small fixed lift (no finger to clear) */
+  mouse: boolean;
+  /** turned by a second finger while held */
+  twisted: boolean;
   ghost: boolean;
   lastValid: { x: number; y: number; angle: number } | null;
   touchId: number;

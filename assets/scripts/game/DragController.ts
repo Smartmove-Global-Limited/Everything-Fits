@@ -23,6 +23,12 @@ const { ccclass, property } = _decorator;
 
 const DRAG_START = 7;                       // pointer travel that turns a touch into a drag
 /**
+ * Pointer travel that turns a press on an item into a pick-up. A real fingertip wobbles more than
+ * DRAG_START on a tap: the tap picked the item up instead of selecting it (no rotate button, it
+ * took a second tap)
+ */
+const TAP_SLOP = 14;
+/**
  * Touch area around every item, for picking only (drag / select / rotate): a finger that lands
  * this close to an item takes it, so small items are easy to grab. The colliders do not change:
  * the item touches other items and the bag with its real shape, and once taken the extra area
@@ -30,7 +36,18 @@ const DRAG_START = 7;                       // pointer travel that turns a touch
  */
 const TOUCH_PAD = 14;
 const HANDLE_EDGE = 3, HANDLE_PAD = 12;     // rotate button: always hit within its radius + EDGE, + PAD where no other item is
-const LIFT_MAX = 70, FINGER_CLEARANCE = 26; // item is lifted above the finger by up to this much
+/**
+ * The held item is lifted so its lowest point sits FINGER_CLEARANCE above the finger, wherever it
+ * was grabbed (lifting the centre by half its size + 26 left a small item grabbed near its top edge
+ * under the fingertip). Up to LIFT_MAX: a big item is seen anyway. Set once when it is picked up
+ * and kept: the item stays the same distance from the finger (eased in, a fast swipe saw it fly
+ * away from the finger and back; recomputed per angle, a second-finger turn made it bob up and down).
+ */
+const LIFT_MAX = 150, FINGER_CLEARANCE = 48;
+const DEMO_ID = -1000;                      // touch id of the tutorial's turn (no real finger has it)
+const STILL_TIME = .25, STILL_MOVE = 14;    // s, units from where it came to rest (finger wobble allowed): the held item fits and the finger rests (onHeldOverBag)
+const TWIST_GAIN = 1.3;                     // second-finger turn while held: item turns this × the finger's turn (asked: a bit faster)
+const TWIST_MIN_R = 14;                     // second finger closer than this to the item centre: no turn (the angle jumps there)
 const LIFT_MOUSE = 8;                       // with a mouse only a small lift
 const HOLD_AFTER_SPIN = 1000;               // ms an item keeps its new angle inside the bag after rotating
 const MAX_TURN = 24;                          // rad/s: fastest turn of the rotate handle (about 4 turns a second)
@@ -65,6 +82,8 @@ function setAngle(it: ItemView, deg: number) {
   it.node.angle = deg;
   (it.body as any).impl?.syncRotationToPhysics?.();
 }
+/** One finger turning the selected item: its last angle round the item (rad), where it landed, past the tap wobble */
+type SpinFinger = { pointer: number; sx: number; sy: number; moved: boolean };
 const SELECT_INK = new Color(0xE2, 0x63, 0x7F, 255), BUTTON_SHADOW = new Color(59, 42, 74, 56);   // web #E2637F, rgba(59,42,74,.22)
 const FIT_INK = new Color(0x3D, 0xBE, 0x78, 255), GHOST_INK = new Color(0xE5, 0x48, 0x4D, 255);
 const OPAQUE = new Color(255, 255, 255, 255), GHOST_ALPHA = new Color(255, 255, 255, 153);   // web: globalAlpha .6
@@ -74,6 +93,14 @@ export type DragEvents = {
   onPick?(item: ItemView): void; onDrop?(item: ItemView, bounced: boolean): void; onSelect?(item: ItemView | null): void;
   /** the player let go of the rotate handle after turning `item` by `degrees` */
   onRotate?(item: ItemView, degrees: number): void;
+  /** the player's finger started turning `item` (not the tutorial's turn) */
+  onTurnStart?(item: ItemView): void;
+  /** the held item fits inside the bag and the finger has rested a moment there (once per pick-up) */
+  onHeldOverBag?(item: ItemView): void;
+  /** the finger holding a frozen item (see freezeHeld) was lifted */
+  onHeldLetGo?(item: ItemView): void;
+  /** a second finger started turning a frozen held item (it turns it once unfrozen) */
+  onHeldTwist?(item: ItemView): void;
 };
 
 @ccclass('DragController')
@@ -91,12 +118,32 @@ export class DragController extends Component {
    *  angle (rad) and item angle (deg) it was measured from; blocked / stuckDir: the item is stuck
    *  turning that way; turns: its turn in the last frames; bottom: height of its lowest point when
    *  the turn began */
-  private spin: { item: ItemView; id: number; startAngle: number; pointer: number; lead: number; lastAngle: number; blocked: boolean; stuckDir: number; turns: number[]; bottom: number; x0: number; moved: boolean; sx: number; sy: number; tapped: ItemView | null } | null = null;
+  /** fingers: every finger turning the item (the first one, `id`, may also be a tap), each with
+   *  its last angle round the item (rad) and where it landed; multi: more than one finger took part
+   *  (then the end is never a tap) */
+  private spin: { item: ItemView; id: number; startAngle: number; fingers: Map<number, SpinFinger>; multi: boolean; lead: number; lastAngle: number; blocked: boolean; stuckDir: number; turns: number[]; bottom: number; x0: number; moved: boolean; tapped: ItemView | null; demo?: boolean } | null = null;
+  /**
+   * Second finger turning the held item (same gesture as the one-finger turn: round the item's
+   * centre). Set when a finger lands while another one holds or is about to pick up an item; that
+   * finger only ever turns the held item, it never selects, picks or turns anything else.
+   * x / y: its last position; turned: degrees turned so far.
+   */
+  private twist: { id: number; x: number; y: number; sx: number; sy: number; moved: boolean; turned: number } | null = null;
   private readonly tmpWorld = new Vec3();
   private readonly tmpLocal = new Vec3();
   private readonly tmpV2 = new Vec2();
   private readonly tmpOut = new Vec2();
   private popAt = 0;
+  /** the held item has fitted inside the bag during this pick-up (onHeldOverBag sent) */
+  private overBag = false;
+  /** how long the held item has fitted in the bag with the finger still, and the finger's last place */
+  private stillFor = 0; private stillX = 0; private stillY = 0;
+  /**
+   * Held item frozen where it is (a tutorial shows something on it): it no longer follows the
+   * finger, a second finger does not turn it. A finger lifted meanwhile drops it when unfrozen.
+   */
+  private frozen = false;
+  private dropOnThaw = false;
 
   onLoad() {
     this.transform = this.getComponent(UITransform)!;
@@ -200,8 +247,24 @@ export class DragController extends Component {
   // ---------- touch ----------
   private onStart(e: EventTouch) {
     const S = GameState;
-    if (S.won || S.lost || S.paused || S.drag) return;
+    if (S.won || S.lost || S.paused) return;
+    this.demoTurnEnd();   // the tutorial's turn gives way to the player's touch
     const p = this.local(e).clone(), id = e.getID();   // a copy: the hit tests below reuse the scratch vector
+    // another finger already holds an item (or pressed one, not moved yet): this one turns it.
+    // A third finger, or one during a one-finger turn, is ignored (never selects / picks another item)
+    if (S.drag || this.pending) {
+      if (!this.twist && id !== (S.drag ? S.drag.touchId : this.pending!.id)) this.twist = { id, x: p.x, y: p.y, sx: p.x, sy: p.y, moved: false, turned: 0 };
+      return;
+    }
+    // a turn in progress: another finger turns the same item too (asked: one finger on its right,
+    // one on its left, each turns it its own way round, no full circle to come round the other side).
+    // It never selects, picks or turns another item
+    if (this.spin) {
+      const sp = this.spin, c = sp.item.node.position;
+      if (!sp.fingers.has(id)) { sp.fingers.set(id, { pointer: Math.atan2(p.y - c.y, p.x - c.x), sx: p.x, sy: p.y, moved: false }); sp.multi = true; }
+      return;
+    }
+    if (this.twist) return;
     // a press on the selected item, or on its rotate button, always picks it up (asked): the button
     // only marks the item as the one that turns, it never starts a turn itself (a finger pulling
     // away from the button turned the item by a few degrees and seemed to freeze it). Turning it:
@@ -219,14 +282,16 @@ export class DragController extends Component {
 
   private onMove(e: EventTouch) {
     const p = this.local(e), id = e.getID();
-    if (this.spin && id === this.spin.id) {
+    if (this.twist && id === this.twist.id) { this.moveTwist(p.x, p.y); return; }
+    const f = this.spin?.fingers.get(id);
+    if (f) {
       // a tap that wobbles a little is still a tap, not a turn
-      if (this.spin.moved || Math.hypot(p.x - this.spin.sx, p.y - this.spin.sy) > DRAG_START) this.moveSpin(p.x, p.y);
+      if (f.moved || Math.hypot(p.x - f.sx, p.y - f.sy) > DRAG_START) { f.moved = true; this.moveSpin(f, p.x, p.y); }
       return;
     }
     const pd = this.pending;
     if (pd && id === pd.id) {
-      if (Math.hypot(p.x - pd.x, p.y - pd.y) > DRAG_START) {
+      if (Math.hypot(p.x - pd.x, p.y - pd.y) > TAP_SLOP) {
         this.pickUp(pd.item, pd.x, pd.y, id, !sys.isMobile && !(e.touch as any)?._isTouch);
         GameState.drag!.targetX = p.x; GameState.drag!.targetY = p.y;
         this.pending = null;
@@ -239,22 +304,115 @@ export class DragController extends Component {
 
   private onEnd(e: EventTouch) {
     const id = e.getID();
-    if (this.spin && id === this.spin.id) {
-      const sp = this.spin; this.spin = null;
+    if (this.twist && id === this.twist.id) { this.endTwist(); return; }
+    if (this.spin?.fingers.has(id)) {
+      const sp = this.spin; sp.fingers.delete(id);
+      if (sp.fingers.size) return;   // another finger still turns it
+      this.spin = null;
       this.letGo(sp);
       // turned into a neighbour: wake everything so the overlap is pushed apart, not left asleep
       if (sp.moved) { this.holdAfterSpin(sp.item); wakeAll(); this.events.onRotate?.(sp.item, angleOf(sp.item.node) - sp.startAngle); }
+      else if (sp.multi) { /* two fingers pressed, none turned: no tap */ }
       else if (sp.tapped) this.select(sp.tapped);
       else { const p = this.local(e); if (!this.hitHandle(p.x, p.y)) this.select(null); }
       return;
     }
     if (this.pending && id === this.pending.id) {
       const it = this.pending.item; this.pending = null;
+      this.twist = null;   // a second finger waiting for a pick-up: forget it (its moves / lift are ignored)
       this.select(GameState.selected === it ? null : it);
       return;
     }
     const d = GameState.drag;
-    if (d && id === d.touchId) this.drop();
+    if (d && id === d.touchId) {
+      this.endTwist();
+      if (this.frozen) { this.dropOnThaw = true; this.events.onHeldLetGo?.(d.item); }   // falls once the tutorial lets go of it
+      else this.drop();
+    }
+  }
+
+  // ---------- a turn driven by a tutorial ----------
+  /**
+   * The tutorial turns the selected item for real, through the same turn as a finger (soft, the
+   * item pushes its neighbours, stuck it stops): demoTurnStart, demoTurnBy per frame, demoTurnEnd.
+   * A touch meanwhile ends it at once and is the player's own (onStart).
+   */
+  demoTurnStart(item: ItemView): boolean {
+    if (this.spin || this.pending || GameState.drag) return false;
+    const p = item.node.position;
+    this.beginSpin(item, p.x, p.y, DEMO_ID);
+    this.spin!.demo = true; this.spin!.multi = true;
+    return true;
+  }
+  demoTurnBy(deg: number) { if (this.spin?.demo && deg) this.addTurn(deg); }
+  demoTurnEnd() {
+    const sp = this.spin; if (!sp?.demo) return;
+    this.spin = null;
+    this.letGo(sp);
+    if (sp.moved) { this.holdAfterSpin(sp.item); wakeAll(); }   // no onRotate: the player did not turn it
+  }
+
+  // ---------- held item frozen by a tutorial ----------
+  /** Freeze / unfreeze the held item. Unfrozen: back on the finger, or dropped if the finger was lifted */
+  freezeHeld(on: boolean) {
+    if (on) { this.frozen = !!GameState.drag; return; }
+    this.frozen = false;
+    if (this.dropOnThaw) { this.dropOnThaw = false; this.drop(); }
+  }
+  /** Let go of the held item now, as if the finger was lifted (a tutorial is over with it) */
+  dropHeld() {
+    this.frozen = false; this.dropOnThaw = false;
+    if (!GameState.drag) return;
+    this.endTwist();
+    this.drop();   // the finger still on the screen is a stranger now: its moves and lift are ignored
+  }
+  /** Turn the held item round its centre by `deg` (a tutorial showing the turn) */
+  turnHeldBy(deg: number) { const d = GameState.drag; if (d) this.turnHeld(d, deg); }
+  /** Where the finger holding the item is, in world space (into `out`) */
+  fingerWorld(out: Vec3): Vec3 | null {
+    const d = GameState.drag; if (!d) return null;
+    return this.transform.convertToWorldSpaceAR(this.tmpLocal.set(d.targetX, d.targetY, 0), out);
+  }
+
+  // ---------- second finger turns the held item ----------
+  /**
+   * Same gesture as the one-finger turn (the finger goes round the item's centre), applied straight
+   * to the angle: the held item is out of the physics world, so turning it pushes nothing (the
+   * shaking of the old turns came from a body turned into its neighbours). The turn is the change
+   * of the finger's angle measured from the item's centre of this moment, for both the old and the
+   * new finger position: moving the item with the first finger alone never turns it.
+   */
+  private moveTwist(x: number, y: number) {
+    const tw = this.twist!, d = GameState.drag;
+    if (!d || d.touchId === tw.id) { tw.x = x; tw.y = y; return; }   // not picked up yet: just follow
+    if (!tw.moved && Math.hypot(x - tw.sx, y - tw.sy) <= DRAG_START) return;   // a wobble is no turn
+    // frozen by a tutorial: it may let go of the item now (onHeldTwist), else just follow
+    if (this.frozen) this.events.onHeldTwist?.(d.item);
+    if (this.frozen) { tw.x = x; tw.y = y; return; }
+    tw.moved = true;
+    const c = d.item.node.position;
+    const r0 = Math.hypot(tw.x - c.x, tw.y - c.y), r1 = Math.hypot(x - c.x, y - c.y);
+    const ox = tw.x, oy = tw.y;
+    tw.x = x; tw.y = y;
+    if (r0 < TWIST_MIN_R || r1 < TWIST_MIN_R) return;
+    const deg = turnDiff(Math.atan2(y - c.y, x - c.x) * 180 / Math.PI, Math.atan2(oy - c.y, ox - c.x) * 180 / Math.PI);
+    if (deg) { this.turnHeld(d, deg * TWIST_GAIN); tw.turned += deg * TWIST_GAIN; }
+  }
+  /** Turn the held item round its own centre: the finger → centre offset is kept in screen axes */
+  private turnHeld(d: NonNullable<typeof GameState.drag>, deg: number) {
+    const it = d.item, a0 = angleOf(it.node), r0 = a0 * Math.PI / 180;
+    let c = Math.cos(r0), s = Math.sin(r0);
+    const wx = d.offsetX * c - d.offsetY * s, wy = d.offsetX * s + d.offsetY * c;
+    const a1 = a0 + deg, r1 = a1 * Math.PI / 180;
+    it.node.angle = a1;
+    c = Math.cos(r1); s = Math.sin(r1);
+    d.offsetX = wx * c + wy * s; d.offsetY = -wx * s + wy * c;
+    d.twisted = true;
+  }
+  private endTwist() {
+    const tw = this.twist; this.twist = null;
+    const d = GameState.drag;
+    if (tw?.moved && d) this.events.onRotate?.(d.item, tw.turned);
   }
 
   private select(item: ItemView | null) {
@@ -275,8 +433,10 @@ export class DragController extends Component {
     // body switched off and floated where it was let go
     const d = GameState.drag;
     if (d) { GameState.drag = null; this.clearHeld(d.item); d.item.endHold(); }
+    if (this.spin?.demo) { this.letGo(this.spin); this.spin = null; }   // a new round: no hold after it
     this.letGo(this.spin);
-    this.pending = null; this.spin = null;
+    this.pending = null; this.spin = null; this.twist = null;
+    this.frozen = false; this.dropOnThaw = false;
     this.outline.clear();
     this.handle?.clear(); this.drawnKey = '';
   }
@@ -293,12 +453,14 @@ export class DragController extends Component {
     wakeAll();   // what it was holding up falls (sleeping clusters, see Settle)
     this.outline.node.setSiblingIndex(this.heldLayer.children.length - 1);
     this.popAt = S.clock;
+    this.overBag = false; this.stillFor = 0;
     const p = item.node.position;
     const a = -angleOf(item.node) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
     const dx = x - p.x, dy = y - p.y;
-    const ui = item.transform2d;
-    const lift = mouse ? LIFT_MOUSE : Math.min(LIFT_MAX, Math.max(ui.width, ui.height) * item.levelScale / 2 + FINGER_CLEARANCE);
-    S.drag = { item, offsetX: dx * c - dy * s, offsetY: dx * s + dy * c, targetX: x, targetY: y, lift: 0, liftTo: lift, ghost: true, lastValid: null, touchId };
+    const offsetX = dx * c - dy * s, offsetY = dx * s + dy * c;
+    // finger: lowest point FINGER_CLEARANCE above it. dy is finger − centre (y, screen axes)
+    const lift = mouse ? LIFT_MOUSE : Math.min(LIFT_MAX, Math.max(0, FINGER_CLEARANCE + dy + item.below(-a)));
+    S.drag = { item, offsetX, offsetY, targetX: x, targetY: y, lift, liftTo: lift, mouse, twisted: false, ghost: true, lastValid: null, touchId };
     this.events.onPick?.(item);
   }
 
@@ -310,12 +472,13 @@ export class DragController extends Component {
     this.drawHandle();
     if (!d) return;
     const it = d.item;
-    d.lift += (d.liftTo - d.lift) * .25;
+    const a = angleOf(it.node) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
     // pop: swell once and back (the body is out of the world, scaling the node is free)
     const t = (S.clock - this.popAt) / POP_MS;
     const k = it.levelScale * (t < 1 ? 1 + Math.sin(t * Math.PI) * POP_GAIN : 1);
     if (it.node.scale.x !== k) it.node.setScale(k, k, 1);
-    const a = angleOf(it.node) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    // frozen by a tutorial: stays where it is (turned by it), only its outline follows
+    if (this.frozen) { d.ghost = computeGhost(it); this.drawHeld(it, d.ghost); return; }
     let x = d.targetX - (d.offsetX * c - d.offsetY * s);
     let y = d.targetY - (d.offsetX * s + d.offsetY * c) + d.lift;
     it.node.setPosition(x, y, 0);
@@ -326,6 +489,15 @@ export class DragController extends Component {
     if (r.xMin < 0) fx = -r.xMin; else if (r.xMax > DESIGN_W) fx = DESIGN_W - r.xMax;
     if (fx || fy) { x += fx; y += fy; it.node.setPosition(x, y, 0); }
     d.ghost = computeGhost(it);
+    // fitting inside the bag with the finger held still a moment (aiming where to put it): not the
+    // moment it comes in, a hint shown then was hard to follow while the item was still moving
+    if (!this.overBag) {
+      const still = Math.hypot(d.targetX - this.stillX, d.targetY - this.stillY) < STILL_MOVE;
+      const fits = !d.ghost && S.bagReady && bagZone(it).fullyInside;
+      if (!still || !fits) { this.stillX = d.targetX; this.stillY = d.targetY; }   // new rest point
+      this.stillFor = still && fits ? this.stillFor + _dt : 0;
+      if (this.stillFor >= STILL_TIME) { this.overBag = true; this.events.onHeldOverBag?.(it); }
+    }
     if (!d.ghost) { const lv = d.lastValid || (d.lastValid = { x: 0, y: 0, angle: 0 }); lv.x = x; lv.y = y; lv.angle = angleOf(it.node); }
     this.drawHeld(it, d.ghost);
   }
@@ -376,6 +548,8 @@ export class DragController extends Component {
       else { const spot = findFreeSpot(it, it.node.position.x); it.node.setPosition(spot.x, spot.y, 0); }
     }
     it.endHold();
+    // turned by a second finger while out of the world: tell Box2D the new angle (see setAngle)
+    if (d.twisted) setAngle(it, angleOf(it.node));
     it.releasedAt = S.clock;
     // Freeze booster running: an item dropped into the bag stays exactly where it was dropped
     if (!bounced && isFreezing() && bagZone(it).fullyInside) freezeItem(it);
@@ -393,9 +567,20 @@ export class DragController extends Component {
     const p = item.node.position;
     // nothing is done to the item until the finger really turns it: a tap only (un)selects
     const a = angleOf(item.node);
-    this.spin = { item, id, moved: false, startAngle: a, pointer: Math.atan2(y - p.y, x - p.x), lead: 0, lastAngle: a, blocked: false, stuckDir: 0, turns: [], bottom: 0, x0: p.x, sx: x, sy: y, tapped };
+    const fingers = new Map<number, SpinFinger>([[id, { pointer: Math.atan2(y - p.y, x - p.x), sx: x, sy: y, moved: false }]]);
+    this.spin = { item, id, moved: false, startAngle: a, fingers, multi: false, lead: 0, lastAngle: a, blocked: false, stuckDir: 0, turns: [], bottom: 0, x0: p.x, tapped };
   }
-  private moveSpin(x: number, y: number) {
+  /** Finger `f` moved to (x, y): its turn round the item is added to the turn (several fingers add up) */
+  private moveSpin(f: SpinFinger, x: number, y: number) {
+    const p = this.spin!.item.node.position;
+    // the finger's turn since the last move, folded so crossing ±180° never flips the direction
+    const pointer = Math.atan2(y - p.y, x - p.x);
+    const d = turnDiff(pointer * 180 / Math.PI, f.pointer * 180 / Math.PI);
+    f.pointer = pointer;
+    this.addTurn(d);
+  }
+  /** `d` more degrees for the turning item to go (a finger's turn, or the tutorial's) */
+  private addTurn(d: number) {
     const sp = this.spin!, it = sp.item, p = it.node.position;
     if (!sp.moved) {
       sp.moved = true;
@@ -408,11 +593,8 @@ export class DragController extends Component {
       sp.bottom = p.y - it.below(sp.lastAngle * Math.PI / 180);
       it.turning = true;
       this.slick(it, true);
+      if (!sp.demo) this.events.onTurnStart?.(it);
     }
-    // the finger's turn since the last move, folded so crossing ±180° never flips the direction
-    const pointer = Math.atan2(y - p.y, x - p.x);
-    const d = turnDiff(pointer * 180 / Math.PI, sp.pointer * 180 / Math.PI);
-    sp.pointer = pointer;
     // stuck: turning on does nothing (pushing again and again shook it), turning back frees it
     if (sp.blocked) {
       if (Math.sign(d) === sp.stuckDir) return;
@@ -513,12 +695,13 @@ export class DragController extends Component {
       if (!it.holdUntil) { if (it.body.fixedRotation) it.body.fixedRotation = false; continue; }   // hold over: it turns freely again
       if (this.spin?.moved && this.spin.item === it) continue;
       it.stuckFrames = 0;
-      if (it.holdUntil !== Infinity && now >= it.holdUntil) { it.holdUntil = 0; it.spunAt = now; it.stop(); it.body.wakeUp(); continue; }
+      // let go: awake and counted afresh by Settle (it must not take it as already at rest)
+      if (it.holdUntil !== Infinity && now >= it.holdUntil) { it.holdUntil = 0; it.spunAt = now; it.stop(); it.restTime = 0; it.restX = NaN; it.body.wakeUp(); continue; }
       // in the bag: still a moment; on the tray: the angle stays, it may still fall
       this.holdAngle(it, it.holdUntil !== Infinity);
     }
     // a tray item kept still after rotating is released when anything else is picked up
-    if (GameState.drag) for (const it of GameState.items) if (it.holdUntil === Infinity && !isHeld(it)) { it.holdUntil = 0; it.spunAt = now; it.body.wakeUp(); }
+    if (GameState.drag) for (const it of GameState.items) if (it.holdUntil === Infinity && !isHeld(it)) { it.holdUntil = 0; it.spunAt = now; it.restTime = 0; it.restX = NaN; it.body.wakeUp(); }
   }
 
   /**

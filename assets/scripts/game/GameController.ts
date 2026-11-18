@@ -168,6 +168,10 @@ export class GameController extends Component {
       onPick: () => Sound.play('pick'),
       onSelect: it => this.tutorial?.onSelect(it),
       onRotate: (_it, deg) => this.tutorial?.onRotated(deg),
+      onTurnStart: () => this.tutorial?.onTurnStart(),
+      onHeldOverBag: it => this.tutorial?.onHeldOverBag(it),
+      onHeldLetGo: () => this.tutorial?.onHeldLetGo(),
+      onHeldTwist: () => this.tutorial?.onHeldTwist(),
       onDrop: (it, bounced) => {
         if (bounced) { Sound.play('misplace'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit!"); }
         else Sound.play('drop', { gain: .9 });
@@ -276,12 +280,12 @@ export class GameController extends Component {
   private maybeTutorial() {
     const n = this.levelNumber;
     const booster = BOOSTER_KEYS.findIndex(k => UNLOCK_LEVEL[k] === n && Tutorial.needsBooster(k));
-    // the shake step waits for 3 items in the bag, on level 1 only (asked): after the basics, or
-    // when level 1 is played again with the basics done but no shake shown yet
     // the first level with a mystery box shows how to open it (once)
     const mystery = !Tutorial.needsBasics(n) && booster < 0 && Tutorial.needsMystery() && GameState.items.some(it => it.locked);
-    const shakeOnly = n === 1 && !Tutorial.needsBasics(n) && booster < 0 && !mystery && Tutorial.needsShake();
-    if (!Tutorial.needsBasics(n) && booster < 0 && !shakeOnly && !mystery) return;
+    // hints that wait for their moment (Tutorial.watch): turning on levels 1-2 (a held item over
+    // the bag, a tap on an item), the shake on level 2 (3 items in the bag)
+    const watch = !Tutorial.needsBasics(n) && booster < 0 && !mystery && Tutorial.needsWatch(n);
+    if (!Tutorial.needsBasics(n) && booster < 0 && !mystery && !watch) return;
     const round = GameState.round;
     let waited = 0;
     // after the bag has shown and the items have dropped in (checked a few times a second)
@@ -292,9 +296,9 @@ export class GameController extends Component {
       if (!S.bagReady && (waited += .25) < 8) { this.scheduleOnce(() => wait(), .25); return; }
       const t = await this.ensureTutorial();
       if (S.round !== round || t.active) return;
-      if (Tutorial.needsBasics(n)) t.startBasics(this.tutorialHost());
+      if (Tutorial.needsBasics(n)) t.startBasics(this.tutorialHost(), n);
       else if (mystery) t.startMystery(this.tutorialHost());
-      else if (shakeOnly) t.watchShake(this.tutorialHost());
+      else if (watch) t.watch(this.tutorialHost(), n);
       else t.startBooster(BOOSTER_KEYS[booster], this.hud.boosters[booster].root, BOOSTER_INTRO[BOOSTER_KEYS[booster]], this.tutorialHost());
     };
     this.scheduleOnce(() => wait(), 1.4);
@@ -319,6 +323,13 @@ export class GameController extends Component {
       packedCount: () => S.packed.size,
       // the clock stops and no interstitial shows while a tutorial runs
       setActive: on => { S.timerOn = !on; Ads.tutorial = on; },
+      freezeHeld: on => this.drag.freezeHeld(on),
+      dropHeld: () => this.drag.dropHeld(),
+      demoTurnStart: it => this.drag.demoTurnStart(it),
+      demoTurnBy: deg => this.drag.demoTurnBy(deg),
+      demoTurnEnd: () => this.drag.demoTurnEnd(),
+      turnHeld: deg => this.drag.turnHeldBy(deg),
+      fingerWorld: out => this.drag.fingerWorld(out),
     };
   }
 

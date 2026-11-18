@@ -39,8 +39,11 @@ const TOPPLE_MS = 2500;                    // ms after the drop / the turn the t
 const SLOW = 2;                            // m/s: faster than this it is still falling / flying (no toppling in the air)
 const G_UNITS = 34.375 * PTM;              // game gravity in units/s² (Project Settings → Physics)
 
+// an item whose angle is held after a turn (DragController holdAfterSpin) is still because it is
+// held, not at rest: counted, it was put to sleep during the hold and slept on in the pose it was
+// turned to once let go (it hung there, no physics)
 function eligible(it: ItemView) {
-  return !it.waiting && !it.entering && !isHeld(it) && !it.turning && it.node.activeInHierarchy
+  return !it.waiting && !it.entering && !isHeld(it) && !it.turning && !it.holdUntil && it.node.activeInHierarchy
     && it.body.type === ERigidBody2DType.Dynamic && it.physicsType !== ItemPhysics.FLOAT;
 }
 
