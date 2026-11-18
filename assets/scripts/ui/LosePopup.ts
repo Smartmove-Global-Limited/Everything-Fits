@@ -12,6 +12,8 @@ export class LosePopup extends Component {
   private card: Node = null!;
   private extra: Node = null!;
   private sub: Node = null!;
+  private retry: Node = null!;
+  private retryX = 0;              // Try again's place beside +60 sec; alone (item broke) it is centred
   private extraEnable: (on: boolean) => void = () => {};
   private opts: LoseOptions = null!;
 
@@ -20,7 +22,9 @@ export class LosePopup extends Component {
     this.card = findNode(n, 'efp-card')!;
     this.extra = findNode(n, 'extraTime')!;
     this.sub = findNode(n, 'loseSub')!;
-    tap(findNode(n, 'retry'), () => { closePopup(n); this.opts.onRetry(); }, 'tapBig', this);
+    this.retry = findNode(n, 'retry')!;
+    this.retryX = this.retry.position.x;
+    tap(this.retry, () => { closePopup(n); this.opts.onRetry(); }, 'tapBig', this);
     tap(findNode(n, 'loseHome'), () => { closePopup(n); this.opts.onHome(); }, 'tap', this);
     this.extraEnable = tap(this.extra, () => this.extraTime(), 'tapBig', this);
   }
@@ -33,6 +37,8 @@ export class LosePopup extends Component {
     setText(findNode(n, 'efp-title'), o.reason ? 'Oops!' : 'So close!');
     this.sub.active = !o.reason;
     this.extra.active = !o.reason;
+    const p = this.retry.position;
+    this.retry.setPosition(o.reason ? 0 : this.retryX, p.y, p.z);
     this.extraEnable(true);
     openPopup(n, this.card);
   }

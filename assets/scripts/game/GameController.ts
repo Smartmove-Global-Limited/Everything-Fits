@@ -245,7 +245,15 @@ export class GameController extends Component {
     this.hud.setClockFrozen(false);
     this.shakeHintOnce();
     Analytics.levelStart(this.levelNumber, S.level.id || String(S.levelIndex), S.level.difficulty?.tier);
-    ContentLoader.preloadLevel(levels[(S.levelIndex + 1) % levels.length]);   // the next one, while this one is played
+    const next = levels[(S.levelIndex + 1) % levels.length];
+    // free the items and bags of earlier levels (their pictures piled up over a long session);
+    // not in the editor, which shows item pictures of its own
+    if (!this.embedded) {
+      const keep = new Set(ContentLoader.levelPaths(S.level).concat(ContentLoader.levelPaths(next), ['items/-1', 'bags/backpack']));
+      this.builder.trimPools(keep);
+      ContentLoader.releaseExcept(keep);
+    }
+    ContentLoader.preloadLevel(next);   // the next one, while this one is played
     this.renderBoosters();
     Sound.duckMusic(false);
     if (!this.embedded) this.maybeTutorial();

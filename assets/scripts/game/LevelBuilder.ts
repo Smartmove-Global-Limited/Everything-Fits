@@ -491,6 +491,23 @@ export class LevelBuilder {
     this.swayOn = false;
   }
 
+  /**
+   * Destroy the pooled items and bags whose prefab path (items/<id>, bags/<skin>) is not in `keep`,
+   * so ContentLoader.releaseExcept can free their pictures. The items and bag on the field stay.
+   */
+  trimPools(keep: Set<string>) {
+    for (const [id, list] of Array.from(this.itemPool)) {
+      if (keep.has(`items/${id}`)) continue;
+      for (const it of list) if (it.isValid) it.node.destroy();
+      this.itemPool.delete(id);
+    }
+    for (const [skin, bag] of Array.from(this.bagPool)) {
+      if (keep.has(`bags/${skin}`) || bag === GameState.bag) continue;
+      if (bag.isValid) bag.node.destroy();
+      this.bagPool.delete(skin);
+    }
+  }
+
   /** Scene teardown: pooled nodes sit outside the scene tree, destroy them explicitly */
   dispose() {
     disposeTethers();

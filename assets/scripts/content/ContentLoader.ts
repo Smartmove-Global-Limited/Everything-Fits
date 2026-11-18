@@ -119,6 +119,29 @@ export const ContentLoader = {
   itemPrefab(id: number) { return this.prefab(`items/${id}`); },
   bagPrefab(skin: string) { return this.prefab(`bags/${skin}`); },
 
+  /** Prefab paths a level uses (items, mystery box, bag), as cached by prefab() */
+  levelPaths(level: any): string[] {
+    if (!level) return [];
+    const out = (level.items || []).filter((it: any) => it?.id != null).map((it: any) => `items/${it.id}`);
+    if ((level.items || []).some((it: any) => it?.locked)) out.push('items/-1');   // the mystery box
+    if (level.container?.skin) out.push(`bags/${level.container.skin}`);
+    return out;
+  },
+
+  /**
+   * Release the item and bag prefabs (with their pictures) not in `keep`. Nothing was ever released
+   * before: playing levels 37-50 in a row kept ~260 item pictures (~170 MB of textures) and weak
+   * phones lagged on the last levels, while opening level 50 straight away did not. Their pooled
+   * nodes must be destroyed first (LevelBuilder.trimPools).
+   */
+  releaseExcept(keep: Set<string>) {
+    for (const [path, p] of Array.from(prefabCache)) {
+      if (keep.has(path) || !(path.startsWith('items/') || path.startsWith('bags/'))) continue;
+      prefabCache.delete(path);
+      if (p.isValid) assetManager.releaseAsset(p);
+    }
+  },
+
   /** Load the bag, items and background of one level (a level object of levels.json), so it opens without hitches */
   async preloadLevel(level: any) {
     if (!level) return;
