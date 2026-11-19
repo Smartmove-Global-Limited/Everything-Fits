@@ -2,14 +2,15 @@
 //   Level 1, once:  1. a hand drags one item from the tray to its place in the bag
 //                      ("Drag items into the bag") until the player packs an item;
 //                   2. "Great! Pack everything before time runs out", then normal play.
-//   Turning, once each, on level 1 (or level 2 if not seen there):
-//     hold + turn:  the first time a held item is inside the bag where it fits (on level 1 that
-//                   is the drag step done), the clock stops and the item stays where it is; a hand
-//                   (left, mirrored) has its finger on the item, holding it, a right hand's finger
-//                   goes round it outside, down, up, a full circle and back, and the item turns
-//                   with it ("Hold it, and rotate with another finger"), back at its own angle.
-//                   Then it is let go into the bag (finger lifted or not): on level 1 the drag
-//                   step is not shown again, "Great! ..." follows.
+//   Turning, once each:
+//     hold + turn:  level 1, the first item let go of inside the bag where it fits: the clock
+//                   stops and the item stays in the air where it was let go; a hand (left,
+//                   mirrored) has its finger on the item, holding it, a right hand's finger goes
+//                   round it outside, down, up, a full circle and back, and the item really turns
+//                   with it ("Hold it, and rotate with another finger"), keeping the angle it
+//                   reached. Then it falls into the bag (or the player's touch ends it sooner and
+//                   the item is theirs); the drag step is not shown again, "Great! ..." follows.
+//                   (levels 1-2 for the tap + turn below)
 //     tap + turn:   the first time an item is tapped (rotate handle shown), two hands beside it at
 //                   once: the left finger goes down its left side and it turns left, then the right
 //                   finger goes down its right side and it turns back right
@@ -30,6 +31,7 @@ import { _decorator, Component, Node, Label, UITransform, Vec3, tween, Tween, UI
 import { LocalStore } from '../services/LocalStore';
 import { GameState } from '../core/GameState';
 import { angleOf } from '../game/DragController';
+import { bagZone } from '../game/BagRules';
 import type { ItemView } from '../game/ItemView';
 const { ccclass, property } = _decorator;
 
@@ -39,6 +41,7 @@ const KEY_SHAKE = 'ef.tutorial.shake.v1';
 const KEY_MYSTERY = 'ef.tutorial.mystery.v1';
 const KEY_HOLD_TURN = 'ef.tutorial.holdturn.v1';
 const KEY_TAP_TURN = 'ef.tutorial.tapturn.v1';
+const HOLD_TURN_LEVEL = 1;                   // the hold + turn hint: the first item let go of in the bag on level 1
 const TURN_LAST_LEVEL = 2;                   // the turn hints wait for their moment on levels 1 and 2
 const SHAKE_LEVEL = 2;
 const HOLD_TURN_LINE = 'Hold it, and rotate with another finger';
@@ -80,17 +83,10 @@ export type TutorialHost = {
   packedCount(): number;
   /** tutorial on / off: the game stops the clock and the ads while on */
   setActive(on: boolean): void;
-  /** hold + turn: freeze the held item where it is / let it go on (DragController.freezeHeld) */
-  freezeHeld(on: boolean): void;
-  /** let go of the held item now (DragController.dropHeld) */
-  dropHeld(): void;
-  /** turn the held item round its centre by `deg` degrees */
-  turnHeld(deg: number): void;
-  /** world position of the finger holding the item (null: nothing held) */
-  fingerWorld(out: Vec3): Vec3 | null;
-  /** tap + turn: turn the selected item for real, as a finger would (DragController.demoTurn*) */
-  demoTurnStart(item: ItemView): boolean;
-  demoTurnBy(deg: number): void;
+  /** turn an item for real, as a finger would (DragController.demoTurn*); `hover`: it stays in the
+   *  air meanwhile. demoTurnBy is false once a touch of the player has ended the turn */
+  demoTurnStart(item: ItemView, hover?: boolean): boolean;
+  demoTurnBy(deg: number): boolean;
   demoTurnEnd(): void;
 };
 
@@ -108,8 +104,6 @@ export class Tutorial extends Component {
   private step: 'off' | 'drag' | 'done' | 'watch' | 'shake' | 'shaken' | 'booster' | 'mystery' | 'opened' | 'holdTurn' | 'tapTurn' = 'off';
   /** level number of the round the hints are for */
   private level = 0;
-  /** ends the hold + turn hint: the finger holding the item was lifted, or a second finger turns it */
-  private holdEnd: ((lifted: boolean) => void) | null = null;
   private target: ItemView | null = null;
   private targetPlace = new Vec3();
   private boosterKey = '';
@@ -121,7 +115,8 @@ export class Tutorial extends Component {
   static needsMystery() { return !LocalStore.get(KEY_MYSTERY); }
   /** a hint still to be shown on this level when its moment comes (turn hints, shake) */
   static needsWatch(levelNumber: number) {
-    return (levelNumber <= TURN_LAST_LEVEL && (!LocalStore.get(KEY_HOLD_TURN) || !LocalStore.get(KEY_TAP_TURN)))
+    return (levelNumber <= TURN_LAST_LEVEL && !LocalStore.get(KEY_TAP_TURN))
+      || (levelNumber === HOLD_TURN_LEVEL && !LocalStore.get(KEY_HOLD_TURN))
       || (levelNumber === SHAKE_LEVEL && Tutorial.needsShake());
   }
   /** something is on screen (waiting for a hint's moment is not) */
@@ -258,19 +253,23 @@ export class Tutorial extends Component {
   }
 
   /**
-   * A held item fits in the bag: the first time, show the second-finger turn on it with two hands:
-   * a left hand's finger on the item holding it, a right hand's finger coming down beside it, then
-   * going round it (down, up, a full circle, back), the item turning with it. Shown over and over
-   * until the player turns it with a second finger or lifts the finger holding it (asked: it used
-   * to end by itself and drop the item while the finger still held it).
+   * Level 1, the first item let go of inside the bag (asked: shown while dragging, the player often
+   * let go at once and missed it): the item stays where it was let go, in the air, and the hint
+   * shows the second-finger turn on it with two hands: a left hand's finger on the item holding it,
+   * a right hand's finger coming down beside it, then going round it (down, up, a full circle,
+   * back). The item really turns with it (the same soft turn as a finger: it pushes what it meets,
+   * stuck it stops) and keeps the angle it was turned to. Once through, the item falls. A touch of
+   * the player meanwhile ends it there: the item is theirs (picked up, turned with a second finger).
    */
-  onHeldOverBag(item: ItemView) {
-    if ((this.step !== 'watch' && this.step !== 'drag') || LocalStore.get(KEY_HOLD_TURN) || !this.host) return;
+  onDropped(item: ItemView, bounced: boolean) {
+    if (bounced || this.level !== HOLD_TURN_LEVEL || !this.host || LocalStore.get(KEY_HOLD_TURN)) return;
+    if ((this.step !== 'watch' && this.step !== 'drag') || !bagZone(item).fullyInside) return;
     const host = this.host;
     this.stopLoop();
+    if (!host.demoTurnStart(item, true)) return;
+    this.unscheduleAllCallbacks();
     this.begin();
     host.setActive(true);
-    host.freezeHeld(true);
     this.step = 'holdTurn';
     this.target = item;
     this.ring.active = false;
@@ -281,8 +280,8 @@ export class Tutorial extends Component {
     const w = item.node.worldPosition;
     const r = Vec3.distance(c, this.toLocal(this.tmp.set(w.x + R, w.y, 0), new Vec3()));
     // two hands, nothing else (asked: no tags, no ring, no arc): a left hand with its fingertip on
-    // the item's bottom edge, holding it (not on the player's finger: there the finger hid it),
-    // and a right hand that comes down beside it, then goes round it, the item turning with it
+    // the item's bottom edge, holding it, and a right hand that comes down beside it, then goes
+    // round it, the item turning with it
     const hold = this.extraHand();
     const hop = hold.getComponent(UIOpacity) || hold.addComponent(UIOpacity);
     Tween.stopAllByTarget(hold); Tween.stopAllByTarget(hop);
@@ -296,51 +295,35 @@ export class Tutorial extends Component {
     tween(op).delay(.3).to(.3, { opacity: 255 }).start();
     tween(this.hand).delay(.45).to(.25, { scale: Vec3.ONE }, { easing: 'quadIn' }).start();
     const arc = this.arc; Tween.stopAllByTarget(arc);
-    const start = HOLD_TURN_PATH[0];
-    let turned = 0;
-    const place = () => {
-      const a = arc.t * Math.PI / 180, x = c.x + Math.cos(a) * r, y = c.y + Math.sin(a) * r;
-      this.hand.setPosition(x, y, 0);
-      const want = arc.t - start;
-      host.turnHeld(want - turned); turned = want;
-    };
-    // one round of the path; it ends a full turn from where it began, the same angle: again
-    const round = (lead: number) => {
-      arc.t = start; turned = 0; place();
-      let tw = tween(arc).delay(lead);
-      for (let k = 0; k < HOLD_TURN_TIMES.length; k++) {
-        if (k) tw = tw.delay(HOLD_TURN_PAUSE);
-        tw = tw.to(HOLD_TURN_TIMES[k], { t: HOLD_TURN_PATH[k + 1] }, { easing: 'sineInOut', onUpdate: place });
-      }
-      tw.delay(HOLD_TURN_REST).call(() => round(0)).start();
-    };
-    round(HOLD_TURN_LEAD);
-    this.holdEnd = lifted => {
-      this.holdEnd = null;
+    let last = HOLD_TURN_PATH[0], over = false;
+    // the hint is over: seen for good; the item falls (with the angle it was turned to)
+    const end = () => {
+      if (over) return; over = true;
       Tween.stopAllByTarget(arc);
-      host.turnHeld(-turned); turned = 0;   // back at the angle it fitted at
+      host.demoTurnEnd();
       LocalStore.set(KEY_HOLD_TURN, '1');
       this.clearExtras();
       this.hand.active = false;
-      if (lifted) {
-        host.dropHeld();   // into the bag
-        // level 1: the item is in, the drag step is done (it is not shown again)
-        if (Tutorial.needsBasics(this.level)) { LocalStore.set(KEY_BASICS, '1'); this.basicsDone(); }
-        else this.resume();
-        return;
-      }
-      host.freezeHeld(false);   // back on the finger, the second finger turns it
-      if (Tutorial.needsBasics(this.level)) {
-        // level 1: nothing on screen, the drag step ends when it is packed (onPacked)
-        this.step = 'drag';
-        this.bubble.active = false;
-      } else this.resume();
+      // level 1: an item is in, the drag step is done (it is not shown again)
+      if (Tutorial.needsBasics(this.level)) { LocalStore.set(KEY_BASICS, '1'); this.basicsDone(); }
+      else this.resume();
     };
+    const place = () => {
+      if (over) return;
+      const a = arc.t * Math.PI / 180;
+      this.hand.setPosition(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 0);
+      // a touch of the player ended the turn (DragController.onStart): the hint ends with it
+      if (!host.demoTurnBy(arc.t - last)) { end(); return; }
+      last = arc.t;
+    };
+    arc.t = last; place();
+    let tw = tween(arc).delay(HOLD_TURN_LEAD);
+    for (let k = 0; k < HOLD_TURN_TIMES.length; k++) {
+      if (k) tw = tw.delay(HOLD_TURN_PAUSE);
+      tw = tw.to(HOLD_TURN_TIMES[k], { t: HOLD_TURN_PATH[k + 1] }, { easing: 'sineInOut', onUpdate: place });
+    }
+    tw.delay(HOLD_TURN_REST).call(end).start();
   }
-  /** The finger holding the item was lifted during the hold + turn hint: it ends, the item drops */
-  onHeldLetGo() { if (this.step === 'holdTurn') this.holdEnd?.(true); }
-  /** A second finger started turning the held item during the hold + turn hint: it ends */
-  onHeldTwist() { if (this.step === 'holdTurn') this.holdEnd?.(false); }
 
   // second hand of the two-hand hints (mirrored: a left hand), made on first use
   private hand2: Node | null = null;
@@ -473,9 +456,7 @@ export class Tutorial extends Component {
     else if (this.step === 'shake' || this.step === 'shaken') LocalStore.set(KEY_SHAKE, '1');
     else if (this.step === 'mystery' || this.step === 'opened') LocalStore.set(KEY_MYSTERY, '1');
     else if (this.step === 'drag' || this.step === 'done') LocalStore.set(KEY_BASICS, '1');
-    // a turn hint cut short by the end of the round: shown again next time
-    if (this.step === 'holdTurn') this.host?.freezeHeld(false);
-    this.holdEnd = null;
+    // a turn hint cut short by the end of the round: shown again next time (stopLoop ends the turn)
     this.clearExtras();
     this.step = 'off';
     this.node.off(Node.EventType.TOUCH_START, this.onTouch, this);

@@ -169,12 +169,10 @@ export class GameController extends Component {
       onSelect: it => this.tutorial?.onSelect(it),
       onRotate: (_it, deg) => this.tutorial?.onRotated(deg),
       onTurnStart: () => this.tutorial?.onTurnStart(),
-      onHeldOverBag: it => this.tutorial?.onHeldOverBag(it),
-      onHeldLetGo: () => this.tutorial?.onHeldLetGo(),
-      onHeldTwist: () => this.tutorial?.onHeldTwist(),
       onDrop: (it, bounced) => {
         if (bounced) { Sound.play('misplace'); this.hapticOut(it); this.puff(it); this.hud.toastMessage("Doesn't fit!"); }
         else Sound.play('drop', { gain: .9 });
+        this.tutorial?.onDropped(it, bounced);
       },
     };
     Shake.bind({
@@ -323,13 +321,9 @@ export class GameController extends Component {
       packedCount: () => S.packed.size,
       // the clock stops and no interstitial shows while a tutorial runs
       setActive: on => { S.timerOn = !on; Ads.tutorial = on; },
-      freezeHeld: on => this.drag.freezeHeld(on),
-      dropHeld: () => this.drag.dropHeld(),
-      demoTurnStart: it => this.drag.demoTurnStart(it),
+      demoTurnStart: (it, hover) => this.drag.demoTurnStart(it, hover),
       demoTurnBy: deg => this.drag.demoTurnBy(deg),
       demoTurnEnd: () => this.drag.demoTurnEnd(),
-      turnHeld: deg => this.drag.turnHeldBy(deg),
-      fingerWorld: out => this.drag.fingerWorld(out),
     };
   }
 
