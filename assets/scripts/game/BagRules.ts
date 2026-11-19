@@ -288,7 +288,24 @@ export function overlapsBagArea(item: ItemView): boolean {
   return r.xMax > bag.minX - m && r.xMin < bag.maxX + m && r.yMax > bag.minY - m && r.yMin < bag.maxY + m;
 }
 
-/** After each physics step: push out items stuck half-in the opening */
+// An item rocking across a divider overlaps it by more than this every frame (measured: 1-7 units
+// between frames, the position solver alone moves it, velocity stays 0); one resting against a
+// wall sinks in by Box2D's slop only (well under a unit)
+const WEDGE_TOL = 1;
+/** Does the item overlap a bag wall, divider or obstacle deeper than a resting item ever does? */
+function wedgedInWalls(item: ItemView): boolean {
+  const polys = item.shapes;
+  const hits = PhysicsSystem2D.instance.testAABB(item.bounds);
+  for (let i = 0; i < hits.length; i++) {
+    const c = hits[i];
+    if (c.node === item.node || c.sensor || c.group !== PhysicsGroup.BAG) continue;
+    if (!(c instanceof PolygonCollider2D) && !(c instanceof CircleCollider2D)) continue;
+    if (overlapsCollider(polys, c, WEDGE_TOL)) return true;
+  }
+  return false;
+}
+
+/** After each physics step: push out items stuck half-in the opening, or wedged across a divider */
 export function checkEject(now: number) {
   for (const it of GameState.items) {
     if (!isOnField(it) || isHeld(it) || it.isStatic) continue;
@@ -297,6 +314,10 @@ export function checkEject(now: number) {
     const v = it.body.linearVelocity;
     const resting = v.x * v.x + v.y * v.y < REST_SPEED * REST_SPEED && Math.abs(it.spin) < REST_SPIN;
     if (z.inZone && !z.fullyInside && resting && overlapsInterior(it)) {
+      if (++it.stuckFrames > STUCK_FRAMES) eject(it, 'stuck');
+    } else if (z.fullyInside && resting && wedgedInWalls(it)) {
+      // lying in the bag across a divider / an obstacle / a wall (deeper than a drop allows): Box2D
+      // pushes it out of one contact into the other forever and it shakes in place, never settling
       if (++it.stuckFrames > STUCK_FRAMES) eject(it, 'stuck');
     } else it.stuckFrames = 0;
   }
