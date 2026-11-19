@@ -35,6 +35,8 @@ export class LevelBuilder {
   private lastDropAt = 0;
   /** when the bag's walls stood up, before the bag is shown (-1: not yet) */
   private wallsOnAt = -1;
+  /** closed holes filled while items drop in (shutHoles) */
+  private holesShut = false;
   /** mystery boxes of this round and the prefab of the item each one hides */
   private hidden = new Map<ItemView, Prefab>();
   /** Node in the front layer that mirrors the bag transform; the bag's front image lives under it */
@@ -159,6 +161,7 @@ export class LevelBuilder {
    */
   private scheduleEntrance() {
     const S = GameState;
+    this.shutHoles(true);   // until everything has come down and lies still (tick)
     const falling = S.items.filter(i => !i.presetInBag).sort((a, b) => a.node.position.y - b.node.position.y);
     const t0 = S.clock + FIRST_DROP;
     for (const it of S.items) if (it.presetInBag) { it.waiting = true; it.enterAt = Infinity; }
@@ -188,6 +191,7 @@ export class LevelBuilder {
     // times on the game clock, which starts again at 0 each round
     item.crackedAt = 0; item.lastImpactAt = -1e9;
     item.body.type = ERigidBody2DType.Dynamic;   // a pooled item may come back frozen (static)
+    item.fillHoles(false);                        // a round ended while items were still dropping in
   }
 
   /**
@@ -281,6 +285,7 @@ export class LevelBuilder {
     });
     S.itemsToPack = toPack;
     S.winFrames = 0;
+    if (prefabs.some(Boolean)) this.shutHoles(true);   // new items drop in beside the bag
   }
 
   private activate(it: ItemView, group: number) {
@@ -314,6 +319,28 @@ export class LevelBuilder {
     }
     if (!S.bagReady && S.bag) this.tryRevealBag();
     if (this.pushing.size) this.pushOut();
+    if (this.holesShut && S.bagReady && this.allStill()) this.shutHoles(false);
+  }
+
+  /**
+   * Closed holes filled while items drop in (ItemView.fillHoles: a falling item went through a thin
+   * ring and stayed hooked in it), from the first drop until the bag is shown and everything lies
+   * still. Any item with several collider parts: the collider tool cuts every closed hole that way,
+   * so items added later and every level are covered without a list.
+   */
+  private shutHoles(on: boolean) {
+    this.holesShut = on;
+    for (const it of GameState.items) it.fillHoles(on);
+  }
+  /** Every item has come down and lies still (the one in the hand aside) */
+  private allStill() {
+    for (const it of GameState.items) {
+      if (it.held) continue;
+      if (it.waiting || it.entering) return false;
+      const v = it.body.linearVelocity;
+      if (v.x * v.x + v.y * v.y > SETTLED_SPEED * SETTLED_SPEED) return false;
+    }
+    return true;
   }
 
   /**

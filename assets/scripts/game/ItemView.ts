@@ -8,6 +8,12 @@ const HANDLE_MID = .3;
 /** … and is pushed this far out of the shape (units at scale 1) */
 const HANDLE_OUT = 5;
 
+function polygonArea(pts: Vec2[]) {
+  let a = 0;
+  for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; a += p.x * q.y - q.x * p.y; }
+  return Math.abs(a) / 2;
+}
+
 /** Physics behaviour of an item (meta.physics in the web item data) */
 export enum ItemPhysics { NORMAL = 0, ROLLING = 1, FLOAT = 2, VIBRATING = 3, BOUNCY = 4 }
 /** Mass class, chosen for gameplay feel (not real grams, not size) */
@@ -104,6 +110,17 @@ export class ItemView extends Component {
   private shapeKey = new Float64Array(5).fill(NaN);
   private static readonly mat = new Mat4();
 
+  // ---- closed holes, filled while the items drop in (fillHoles) ----
+  /** several collider parts: the collider tool (build_colliders) cuts the shape through every closed hole */
+  hasHoles = false;
+  holesFilled = false;
+  /** collider densities × areas of the parts at scale 1: the filled outline keeps this mass */
+  private baseMass = 0;
+  private partPolys: Vec2[][] = []; private partWorld: Vec2[][] = [];
+  private fillPolys: Vec2[][] = []; private fillWorld: Vec2[][] = [];
+  /** collider on the outline, made the first time the holes are filled */
+  private filler: PolygonCollider2D | null = null;
+
   onLoad() {
     this.body = this.getComponent(RigidBody2D)!;
     this.colliders = this.getComponents(Collider2D);
@@ -111,18 +128,59 @@ export class ItemView extends Component {
     this.transform2d = this.getComponent(UITransform)!;
     this.sprite = this.getComponent(Sprite);
     for (const c of this.colliders) c.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
-    for (const c of this.colliders) {
+    this.colliders.forEach((c, n) => {
       const pts: Vec2[] = [];
       if (c instanceof PolygonCollider2D) for (const p of c.points) pts.push(new Vec2(p.x + c.offset.x, p.y + c.offset.y));
       else if (c instanceof CircleCollider2D) for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; pts.push(new Vec2(c.offset.x + Math.cos(a) * c.radius, c.offset.y + Math.sin(a) * c.radius)); }
-      if (pts.length < 3) continue;
+      if (pts.length < 3) return;
       this.localPolys.push(pts);
-      let a = 0; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; a += p.x * q.y - q.x * p.y; }
-      this.baseArea += Math.abs(a) / 2;
+      const area = polygonArea(pts);
+      this.baseArea += area;
+      this.baseMass += this.baseDensity[n] * area;
       this.worldPolys.push(pts.map(() => new Vec2()));
-    }
+    });
+    this.partPolys = this.localPolys; this.partWorld = this.worldPolys;
+    this.hasHoles = this.localPolys.length > 1 && this.outline.length >= 3;
     this.computeLocalBox();
     this.computeSlimAxis();
+  }
+
+  /**
+   * Fill the closed holes (one collider on the outline instead of the parts) or open them again.
+   * Filled while the items drop in at the start (LevelBuilder): Box2D tests contacts between two
+   * moving bodies only at the end of each step and items land at ~20 units a step, more than a
+   * thin ring is thick (a kettlebell handle, a carabiner, an elastic band at small sizes). An item
+   * falling on one, or knocked into it, went right through, or the falling ring swallowed an item,
+   * and the two stayed hooked, shaking for good. Opened again once everything lies still: nothing
+   * can be inside then, and in play items move slowly, the holes are there to be packed.
+   * Same mass either way; the shape tests (held item, bag rules) follow the colliders.
+   */
+  fillHoles(on: boolean) {
+    if (!this.hasHoles || on === this.holesFilled) return;
+    this.holesFilled = on;
+    if (on && !this.filler) this.makeFiller();
+    for (const c of this.colliders) c.enabled = (c === this.filler) === on;
+    this.localPolys = on ? this.fillPolys : this.partPolys;
+    this.worldPolys = on ? this.fillWorld : this.partWorld;
+    this.shapeKey.fill(NaN);
+  }
+
+  private makeFiller() {
+    const first = this.colliders[0];
+    const f = this.addComponent(PolygonCollider2D)!;
+    f.enabled = false;
+    f.points = this.outline.map(p => p.clone());
+    f.friction = first.friction; f.restitution = first.restitution;
+    f.group = first.group; f.tag = first.tag; f.sensor = false;
+    // the parts' mass spread over the outline (setLevelScale divides it by the area gain, like theirs)
+    const density = this.baseMass / Math.max(1, polygonArea(this.outline));
+    f.density = density / (this.levelScale * this.levelScale);
+    f.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
+    this.colliders.push(f);
+    this.baseDensity.push(density);
+    this.fillPolys = [this.outline];
+    this.fillWorld = [this.outline.map(() => new Vec2())];
+    this.filler = f;
   }
 
   onDestroy() { for (const c of this.colliders) if (c.isValid) c.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this); }
