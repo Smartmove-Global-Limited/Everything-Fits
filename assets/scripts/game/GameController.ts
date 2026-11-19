@@ -50,6 +50,7 @@ const { ccclass, property } = _decorator;
 const WIN_POPUP_DELAY = .7;   // let the player see the celebration before the popup covers it
 const SHATTER_AT = .35;     // s: a broken item's cracks spread this long before it shatters
 const SHARDS_FALL = 1.2;    // s: the shards fly and fall before the lose popup
+const OVERTIME_MAX = 3000;  // ms: time up with every item in the bag, the win may still come this long
 /** One line for each booster's first level (Tutorial booster intro) */
 const BOOSTER_INTRO: Record<string, string> = {
   freeze: 'New booster! Freeze stops the clock for a few seconds',
@@ -573,8 +574,16 @@ export class GameController extends Component {
     const sec = Math.ceil(S.timeLeft / 1000);
     if (sec !== before && sec <= 10 && sec > 0) Sound.play('clockTick', { gain: .55 });   // last ten seconds tick
     this.hud.setClock(S.timeLeft / 1000);
-    if (S.timeLeft <= 0) this.onLose(null);
+    if (S.timeLeft > 0) { this.overtime = 0; return; }
+    // time is up with every item already in the bag (the last one let go a moment ago, not yet
+    // counted or the bag not yet settled): that is a win, not "0 items still out of the bag". The
+    // clock stays at 0 while the win check finishes; an item out or in the hand, or no win by
+    // OVERTIME_MAX: lost
+    if (BagRules.allInBag() && this.overtime < OVERTIME_MAX) { this.overtime += ms; return; }
+    this.onLose(null);
   }
+  /** ms the clock has stood at 0 while the last items settle in the bag (tickTimer) */
+  private overtime = 0;
 
   private onWin() {
     const S = GameState;

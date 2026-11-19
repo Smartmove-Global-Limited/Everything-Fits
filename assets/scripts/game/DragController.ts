@@ -501,9 +501,7 @@ export class DragController extends Component {
       } else if (d.lastValid) { it.node.setPosition(d.lastValid.x, d.lastValid.y, 0); setAngle(it, d.lastValid.angle); }
       else { const spot = findFreeSpot(it, it.node.position.x); it.node.setPosition(spot.x, spot.y, 0); }
     }
-    it.endHold();
-    // turned by a second finger while out of the world: tell Box2D the new angle (see setAngle)
-    if (d.twisted) setAngle(it, angleOf(it.node));
+    it.endHold();   // tells Box2D the node's place and angle (turned by a second finger too)
     it.releasedAt = S.clock;
     // Freeze booster running: an item dropped into the bag stays exactly where it was dropped
     if (!bounced && isFreezing() && bagZone(it).fullyInside) freezeItem(it);

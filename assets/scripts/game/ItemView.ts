@@ -208,6 +208,12 @@ export class ItemView extends Component {
     this.held = false;
     this.body.type = ERigidBody2DType.Dynamic;
     this.body.enabled = true;
+    // the body at the node's place and angle now, physics running or not. While held, the switched-off
+    // body still followed the node every physics step; let go while the world was stopped (time up,
+    // lose popup) and moved to the tray, it stayed where the finger had it, and once the world ran
+    // again (+60 sec) it pulled the item back there, into the bag
+    const impl = (this.body as any).impl;
+    impl?.syncPositionToPhysics?.(); impl?.syncRotationToPhysics?.();
     this.body.gravityScale = 1;
     this.stop();
     this.body.wakeUp();

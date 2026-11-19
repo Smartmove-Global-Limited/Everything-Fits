@@ -333,3 +333,18 @@ export function updatePacked(now: number) {
     }
   } else { S.winFrames = 0; S.fitNoted = false; }
 }
+
+/**
+ * Every item to pack is in the bag: packed, or fully inside and about to be counted (let go a
+ * moment ago, still settling: IN_FRAMES, then WIN_FRAMES for the win). Not while one is in the hand.
+ */
+export function allInBag() {
+  const S = GameState;
+  if (S.drag || S.itemsToPack <= 0) return false;
+  let n = S.packed.size;
+  for (const it of S.items) {
+    if (it.itemId === 0 || it.waiting || it.locked || S.packed.has(it.levelIndex)) continue;
+    if (bagZone(it).fullyInside) n++;
+  }
+  return n >= S.itemsToPack;
+}
