@@ -449,17 +449,43 @@ export class EditorBoard {
       pal.appendChild(p);
     }
   }
+  /**
+   * Tray items placed beyond the board (a level with more than 24 items put its 5th row at y 812,
+   * under the 760-high board: invisible, impossible to drag) are moved into free slots on the board.
+   * Returns true when something moved.
+   */
+  fitToBoard(): boolean {
+    const L = this.L; if (!L?.items) return false;
+    let n = 0, moved = false;
+    for (const it of L.items) {
+      if (it.inBag) continue;
+      if (it.y > H - 18 || it.y < 0 || it.x < 0 || it.x > W) { const p = traySlot(24 + n++); it.x = p.x; it.y = p.y; moved = true; }
+    }
+    return moved;
+  }
   private addItem(def: any) {
     const L = this.L;
     // several items of a kind are fine (two apples…); only one key: it opens the mystery boxes
     if (def.id === KEY_ID && L.items.some((i: any) => Number(i.id) === KEY_ID)) return this.app.status('Level chỉ có một chìa khoá', 'bad');
-    const n = L.items.filter((i: any) => !i.inBag).length, col = n % 6, row = Math.floor(n / 6);
-    const it: any = { id: def.id, x: 40 + col * 68, y: TABLE_Y + 40 + row * 70, angle: 0 };
+    const n = L.items.filter((i: any) => !i.inBag).length, slot = traySlot(n);
+    const it: any = { id: def.id, x: slot.x, y: slot.y, angle: 0 };
     if (def.id === KEY_ID) { it.inBag = true; it.x = 0; it.y = -40; }   // the key always starts in the bag
     L.items.push(it); this.sel = it; this.showSel(); this.app.onChange();
     const n2 = L.items.filter((i: any) => i.id === def.id).length;
     if (n2 > 1) this.app.status(`Đã thêm ${def.name} thứ ${n2}`, 'ok');
   }
+}
+
+/**
+ * Where the n-th tray item goes: 6 columns × 4 rows of 70 from the tray top (24 slots), then the
+ * same grid shifted by half a cell (5 columns × 3 rows between the others), then round again; always on the board.
+ */
+function traySlot(n: number): { x: number; y: number } {
+  const main = 24, shifted = 15;
+  n %= main + shifted;
+  if (n < main) return { x: 40 + (n % 6) * 68, y: TABLE_Y + 40 + Math.floor(n / 6) * 70 };
+  n -= main;
+  return { x: 74 + (n % 5) * 68, y: TABLE_Y + 75 + Math.floor(n / 5) * 70 };
 }
 
 const HINTS = {

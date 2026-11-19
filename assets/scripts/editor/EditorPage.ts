@@ -79,6 +79,7 @@ export class EditorPage {
     $('lvCoin').value = L.reward?.coin ?? 20;
     $('lvPlayDiff').value = playDifficultyOf(L);
     this.paintItemScale();
+    if (this.board?.fitToBoard()) this.status("Món nằm ngoài bảng đã được đưa vào khay", "ok");
     this.board?.clearSelection();
   }
   /** "Cỡ đồ": size of every item of the level (level.itemScale), 1 is not written */
