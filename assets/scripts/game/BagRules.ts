@@ -292,6 +292,7 @@ export function overlapsBagArea(item: ItemView): boolean {
 // between frames, the position solver alone moves it, velocity stays 0); one resting against a
 // wall sinks in by Box2D's slop only (well under a unit)
 const WEDGE_TOL = 1;
+const WEDGE_FRAMES = 20;   // frames of rocking in place before it is put to sleep (~1/3 s)
 /** Does the item overlap a bag wall, divider or obstacle deeper than a resting item ever does? */
 function wedgedInWalls(item: ItemView): boolean {
   const polys = item.shapes;
@@ -305,7 +306,7 @@ function wedgedInWalls(item: ItemView): boolean {
   return false;
 }
 
-/** After each physics step: push out items stuck half-in the opening, or wedged across a divider */
+/** After each physics step: push out items stuck half-in the opening; put wedged ones to sleep */
 export function checkEject(now: number) {
   for (const it of GameState.items) {
     if (!isOnField(it) || isHeld(it) || it.isStatic) continue;
@@ -316,9 +317,11 @@ export function checkEject(now: number) {
     if (z.inZone && !z.fullyInside && resting && overlapsInterior(it)) {
       if (++it.stuckFrames > STUCK_FRAMES) eject(it, 'stuck');
     } else if (z.fullyInside && resting && wedgedInWalls(it)) {
-      // lying in the bag across a divider / an obstacle / a wall (deeper than a drop allows): Box2D
-      // pushes it out of one contact into the other forever and it shakes in place, never settling
-      if (++it.stuckFrames > STUCK_FRAMES) eject(it, 'stuck');
+      // lying in the bag across a divider / an obstacle / a wall: Box2D pushes it out of one contact
+      // into the other forever (velocity stays 0, the position solver alone moves it) and it shakes
+      // in place, never settling. It was dropped as fitting, so it stays right there: put to sleep
+      // where it is (static walls never wake it; an item falling onto it does, and it sleeps again)
+      if (++it.stuckFrames > WEDGE_FRAMES) { it.body.sleep(); it.stuckFrames = 0; }
     } else it.stuckFrames = 0;
   }
 }

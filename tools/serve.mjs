@@ -1,6 +1,7 @@
 // Local server for the web builds of the Cocos project:
 //   /           the game          (build/web-mobile, tools/build-web.mjs)
 //   /editor/    the Level Editor  (build/web-editor)
+//   /editor-old/ an earlier Level Editor build kept for comparison (build/web-editor-old, optional)
 //   /api/...    what the Editor saves into the project (see API below)
 // A Cocos web build must be served over http: opening index.html from the disk shows a blank page.
 //   node tools/serve.mjs            http://localhost:8088   (this computer only)
@@ -14,7 +15,8 @@ import { networkInterfaces } from 'node:os';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const PORT = Number(process.env.PORT) || 8088;
 const LAN = process.argv.includes('--lan');
-const SITES = [['/editor/', join(ROOT, 'build/web-editor')], ['/', join(ROOT, 'build/web-mobile')]];
+// /editor-old/ serves build/web-editor-old when it exists: an earlier editor build kept to compare behaviour by hand
+const SITES = [['/editor-old/', join(ROOT, 'build/web-editor-old')], ['/editor/', join(ROOT, 'build/web-editor')], ['/', join(ROOT, 'build/web-mobile')]];
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml',
