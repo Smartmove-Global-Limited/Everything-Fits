@@ -14,6 +14,7 @@ import { Fx } from './Fx';
 import { BagView } from './BagView';
 import { buildTethers, clearTethers, disposeTethers, resetTetherDrawing, retie, setTetherLayers } from './Tethers';
 import { KEY_ID, MYSTERY_ID } from './MysteryBox';
+import { buildBlocks } from './BagBlocks';
 
 const DROP_INTERVAL = 110;     // ms between two items dropping in
 const FIRST_DROP = 150;        // pause before the first one
@@ -113,6 +114,7 @@ export class LevelBuilder {
     this.bagScale = s;
     bag.node.setPosition(c.cx ?? 210, levelToFieldY(bottomLevel), 0);
     bag.node.active = true;
+    buildBlocks(bag, c, s);   // obstacles of this level: drawn with the bag, solid with its walls
     this.frontHolder.setPosition(bag.node.position); this.frontHolder.setScale(bag.node.scale);
     if (bag.front) { bag.front.setParent(this.frontHolder, false); bag.front.active = true; }
     if (bag.walls) bag.walls.active = false;                       // no walls until the bag appears
@@ -453,7 +455,7 @@ export class LevelBuilder {
   private scaled: Vec2[] = [];
 
   private setBagVisible(bag: BagView, on: boolean) {
-    for (const n of [bag.body, bag.front]) {
+    for (const n of [bag.body, bag.blocksArt, bag.front]) {
       if (!n) continue;
       const op = n.getComponent(UIOpacity) || n.addComponent(UIOpacity);
       if (on) { op.opacity = 0; tween(op).to(.18, { opacity: 255 }).start(); } else op.opacity = 0;
@@ -477,17 +479,18 @@ export class LevelBuilder {
   }
 
   // ---------- bag sway while shaking (images only; the physical walls do not move) ----------
-  private swayBody = new Vec3(); private swayFront = new Vec3(); private swayOn = false;
+  private swayBody = new Vec3(); private swayFront = new Vec3(); private swayBlocks = new Vec3(); private swayOn = false;
   setSway(dx: number, dy: number, angle: number) {
     const bag = GameState.bag; if (!bag || !bag.body) return;
     const s = bag.node.scale.x || 1;
-    if (!this.swayOn) { this.swayBody.set(bag.body.position); if (bag.front) this.swayFront.set(bag.front.position); this.swayOn = true; }
+    if (!this.swayOn) { this.swayBody.set(bag.body.position); if (bag.front) this.swayFront.set(bag.front.position); if (bag.blocksArt) this.swayBlocks.set(bag.blocksArt.position); this.swayOn = true; }
     bag.body.setPosition(this.swayBody.x + dx / s, this.swayBody.y + dy / s, 0); bag.body.angle = angle;
+    if (bag.blocksArt) { bag.blocksArt.setPosition(this.swayBlocks.x + dx / s, this.swayBlocks.y + dy / s, 0); bag.blocksArt.angle = angle; }
     if (bag.front) { bag.front.setPosition(this.swayFront.x + dx / s, this.swayFront.y + dy / s, 0); bag.front.angle = angle; }
   }
   resetSway() {
     const bag = GameState.bag;
-    if (this.swayOn && bag && bag.body) { bag.body.setPosition(this.swayBody); bag.body.angle = 0; if (bag.front) { bag.front.setPosition(this.swayFront); bag.front.angle = 0; } }
+    if (this.swayOn && bag && bag.body) { bag.body.setPosition(this.swayBody); bag.body.angle = 0; if (bag.front) { bag.front.setPosition(this.swayFront); bag.front.angle = 0; } if (bag.blocksArt) { bag.blocksArt.setPosition(this.swayBlocks); bag.blocksArt.angle = 0; } }
     this.swayOn = false;
   }
 

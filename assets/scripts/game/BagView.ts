@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec2, Intersection2D } from 'cc';
+import { _decorator, Component, Node, Vec2, Intersection2D, Collider2D } from 'cc';
 const { ccclass, property } = _decorator;
 
 /**
@@ -20,6 +20,10 @@ export class BagView extends Component {
   @property({ type: Node }) body: Node | null = null;
   @property({ type: Node }) front: Node | null = null;
   @property({ type: Node }) walls: Node | null = null;
+
+  /** Obstacles of the current level (game/BagBlocks): their drawing under the bag image, their colliders on walls */
+  blocksArt: Node | null = null;
+  readonly blockColliders: Collider2D[] = [];
 
   /** Interior in world space, refreshed when the bag moves or scales (shared, not reallocated per frame) */
   readonly interiorWorld: Vec2[] = [];
