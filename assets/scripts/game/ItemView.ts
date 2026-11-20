@@ -14,6 +14,38 @@ function polygonArea(pts: Vec2[]) {
   return Math.abs(a) / 2;
 }
 
+/** While sealed (fillHoles), an open pocket of the outline whose mouth is narrower than this (game
+ *  units, at the level size) is bridged over: gaps between coral branches, toothed leaves, notches */
+const POCKET_MOUTH = 16;
+
+/** Indices of the convex hull of a simple polygon, in the polygon's own order */
+function hullIndices(p: Vec2[]): number[] {
+  const idx = p.map((_, i) => i).sort((a, b) => p[a].x - p[b].x || p[a].y - p[b].y);
+  const cross = (o: number, a: number, b: number) => (p[a].x - p[o].x) * (p[b].y - p[o].y) - (p[a].y - p[o].y) * (p[b].x - p[o].x);
+  const lower: number[] = [], upper: number[] = [];
+  for (const i of idx) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], i) <= 0) lower.pop(); lower.push(i); }
+  for (let k = idx.length - 1; k >= 0; k--) { const i = idx[k]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], i) <= 0) upper.pop(); upper.push(i); }
+  const set = new Set(lower.concat(upper));
+  return p.map((_, i) => i).filter(i => set.has(i));
+}
+
+/** The polygon with every pocket (outline between two consecutive hull vertices) whose mouth is
+ *  shorter than `mouth` replaced by its mouth; wider pockets are kept */
+function bridgeNarrowPockets(p: Vec2[], mouth: number): Vec2[] {
+  const h = hullIndices(p);
+  if (h.length < 3) return p;
+  const out: Vec2[] = [];
+  for (let k = 0; k < h.length; k++) {
+    const i = h[k], j = h[(k + 1) % h.length];
+    out.push(p[i]);
+    const gap = (j - i + p.length) % p.length;
+    if (gap <= 1) continue;
+    if (Vec2.distance(p[i], p[j]) < mouth) continue;   // narrow: bridged
+    for (let s = 1; s < gap; s++) out.push(p[(i + s) % p.length]);
+  }
+  return out;
+}
+
 /** Physics behaviour of an item (meta.physics in the web item data) */
 export enum ItemPhysics { NORMAL = 0, ROLLING = 1, FLOAT = 2, VIBRATING = 3, BOUNCY = 4 }
 /** Mass class, chosen for gameplay feel (not real grams, not size) */
@@ -146,41 +178,67 @@ export class ItemView extends Component {
   }
 
   /**
-   * Fill the closed holes (one collider on the outline instead of the parts) or open them again.
-   * Filled while the items drop in at the start (LevelBuilder): Box2D tests contacts between two
+   * Seal the item (one collider on sealedShape instead of its own: closed holes and narrow pockets
+   * filled) or open it again. Sealed while the items drop in at the start (LevelBuilder), until
+   * everything lies still. Holes: Box2D tests contacts between two
    * moving bodies only at the end of each step and items land at ~20 units a step, more than a
    * thin ring is thick (a kettlebell handle, a carabiner, an elastic band at small sizes). An item
    * falling on one, or knocked into it, went right through, or the falling ring swallowed an item,
    * and the two stayed hooked, shaking for good. Opened again once everything lies still: nothing
-   * can be inside then, and in play items move slowly, the holes are there to be packed.
+   * can be inside then, and in play items move slowly, the holes are there to be packed. Narrow
+   * pockets: see sealedShape (an item resting over one may settle a little when it opens).
    * Same mass either way; the shape tests (held item, bag rules) follow the colliders.
    */
   fillHoles(on: boolean) {
-    if (!this.hasHoles || on === this.holesFilled) return;
+    if (on === this.holesFilled) return;
+    if (on) {
+      const pts = this.sealedShape();
+      if (!pts) return;                    // nothing to fill: its own colliders stay
+      this.setFiller(pts);
+    } else if (!this.filler) return;
     this.holesFilled = on;
-    if (on && !this.filler) this.makeFiller();
     for (const c of this.colliders) c.enabled = (c === this.filler) === on;
     this.localPolys = on ? this.fillPolys : this.partPolys;
     this.worldPolys = on ? this.fillWorld : this.partWorld;
     this.shapeKey.fill(NaN);
   }
 
-  private makeFiller() {
-    const first = this.colliders[0];
-    const f = this.addComponent(PolygonCollider2D)!;
-    f.enabled = false;
-    f.points = this.outline.map(p => p.clone());
-    f.friction = first.friction; f.restitution = first.restitution;
-    f.group = first.group; f.tag = first.tag; f.sensor = false;
-    // the parts' mass spread over the outline (setLevelScale divides it by the area gain, like theirs)
-    const density = this.baseMass / Math.max(1, polygonArea(this.outline));
+  /**
+   * The shape while sealed, for the current level size: the outline (closed holes gone), with every
+   * open pocket narrower than POCKET_MOUTH bridged over. Narrow pockets were the other trap: an item
+   * dropping onto the pile settled into the gap between coral branches (or a carrot's toothed
+   * leaves...), each small piece of the shape pushed it a different way, and it stayed half inside.
+   * null when the item has neither (its colliders stay as they are).
+   */
+  private sealedShape(): Vec2[] | null {
+    const base = this.hasHoles ? this.outline : this.partPolys.length === 1 ? this.partPolys[0] : null;
+    if (!base || base.length < 3) return null;
+    const pts = base.length > 3 ? bridgeNarrowPockets(base, POCKET_MOUTH / Math.max(.05, this.levelScale)) : base;
+    if (!this.hasHoles && pts.length === base.length) return null;
+    return pts;
+  }
+
+  /** The sealing collider on these points (made the first time), with the parts' mass */
+  private setFiller(pts: Vec2[]) {
+    let f = this.filler;
+    if (!f) {
+      const first = this.colliders[0];
+      f = this.addComponent(PolygonCollider2D)!;
+      f.enabled = false;
+      f.friction = first.friction; f.restitution = first.restitution;
+      f.group = first.group; f.tag = first.tag; f.sensor = false;
+      f.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
+      this.colliders.push(f);
+      this.baseDensity.push(1);
+      this.filler = f;
+    }
+    f.points = pts.map(p => p.clone());
+    // the parts' mass spread over the sealed shape (setLevelScale divides it by the area gain, like theirs)
+    const density = this.baseMass / Math.max(1, polygonArea(pts));
+    this.baseDensity[this.colliders.indexOf(f)] = density;
     f.density = density / (this.levelScale * this.levelScale);
-    f.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
-    this.colliders.push(f);
-    this.baseDensity.push(density);
-    this.fillPolys = [this.outline];
-    this.fillWorld = [this.outline.map(() => new Vec2())];
-    this.filler = f;
+    this.fillPolys = [pts];
+    this.fillWorld = [pts.map(() => new Vec2())];
   }
 
   onDestroy() { for (const c of this.colliders) if (c.isValid) c.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this); }
