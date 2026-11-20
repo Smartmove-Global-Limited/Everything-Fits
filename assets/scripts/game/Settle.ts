@@ -12,7 +12,7 @@
 import { ERigidBody2DType, Rect } from 'cc';
 import { GameState, isHeld } from '../core/GameState';
 import { ItemView, ItemPhysics } from './ItemView';
-import { itemAABB } from './BagRules';
+import { itemAABB, bagZone } from './BagRules';
 import { PTM } from '../core/GameConstants';
 
 // An item rocking around one spot (wedged deeper: the pushes are bigger) must count as resting
@@ -44,7 +44,17 @@ const G_UNITS = 34.375 * PTM;              // game gravity in units/s² (Project
 // turned to once let go (it hung there, no physics)
 function eligible(it: ItemView) {
   return !it.waiting && !it.entering && !isHeld(it) && !it.turning && !it.holdUntil && it.node.activeInHierarchy
-    && it.body.type === ERigidBody2DType.Dynamic && it.physicsType !== ItemPhysics.FLOAT;
+    && it.body.type === ERigidBody2DType.Dynamic && (it.physicsType !== ItemPhysics.FLOAT || floatInBag(it));
+}
+/**
+ * A balloon inside the bag sleeps like the rest once it lies still (pressed against the bag or an
+ * item). Kept awake, it kept its whole pile awake for good (Box2D simulates touching bodies
+ * together): level 50, 28 items awake with nothing moving, physics 3.5 ms a frame instead of 0.3.
+ * Floating outside the bag it bobs and is never put to sleep. Mechanics.tickBalloons leaves a
+ * sleeping one asleep; Box2D wakes it when something touches it.
+ */
+function floatInBag(it: ItemView) {
+  return GameState.bagReady && bagZone(it).fullyInside;
 }
 
 const boxes = new Map<ItemView, Rect>();
@@ -130,5 +140,38 @@ export function wakeAll() {
   for (const it of GameState.items) {
     it.restTime = 0; it.restX = NaN;
     if (it.node.activeInHierarchy && !it.waiting && it.body.type === ERigidBody2DType.Dynamic) it.body.wakeUp();
+  }
+}
+
+/** units between bounding boxes that still count as touching (wakeAround) */
+const NEAR = 2;
+const pileBoxes = new Map<ItemView, Rect>();
+const pile: ItemView[] = [];
+/**
+ * Only the pile `it` belongs to is woken (and counted afresh by Settle): the items touching it,
+ * the items touching those, and so on (bounding boxes, like Settle's clusters), and nothing else.
+ * Picked up, it no longer holds them; turned, it pushed them. An item picked up on the tray leaves
+ * the pile in the bag asleep (the bag's walls part the two piles), and that pile wakes only when an
+ * item dropped into the bag touches it. wakeAll woke every item at every pick up: the fuller the
+ * bag, the heavier each move. Only the items touching it directly left an item resting on one of
+ * them asleep in the air once in 30 picks: the whole pile it is. Call it before it leaves the world.
+ */
+export function wakeAround(it: ItemView) {
+  pileBoxes.clear();
+  for (const o of GameState.items) if (o.node.activeInHierarchy && !o.waiting) pileBoxes.set(o, itemAABB(o).clone());
+  if (!pileBoxes.has(it)) pileBoxes.set(it, itemAABB(it).clone());
+  pile.length = 0; pile.push(it);
+  const seen = new Set<ItemView>([it]);
+  for (let i = 0; i < pile.length; i++) {
+    const r = pileBoxes.get(pile[i])!;
+    for (const [o, q] of pileBoxes) {
+      if (seen.has(o)) continue;
+      if (q.xMin > r.xMax + NEAR || q.xMax < r.xMin - NEAR || q.yMin > r.yMax + NEAR || q.yMax < r.yMin - NEAR) continue;
+      seen.add(o); pile.push(o);
+    }
+  }
+  for (const o of pile) {
+    o.restTime = 0; o.restX = NaN;
+    if (o !== it && o.body.type === ERigidBody2DType.Dynamic) o.body.wakeUp();
   }
 }

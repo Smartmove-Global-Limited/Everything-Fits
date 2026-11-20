@@ -169,8 +169,12 @@ export function tickBalloons() {
     const pos = b.node.position;
     let rise: number;
     pt.set(pos.x, pos.y);
-    if (bag.contains(pt)) rise = RISE_IN_BAG;
-    else {
+    if (bag.contains(pt)) {
+      // asleep in the bag (Settle put its still pile to sleep): left asleep, no push, no righting,
+      // both woke it every frame and with it the whole pile; Box2D wakes it when something touches it
+      if (!b.body.isAwake()) continue;
+      rise = RISE_IN_BAG;
+    } else {
       const below = (DESIGN_H - pos.y) - (DESIGN_H - CEIL_Y);   // > 0: still under the ceiling
       rise = 1 + Math.max(-HOVER_MAX, Math.min(HOVER_MAX, below * HOVER_K));
     }

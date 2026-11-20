@@ -17,7 +17,7 @@ import { DESIGN_W, levelToFieldY, FLOOR_Y, PTM } from '../core/GameConstants';
 import { ItemView } from './ItemView';
 import { computeGhost, overlapsInterior, bagZone, findFreeSpot, itemAABB, beginSpotBatch } from './BagRules';
 import { isFreezing, freezeItem } from './BoosterEffects';
-import { wakeAll } from './Settle';
+import { wakeAround } from './Settle';
 import { KEY_ID } from './MysteryBox';
 const { ccclass, property } = _decorator;
 
@@ -294,7 +294,7 @@ export class DragController extends Component {
       this.spin = null;
       this.letGo(sp);
       // turned into a neighbour: wake everything so the overlap is pushed apart, not left asleep
-      if (sp.moved) { this.holdAfterSpin(sp.item); wakeAll(); this.events.onRotate?.(sp.item, angleOf(sp.item.node) - sp.startAngle); }
+      if (sp.moved) { this.holdAfterSpin(sp.item); wakeAround(sp.item); this.events.onRotate?.(sp.item, angleOf(sp.item.node) - sp.startAngle); }
       else if (sp.multi) { /* two fingers pressed, none turned: no tap */ }
       else if (sp.tapped) this.select(sp.tapped);
       else { const p = this.local(e); if (!this.hitHandle(p.x, p.y)) this.select(null); }
@@ -341,7 +341,7 @@ export class DragController extends Component {
     this.letGo(sp);
     if (sp.hover) { sp.item.body.gravityScale = 1; sp.item.body.wakeUp(); }
     // no onRotate: the player did not turn it. The angle it was turned to is kept
-    if (sp.moved) { this.holdAfterSpin(sp.item); wakeAll(); }
+    if (sp.moved) { this.holdAfterSpin(sp.item); wakeAround(sp.item); }
   }
 
   // ---------- second finger turns the held item ----------
@@ -386,7 +386,7 @@ export class DragController extends Component {
     // the item just turned on the tray keeps its angle only while selected: let go of it, so an
     // item turned into another one is pushed apart instead of staying stuck on it
     const prev = GameState.selected;
-    if (prev && prev !== item && prev.holdUntil === Infinity) { prev.holdUntil = 0; prev.spunAt = GameState.clock; wakeAll(); }
+    if (prev && prev !== item && prev.holdUntil === Infinity) { prev.holdUntil = 0; prev.spunAt = GameState.clock; wakeAround(prev); }
     GameState.selected = item;
     this.events.onSelect?.(item);
   }
@@ -413,10 +413,11 @@ export class DragController extends Component {
     this.select(null);
     S.bagSnapshot = null;
     item.holdUntil = 0; item.frozen = false;
+    // what it was holding up falls, and only that (see Settle): before its body leaves the world
+    wakeAround(item);
     item.beginHold();
     // above the bag rim while held (else dragging it out of the bag looks like it slides under it)
     item.node.setParent(this.heldLayer, true);
-    wakeAll();   // what it was holding up falls (sleeping clusters, see Settle)
     this.outline.node.setSiblingIndex(this.heldLayer.children.length - 1);
     this.popAt = S.clock;
     const p = item.node.position;
