@@ -28,6 +28,27 @@ const PUSH_SPEED = 2.5;        // items in the bag's place as it appears are pus
 const PUSH_MAX = 1500;         // …for this long at most (ms), then moved to a free spot on the tray
 const PUSH_STEP = 3;           // moved out of the bag in steps this long (units) each frame
 const POP_TIME = 450;          // the bag's pop when it appears (ms, the tweens in tryRevealBag)
+// Continuous collision (setSwept) from this speed, off again under the lower one (m/s; units per
+// physics step × 60 / PTM)
+const SWEPT_ON = 5 * 60 / PTM, SWEPT_OFF = 3 * 60 / PTM;
+
+/**
+ * Continuous collision against the other items (Box2D "bullet") only while an item moves fast:
+ * dropping in from above the screen (from the drop until it has landed and slowed down), knocked
+ * away, let go from high up. Between two moving bodies Box2D tests contacts only at the end of each
+ * step, unless one of them is a bullet, and items land at 17-20 units a step: level 43 had 233
+ * items sinking into another in 20 entrances, all while dropping in, 78% at that speed (an apple,
+ * a banana, a carrot's leaves...). Most were pushed out again, but thin, toothed or hollow parts
+ * stayed hooked (8 entrances in 20). The items lying on the tray are not bullets: a bullet only
+ * costs where it touches something, so in the air it is free and the pile stays as cheap as
+ * before (every item a bullet made the pile slow: lag on a weak phone). Cocos reads
+ * RigidBody2D.bullet only when it makes the body, so the Box2D body is told too.
+ */
+function setSwept(it: ItemView, on: boolean) {
+  if (it.body.bullet === on) return;
+  it.body.bullet = on;
+  (it.body as any).impl?.impl?.SetBullet?.(on);
+}
 
 export class LevelBuilder {
   private itemPool = new Map<number, ItemView[]>();
@@ -192,6 +213,7 @@ export class LevelBuilder {
     item.crackedAt = 0; item.lastImpactAt = -1e9;
     item.body.type = ERigidBody2DType.Dynamic;   // a pooled item may come back frozen (static)
     item.fillHoles(false);                        // a round ended while items were still dropping in
+    setSwept(item, false);
   }
 
   /**
@@ -316,21 +338,31 @@ export class LevelBuilder {
         it.entering = false;
         it.setGroup(PhysicsGroup.ITEM);
       }
+      if (!it.waiting && !it.held) {
+        const v = it.body.linearVelocity, s2 = v.x * v.x + v.y * v.y;
+        if (it.entering || s2 > SWEPT_ON * SWEPT_ON) setSwept(it, true);
+        else if (s2 < SWEPT_OFF * SWEPT_OFF) setSwept(it, false);
+      }
     }
     if (!S.bagReady && S.bag) this.tryRevealBag();
     if (this.pushing.size) this.pushOut();
-    if (this.holesShut && S.bagReady && this.allStill()) this.shutHoles(false);
+    // not in the frame the bag is shown (bagShownAt): see shutHoles
+    if (this.holesShut && S.bagReady && S.clock > S.bagShownAt && this.allStill()) this.shutHoles(false);
   }
 
   /**
    * Closed holes filled while items drop in (ItemView.fillHoles: a falling item went through a thin
    * ring and stayed hooked in it), from the first drop until the bag is shown and everything lies
    * still. Any item with several collider parts: the collider tool cuts every closed hole that way,
-   * so items added later and every level are covered without a list.
+   * so items added later and every level are covered without a list. Items placed in the bag from
+   * the start do not drop in and keep theirs. Box2D (box2d.ts) crashed when a collider was swapped
+   * in the frame its body was switched on and made static (the mystery box key, shown with the
+   * bag): a proxy queued twice in its move buffer was dequeued once, and the next contact search
+   * read the freed one. So holes never open in the frame the bag is shown, only after a physics step.
    */
   private shutHoles(on: boolean) {
     this.holesShut = on;
-    for (const it of GameState.items) it.fillHoles(on);
+    for (const it of GameState.items) it.fillHoles(on && !it.presetInBag);
   }
   /** Every item has come down and lies still (the one in the hand aside) */
   private allStill() {
