@@ -187,6 +187,8 @@ export function tickBalloons() {
       if (Math.min(q.xMax, x1) - Math.max(q.xMin, x0) > Math.min(q.width, r.width) * .3) { b.pressedUntil = t + PRESSED_HOLD_MS; break; }
     }
     const pressed = b.pressedUntil > t;
+    // asleep under an item (Settle): left asleep too, the pile it is buried in sleeps with it
+    if (pressed && !b.body.isAwake()) continue;
     b.body.linearDamping = pressed ? AIR_PRESSED : AIR;
     if (pressed) rise = Math.min(rise, PRESSED_RISE);
     const phase = b.levelIndex * 1.7;

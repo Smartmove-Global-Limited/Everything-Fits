@@ -100,6 +100,8 @@ export class ItemView extends Component {
   /** hanging from its tied partner on the string (game/Tethers), drawn in front of the bag rim */
   dangling = false;
   releasedAt = 0; floorBuzzAt = 0; spunAt = 0; stuckFrames = 0; insideFrames = 0; outsideFrames = 0; fitAt = 0; outAt = -1e9;
+  /** BagRules.checkEject: asleep and already found neither stuck in the opening nor wedged (not looked at again until it wakes) */
+  ejectSettled = false;
   /** Settle: where the item has been staying lately and for how long (seconds) */
   restX = NaN; restY = 0; restAngle = 0; restTime = 0;
   holdUntil = 0;

@@ -5,7 +5,7 @@
 // Item geometry is ItemView.shapes (polygons at the CURRENT node transform, so the held item is
 // judged where it is drawn, not where Box2D last saw it); other bodies come from Box2D
 // (PolygonCollider2D.worldPoints, testAABB). Nothing here allocates per call.
-import { Vec2, Rect, PolygonCollider2D, CircleCollider2D, Intersection2D, PhysicsSystem2D } from 'cc';
+import { Vec2, Rect, PolygonCollider2D, CircleCollider2D, Intersection2D, PhysicsSystem2D, ERigidBody2DType } from 'cc';
 import { GameState, isHeld, isOnField } from '../core/GameState';
 import { DESIGN_W, TABLE_Y, FLOOR_Y, BAG_WALL, PhysicsGroup, PTM, levelToFieldY } from '../core/GameConstants';
 import type { ItemView } from './ItemView';
@@ -310,6 +310,12 @@ function wedgedInWalls(item: ItemView): boolean {
 export function checkEject(now: number) {
   for (const it of GameState.items) {
     if (!isOnField(it) || isHeld(it) || it.isStatic) continue;
+    // asleep, it lies exactly where it was looked at last: once found neither stuck nor wedged, it
+    // is not looked at again until something moves it (Box2D or the game wakes it). Checking every
+    // item every frame cost 3-4 ms a frame on a weak phone (level 50), most of them lying still
+    const asleep = !it.body.isAwake();
+    if (!asleep) it.ejectSettled = false;
+    else if (it.ejectSettled) continue;
     if (it.releasedAt > now - WAIT_AFTER_RELEASE) { it.stuckFrames = 0; continue; }
     const z = bagZone(it);
     const v = it.body.linearVelocity;
@@ -321,8 +327,9 @@ export function checkEject(now: number) {
       // into the other forever (velocity stays 0, the position solver alone moves it) and it shakes
       // in place, never settling. It was dropped as fitting, so it stays right there: put to sleep
       // where it is (static walls never wake it; an item falling onto it does, and it sleeps again)
-      if (++it.stuckFrames > WEDGE_FRAMES) { it.body.sleep(); it.stuckFrames = 0; }
+      if (++it.stuckFrames > WEDGE_FRAMES) { it.body.sleep(); it.stuckFrames = 0; it.ejectSettled = true; }
     } else it.stuckFrames = 0;
+    if (asleep && it.stuckFrames === 0) it.ejectSettled = true;
   }
 }
 
@@ -334,6 +341,11 @@ export function updatePacked(now: number) {
     if (it.itemId === 0 || it.waiting) continue;               // the key is a tool, not an item to pack
     const was = S.packed.has(it.levelIndex);
     const outOfPlay = isHeld(it) || it.locked;
+    // asleep, it cannot have come in or gone out since it was looked at last: skipped once its
+    // count is settled (packed and last seen inside, or not packed and last seen outside). An item
+    // still being counted in (IN_FRAMES) or out (OUT_FRAMES) is looked at until it is, and a frozen
+    // (static) item every frame. Box2D or the game wakes whatever moves.
+    if (!outOfPlay && it.body.type === ERigidBody2DType.Dynamic && !it.body.isAwake() && (was ? it.outsideFrames === 0 : it.insideFrames === 0)) continue;
     const inside = !outOfPlay && bagZone(it).fullyInside;
     if (outOfPlay) { it.insideFrames = 0; it.outsideFrames = OUT_FRAMES; }
     else { it.insideFrames = inside ? it.insideFrames + 1 : 0; it.outsideFrames = inside ? 0 : it.outsideFrames + 1; }

@@ -44,17 +44,18 @@ const G_UNITS = 34.375 * PTM;              // game gravity in units/s² (Project
 // turned to once let go (it hung there, no physics)
 function eligible(it: ItemView) {
   return !it.waiting && !it.entering && !isHeld(it) && !it.turning && !it.holdUntil && it.node.activeInHierarchy
-    && it.body.type === ERigidBody2DType.Dynamic && (it.physicsType !== ItemPhysics.FLOAT || floatInBag(it));
+    && it.body.type === ERigidBody2DType.Dynamic && (it.physicsType !== ItemPhysics.FLOAT || floatMaySleep(it));
 }
 /**
- * A balloon inside the bag sleeps like the rest once it lies still (pressed against the bag or an
- * item). Kept awake, it kept its whole pile awake for good (Box2D simulates touching bodies
- * together): level 50, 28 items awake with nothing moving, physics 3.5 ms a frame instead of 0.3.
- * Floating outside the bag it bobs and is never put to sleep. Mechanics.tickBalloons leaves a
- * sleeping one asleep; Box2D wakes it when something touches it.
+ * A balloon that cannot go anywhere sleeps like the rest once it lies still: inside the bag
+ * (against its top or an item), or anywhere with an item lying on it. Kept awake, it kept its
+ * whole pile awake for good (Box2D simulates touching bodies together): level 50, the 30 items
+ * of the tray awake from the start (the balloon buried under them), and later 28 in the bag, with
+ * nothing moving. Floating free it bobs and is never put to sleep. Mechanics.tickBalloons leaves
+ * such a sleeping one asleep; Box2D (or a pick up next to it, wakeAround) wakes it.
  */
-function floatInBag(it: ItemView) {
-  return GameState.bagReady && bagZone(it).fullyInside;
+function floatMaySleep(it: ItemView) {
+  return GameState.bagReady && (it.pressedUntil > GameState.clock || bagZone(it).fullyInside);
 }
 
 const boxes = new Map<ItemView, Rect>();

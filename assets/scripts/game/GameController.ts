@@ -131,6 +131,12 @@ export class GameController extends Component {
   get embedded() { return this.node.scene?.name === 'Editor'; }
 
   onLoad() {
+    // One physics step a frame at most (the project setting allows 3). A frame that ran late made
+    // the next one take 2-3 steps to catch up, which made it later still: shaking the phone on a weak
+    // one (TECNO, Unisoc T606) went to 3 steps of ~14 ms a frame, 20 fps. Now a frame that runs late
+    // moves the items a little less (slower for that moment) instead of stalling; at 60 fps nothing
+    // changes (one step a frame already). The backlog is dropped in update().
+    PhysicsSystem2D.instance.maxSubSteps = 1;
     preloadIceCoat();
     if (this.embedded) ScreenFit.setEmbedded();
     else {
@@ -355,6 +361,10 @@ export class GameController extends Component {
     // physics stays on under the loading veil (only the clock and the drops wait for it): items
     // placed while it was off kept bodies at (0, 0) on Android and fell through the tray floor
     PhysicsSystem2D.instance.enable = !S.won && !S.lost && !S.paused;
+    // time the physics fell behind (late frames, one step a frame) is dropped, not made up later:
+    // on a 90 / 120 Hz screen it would run every frame, fast, until caught up
+    const ph = PhysicsSystem2D.instance as any;
+    if (ph._accumulator > ph.fixedTimeStep) ph._accumulator %= ph.fixedTimeStep;
     if (!running) return;
     const ms = dt * 1000 * S.timeScale;
     S.clock += ms;
